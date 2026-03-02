@@ -1,0 +1,36 @@
+<div class="wk-loading" *ngIf="cargando"><div class="wk-loading-bar"></div></div>
+<div class="wk-error" *ngIf="error">{{ error }}</div>
+
+<div class="ing-content">
+  <div class="ing-table-card">
+    <div class="ing-table-head">
+      <span class="ing-table-title">Ingresos 2026</span>
+      <span class="ing-table-sub">Montos en Soles (S/) — {{ fechas.length }} semanas</span>
+    </div>
+    <div class="ing-table-scroll">
+      <table class="ing-table">
+        <thead>
+          <tr>
+            <th class="ing-th-concepto">CONCEPTO</th>
+            <th class="ing-th-num" *ngFor="let f of fechas">{{ f }}</th>
+            <th class="ing-th-num">VARIACIÓN</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let f of filas" class="ing-row-{{f.tipo}}">
+            <td class="ing-td-concepto" [style.padding-left.px]="14 + f.indent * 18">
+              {{ f.nombre }}
+            </td>
+            <td class="ing-td-num" *ngFor="let m of f.montos"
+                [class.ing-neg]="m! < 0"
+                [class.ing-empty]="m === null">{{ fmt(m) }}</td>
+            <td class="ing-td-num"
+                [class.ing-neg]="f.variacion! < 0"
+                [class.ing-pos]="f.variacion! > 0"
+                [class.ing-empty]="f.variacion === null">{{ fmt(f.variacion) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,36 @@
+<div class="wk-loading" *ngIf="cargando"><div class="wk-loading-bar"></div></div>
+<div class="wk-error" *ngIf="error">{{ error }}</div>
+
+<div class="eg-content">
+  <div class="eg-table-card">
+    <div class="eg-table-head">
+      <span class="eg-table-title">Egresos 2026</span>
+      <span class="eg-table-sub">Montos en Soles (S/) — {{ fechas.length }} semanas</span>
+    </div>
+    <div class="eg-table-scroll">
+      <table class="eg-table">
+        <thead>
+          <tr>
+            <th class="eg-th-concepto">CONCEPTO</th>
+            <th class="eg-th-num" *ngFor="let f of fechas">{{ f }}</th>
+            <th class="eg-th-num">VARIACIÓN</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let f of filas" class="eg-row-{{f.tipo}}">
+            <td class="eg-td-concepto" [style.padding-left.px]="14 + f.indent * 18">
+              {{ f.nombre }}
+            </td>
+            <td class="eg-td-num" *ngFor="let m of f.montos"
+                [class.eg-neg]="m! < 0"
+                [class.eg-empty]="m === null">{{ fmt(m) }}</td>
+            <td class="eg-td-num"
+                [class.eg-neg]="f.variacion! < 0"
+                [class.eg-pos]="f.variacion! > 0"
+                [class.eg-empty]="f.variacion === null">{{ fmt(f.variacion) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

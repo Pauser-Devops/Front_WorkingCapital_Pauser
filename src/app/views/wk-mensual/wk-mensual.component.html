@@ -1,0 +1,56 @@
+<div class="wk-loading" *ngIf="cargando"><div class="wk-loading-bar"></div></div>
+<div class="wk-error" *ngIf="error">{{ error }}</div>
+
+<div class="wk-content">
+
+  <!-- KPIs -->
+  <div class="wk-kpis">
+    <div class="wk-kpi" [class.wk-kpi-green]="kpis.wk! > 0" [class.wk-kpi-red]="kpis.wk! < 0">
+      <div class="wk-kpi-label">WORKING CAPITAL</div>
+      <div class="wk-kpi-value">{{ fmtK(kpis.wk) }}</div>
+      <div class="wk-kpi-sub" *ngIf="kpis.wk !== null">{{ kpis.wk >= 0 ? 'Superávit' : 'Déficit' }}</div>
+      <div class="wk-kpi-sub wk-kpi-empty" *ngIf="kpis.wk === null">Pendiente conexión</div>
+    </div>
+    <div class="wk-kpi wk-kpi-blue">
+      <div class="wk-kpi-label">TOTAL ACTIVO CORRIENTE</div>
+      <div class="wk-kpi-value">{{ fmtK(kpis.activo) }}</div>
+      <div class="wk-kpi-sub">Último mes</div>
+    </div>
+    <div class="wk-kpi wk-kpi-blue">
+      <div class="wk-kpi-label">TOTAL PASIVO CORRIENTE</div>
+      <div class="wk-kpi-value">{{ fmtK(kpis.pasivo) }}</div>
+      <div class="wk-kpi-sub">Último mes</div>
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="wk-table-card">
+    <div class="wk-table-head">
+      <span class="wk-table-title">WK 2026 Mensual</span>
+      <span class="wk-table-sub">Montos en Soles (S/) — {{ fechas.length }} meses</span>
+    </div>
+    <div class="wk-table-scroll">
+      <table class="wk-table">
+        <thead>
+          <tr>
+            <th class="wk-th-concepto">CONCEPTO</th>
+            <th class="wk-th-num" *ngFor="let f of fechas">{{ f }}</th>
+            <th class="wk-th-num">VARIACIÓN</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let f of filas" class="wk-row-{{f.tipo}}">
+            <td class="wk-td-concepto" [style.padding-left.px]="14 + f.indent * 16">{{ f.nombre }}</td>
+            <td class="wk-td-num" *ngFor="let m of f.montos"
+                [class.wk-neg]="m! < 0" [class.wk-empty]="m === null">{{ fmt(m) }}</td>
+            <td class="wk-td-num"
+                [class.wk-neg]="f.variacion! < 0"
+                [class.wk-pos]="f.variacion! > 0"
+                [class.wk-empty]="f.variacion === null">{{ fmt(f.variacion) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

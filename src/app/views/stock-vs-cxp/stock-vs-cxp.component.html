@@ -1,0 +1,90 @@
+<div class="wk-loading" *ngIf="cargando"><div class="wk-loading-bar"></div></div>
+<div class="wk-error" *ngIf="error">{{ error }}</div>
+
+<div class="sc-content">
+
+  <!-- Selector de semana -->
+  <div class="sc-semanas">
+    <span class="sc-semanas-label">SEMANA</span>
+    <button
+      class="sc-semana-btn"
+      *ngFor="let s of semanas; let i = index"
+      [class.sc-semana-active]="semanaSeleccionada === i"
+      (click)="selectSemana(i)">
+      {{ s.fecha }}
+    </button>
+  </div>
+
+  <!-- Tabla -->
+  <div class="sc-table-card">
+    <div class="sc-table-head">
+      <span class="sc-table-title">Stock vs Cuentas por Pagar</span>
+      <span class="sc-table-sub">Semana {{ semanaActual.fecha }}</span>
+    </div>
+    <div class="sc-table-scroll">
+      <table class="sc-table">
+        <thead>
+          <tr>
+            <th class="sc-th-proveedor">PROVEEDOR</th>
+            <th class="sc-th-num" *ngFor="let col of columnas">{{ col.label }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let fila of semanaActual.filas"
+              [class.sc-row-total]="fila.esTotal"
+              [class.sc-row-item]="!fila.esTotal">
+
+            <td class="sc-td-proveedor">{{ fila.proveedor }}</td>
+
+            <!-- STOCK -->
+            <td class="sc-td-num" [class.sc-empty]="fila.stock === null">
+              {{ fmt(fila.stock) }}
+            </td>
+
+            <!-- POR PAGAR -->
+            <td class="sc-td-num" [class.sc-empty]="fila.porPagar === null">
+              {{ fmt(fila.porPagar) }}
+            </td>
+
+            <!-- DIFERENCIA -->
+            <td class="sc-td-num"
+                [class.sc-pos]="esPositivo(fila.diferencia)"
+                [class.sc-neg]="esNegativo(fila.diferencia)"
+                [class.sc-empty]="fila.diferencia === null">
+              {{ fmt(fila.diferencia) }}
+            </td>
+
+            <!-- DÍAS PISO -->
+            <td class="sc-td-num sc-dias"
+                [class.sc-dias-ok]="fila.diasPiso !== null && fila.diasPiso <= 14"
+                [class.sc-dias-warn]="fila.diasPiso !== null && fila.diasPiso > 14 && fila.diasPiso <= 20"
+                [class.sc-dias-bad]="fila.diasPiso !== null && fila.diasPiso > 20"
+                [class.sc-empty]="fila.diasPiso === null">
+              {{ fmtDias(fila.diasPiso) }}
+            </td>
+
+            <!-- LO QUE DEBE SER -->
+            <td class="sc-td-num" [class.sc-empty]="fila.loQueDebeSer === null">
+              {{ fmt(fila.loQueDebeSer) }}
+            </td>
+
+            <!-- EXCESO -->
+            <td class="sc-td-num"
+                [class.sc-pos]="esPositivo(fila.exceso)"
+                [class.sc-neg]="esNegativo(fila.exceso)"
+                [class.sc-empty]="fila.exceso === null">
+              {{ fmt(fila.exceso) }}
+            </td>
+
+            <!-- LO QUE DEBER. TENER -->
+            <td class="sc-td-num" [class.sc-empty]="fila['loQueDeberíamosTener'] === null">
+              {{ fmt(fila['loQueDeberíamosTener']) }}
+            </td>
+
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

@@ -1,0 +1,80 @@
+<div class="wk-loading" *ngIf="cargando">
+  <div class="wk-loading-bar"></div>
+</div>
+<div class="wk-error" *ngIf="error">{{ error }}</div>
+
+<div class="wk-content">
+  <div class="wk-kpis">
+    <div class="wk-kpi" [class.wk-kpi-green]="kpis.wk! > 0" [class.wk-kpi-red]="kpis.wk! < 0">
+      <div class="wk-kpi-label">WORKING CAPITAL</div>
+      <div class="wk-kpi-value">{{ fmtK(kpis.wk) }}</div>
+      <div class="wk-kpi-sub" *ngIf="kpis.wk !== null">{{ kpis.wk >= 0 ? 'Superávit' : 'Déficit' }}</div>
+      <div class="wk-kpi-sub wk-kpi-empty" *ngIf="kpis.wk === null">Pendiente conexión</div>
+    </div>
+    <div class="wk-kpi wk-kpi-blue">
+      <div class="wk-kpi-label">TOTAL ACTIVO CORRIENTE</div>
+      <div class="wk-kpi-value">{{ fmtK(kpis.activo) }}</div>
+      <div class="wk-kpi-sub">Última semana</div>
+    </div>
+    <div class="wk-kpi wk-kpi-blue">
+      <div class="wk-kpi-label">TOTAL PASIVO CORRIENTE</div>
+      <div class="wk-kpi-value">{{ fmtK(kpis.pasivo) }}</div>
+      <div class="wk-kpi-sub">Última semana</div>
+    </div>
+  </div>
+
+  <div class="wk-table-card">
+    <div class="wk-table-head">
+      <span class="wk-table-title">WK 2026 Semanal</span>
+      <div class="wk-table-actions">
+        <span class="wk-table-sub">Montos en Soles (S/) — {{ fechas.length }} semanas</span>
+        <button class="wk-btn-edit" *ngIf="!modoEdicion" (click)="activarEdicion()">✏️ Editar</button>
+        <button class="wk-btn-cancel" *ngIf="modoEdicion" (click)="cancelarEdicion()">Cancelar</button>
+        <button class="wk-btn-save" *ngIf="modoEdicion && hayCambios" (click)="guardarCambios()">💾 Guardar</button>
+      </div>
+    </div>
+    <div class="wk-table-scroll">
+      <table class="wk-table">
+        <thead>
+          <tr>
+            <th class="wk-th-concepto">CONCEPTO</th>
+            <th class="wk-th-num" *ngFor="let f of fechas">{{ f }}</th>
+            <th class="wk-th-num">VARIACIÓN</th>
+          </tr>
+        </thead>
+        <tbody>
+        <tr *ngFor="let f of filas; trackBy: trackFila" class="wk-row-{{f.tipo}}">
+  <td class="wk-td-concepto" [style.padding-left.px]="14 + f.indent * 16">{{ f.nombre }}</td>
+
+  <td class="wk-td-num"
+      *ngFor="let m of f.montos; let i = index; trackBy: trackIndice"
+      [class.wk-neg]="(m ?? 0) < 0"
+      [class.wk-empty]="m === null && !modoEdicion"
+      [class.wk-editado]="tieneCambio(f.nombre, i)">
+
+    <ng-container *ngIf="!modoEdicion || f.tipo === 'seccion' || f.tipo === 'total' || f.tipo === 'wk' || f.tipo === 'pago'">
+      {{ fmt(m) }}
+    </ng-container>
+
+    <ng-container *ngIf="modoEdicion && f.tipo !== 'seccion' && f.tipo !== 'total' && f.tipo !== 'wk' && f.tipo !== 'pago'">
+      <input
+        class="wk-celda-input"
+        type="text"
+        [value]="m !== null ? m : ''"
+        (input)="onCeldaChange(f, i, $event)"
+        (click)="$event.stopPropagation()"
+        tabindex="0" />
+    </ng-container>
+
+  </td>
+
+  <td class="wk-td-num"
+      [class.wk-neg]="(f.variacion ?? 0) < 0"
+      [class.wk-pos]="(f.variacion ?? 0) > 0"
+      [class.wk-empty]="f.variacion === null">{{ fmt(f.variacion) }}</td>
+</tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
