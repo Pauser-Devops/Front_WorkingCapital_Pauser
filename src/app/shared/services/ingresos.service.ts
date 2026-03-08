@@ -2,10 +2,11 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { tap } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class IngresosService {
-  private readonly API = 'http://127.0.0.1:8000';
+  private readonly API = environment.apiUrl;
 
   // Caché en memoria por sesión (se limpia al recargar la página)
   private _datosIngresos = new BehaviorSubject<any>(null);

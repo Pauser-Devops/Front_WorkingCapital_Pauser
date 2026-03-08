@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
-
-const API = 'http://localhost:8000';
+import { environment } from './../environments/environment';
+const API = environment.apiUrl;
 
 export interface Usuario {
   id: number;
