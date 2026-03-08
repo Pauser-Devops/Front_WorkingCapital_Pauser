@@ -1,0 +1,214 @@
+<div class="ib-wrap">
+
+
+  <!-- HEADER -->
+  <div class="ib-header">
+    <div class="ib-header-left">
+      <div class="ib-icon">
+        <span class="material-icons">account_balance</span>
+      </div>
+      <div>
+        <div class="ib-title">Ingresos Bancarios</div>
+        <div class="ib-subtitle">Dashboard desde base de datos · {{ mesLabel }}</div>
+      </div>
+    </div>
+
+    <!-- MESES -->
+    <div class="ib-meses">
+      <button class="ib-mes-btn" *ngFor="let m of meses" [class.activo]="mesActivo === m" (click)="seleccionarMes(m)">
+        {{ m }}
+      </button>
+    </div>
+
+  </div>
+  <!-- LOADING -->
+  <div class="ib-loading" *ngIf="cargando">
+    <div class="ib-spinner"></div>
+    <span>Cargando datos...</span>
+  </div>
+
+  <div class="ib-error" *ngIf="error && !cargando">{{ error }}</div>
+
+  <div *ngIf="!cargando && filtrados.length > 0">
+
+    <!-- FILTROS -->
+    <div class="ib-filtros">
+
+      <!-- Estado -->
+      <div class="ib-filtro-group">
+        <div class="ib-filtro-label">Estado</div>
+        <div class="ib-filtro-pills">
+          <button class="ib-pill" [class.activo]="filtroEstado==='activos'"
+            (click)="setFiltroEstado('activos')">Activos</button>
+          <button class="ib-pill" [class.activo]="filtroEstado==='inactivos'"
+            (click)="setFiltroEstado('inactivos')">Inactivos</button>
+          <button class="ib-pill" [class.activo]="filtroEstado==='todos'"
+            (click)="setFiltroEstado('todos')">Todos</button>
+        </div>
+      </div>
+
+      <!-- Banco tabla -->
+      <div class="ib-filtro-group">
+        <div class="ib-filtro-label">Banco (hoja)</div>
+        <div class="ib-filtro-pills">
+          <button class="ib-pill" [class.activo]="filtroBanco==='TODOS'"
+            (click)="setFiltroBanco('TODOS')">Todos</button>
+          <button class="ib-pill banco-pill" *ngFor="let b of bancos" [class.activo]="filtroBanco === b"
+            [style.--bc]="getBancoColor(b)" (click)="setFiltroBanco(b)">
+            {{ b }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Sucursal -->
+      <div class="ib-filtro-group">
+        <div class="ib-filtro-label">Sucursal</div>
+        <div class="ib-filtro-pills">
+          <button class="ib-pill" [class.activo]="filtroSucursal==='TODAS'"
+            (click)="setFiltroSucursal('TODAS')">Todas</button>
+          <button class="ib-pill" *ngFor="let s of sucursales" [class.activo]="filtroSucursal === s"
+            (click)="setFiltroSucursal(s)">
+            {{ s }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Entidad -->
+      <div class="ib-filtro-group">
+        <div class="ib-filtro-label">Entidad</div>
+        <div class="ib-filtro-pills">
+          <button class="ib-pill" [class.activo]="filtroEntidad==='TODAS'"
+            (click)="setFiltroEntidad('TODAS')">Todas</button>
+          <button class="ib-pill" *ngFor="let e of entidades" [class.activo]="filtroEntidad === e"
+            (click)="setFiltroEntidad(e)">
+            {{ e }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="ib-kpis">
+      <div class="ib-kpi">
+        <div class="ib-kpi-icon">
+          <span class="material-icons">payments</span>
+        </div>
+        <div class="ib-kpi-val green">{{ fmt(totalMonto) }}</div>
+        <div class="ib-kpi-label">Monto Total</div>
+      </div>
+      <div class="ib-kpi">
+        <div class="ib-kpi-icon">
+          <span class="material-icons">list_alt</span>
+        </div>
+        <div class="ib-kpi-val blue">{{ totalRegistros | number }}</div>
+        <div class="ib-kpi-label">Registros</div>
+      </div>
+      <div class="ib-kpi">
+        <div class="ib-kpi-icon">
+          <span class="material-icons">task_alt</span>
+        </div>
+        <div class="ib-kpi-val teal">{{ totalConc | number }}</div>
+        <div class="ib-kpi-label">Conciliados</div>
+      </div>
+      <div class="ib-kpi">
+        <div class="ib-kpi-icon">
+          <span class="material-icons">pending_actions</span>
+        </div>
+        <div class="ib-kpi-val orange">{{ totalSinConc | number }}</div>
+        <div class="ib-kpi-label">Sin conciliar</div>
+      </div>
+      <div class="ib-kpi ib-kpi-pct">
+        <div class="ib-kpi-label">Conciliación</div>
+        <div class="ib-pct-ring">
+          <svg viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="15" fill="none" stroke="#e2e8f0" stroke-width="3" />
+            <circle cx="18" cy="18" r="15" fill="none" stroke="#16a34a" stroke-width="3"
+              [attr.stroke-dasharray]="pctBar + ', 100' " [attr.stroke-dashoffset]="25" stroke-linecap="round" />
+          </svg>
+          <div class="ib-pct-val">{{ pctConc }}%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHARTS ROW -->
+    <div class="ib-charts-row">
+
+      <!-- Por banco -->
+      <div class="ib-card">
+        <div class="ib-card-title">Por Banco (hoja)</div>
+        <div class="ib-bars">
+          <div class="ib-bar-row" *ngFor="let b of porBanco">
+            <div class="ib-bar-label">
+              <span class="ib-dot" [style.background]="b.color"></span>
+              {{ b.label }}
+            </div>
+            <div class="ib-bar-track">
+              <div class="ib-bar-fill" [style.width.%]="b.pct" [style.background]="b.color"></div>
+            </div>
+            <div class="ib-bar-nums">
+              <span class="ib-bar-monto">{{ fmtK(b.monto) }}</span>
+              <span class="ib-bar-pct">{{ b.pct }}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Por entidad -->
+      <div class="ib-card">
+        <div class="ib-card-title">Por Entidad</div>
+        <div class="ib-bars">
+          <div class="ib-bar-row" *ngFor="let e of porEntidad">
+            <div class="ib-bar-label">{{ e.label }}</div>
+            <div class="ib-bar-track">
+              <div class="ib-bar-fill ib-fill-teal" [style.width.%]="e.pct"></div>
+            </div>
+            <div class="ib-bar-nums">
+              <span class="ib-bar-monto">{{ fmtK(e.monto) }}</span>
+              <span class="ib-bar-pct">{{ e.pct }}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Por sucursal -->
+      <div class="ib-card">
+        <div class="ib-card-title">Por Sucursal</div>
+        <div class="ib-bars">
+          <div class="ib-bar-row" *ngFor="let s of porSucursal">
+            <div class="ib-bar-label">{{ s.label }}</div>
+            <div class="ib-bar-track">
+              <div class="ib-bar-fill ib-fill-blue" [style.width.%]="s.pct"></div>
+            </div>
+            <div class="ib-bar-nums">
+              <span class="ib-bar-monto">{{ fmtK(s.monto) }}</span>
+              <span class="ib-bar-pct">{{ s.pct }}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TIMELINE -->
+    <div class="ib-card ib-card-full">
+      <div class="ib-card-title">Evolución Diaria — {{ mesLabel }}</div>
+      <div class="ib-timeline">
+        <div class="ib-tbar-col" *ngFor="let d of porDia" [title]="d.fecha + ': ' + fmt(d.monto)">
+          <div class="ib-tbar-val">{{ fmtK(d.monto) }}</div>
+          <div class="ib-tbar-wrap">
+            <div class="ib-tbar" [style.height.%]="d.pct || 2"></div>
+          </div>
+          <div class="ib-tbar-label">{{ d.fecha }}</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- EMPTY -->
+  <div class="ib-empty" *ngIf="!cargando && !error && filtrados.length === 0 && mesActivo">
+    <span class="material-icons">inbox</span>
+    <p>Sin datos para {{ mesLabel }}</p>
+  </div>
+
+</div>

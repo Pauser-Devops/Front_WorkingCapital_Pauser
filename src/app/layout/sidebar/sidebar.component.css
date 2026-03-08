@@ -9,7 +9,7 @@
   min-width: 205px;
   height: 100%;
   background: #fff;
-  border-right: 1px solid #E5EAF0;
+  border-right: 1px solid #dde3eb;
   display: flex;
   flex-direction: column;
 }
@@ -17,13 +17,14 @@
 .wk-brand {
   display: flex; align-items: center; gap: 10px;
   padding: 16px 14px;
-  border-bottom: 1px solid #E5EAF0;
+  border-bottom: 1px solid #dde3eb;
   flex-shrink: 0;
 }
 
 .wk-brand-logo {
   width: 34px; height: 34px;
-  background: #0070C0; color: #fff;
+  background: #1e3a5f;
+  color: #fff;
   border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
   font-family: 'Syne', sans-serif;
@@ -33,10 +34,14 @@
 .wk-brand-name {
   font-family: 'Syne', sans-serif;
   font-weight: 700; font-size: 13px;
-  color: #0070C0; letter-spacing: 1.5px;
+  color: #1e3a5f;
+  letter-spacing: 1.5px;
 }
 
-.wk-brand-sub { font-size: 10px; color: #8A97A8; }
+.wk-brand-sub {
+  font-size: 10px;
+  color: #8A97A8;
+}
 
 .wk-nav-label {
   padding: 14px 14px 4px;
@@ -63,12 +68,20 @@
   display: block;
 }
 
-.wk-nav-item:hover { background: #EBF3FB; color: #0070C0; }
-.wk-active { background: #0070C0 !important; color: #fff !important; font-weight: 600; }
+.wk-nav-item:hover {
+  background: #eef4fb;
+  color: #1e3a5f;
+}
+
+.wk-active {
+  background: #1e3a5f !important;
+  color: #fff !important;
+  font-weight: 600;
+}
 
 .wk-sidebar-foot {
   padding: 12px;
-  border-top: 1px solid #E5EAF0;
+  border-top: 1px solid #dde3eb;
   display: flex; flex-direction: column; gap: 6px;
   flex-shrink: 0;
 }

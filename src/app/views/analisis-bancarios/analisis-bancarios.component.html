@@ -1,0 +1,165 @@
+<div class="ab-wrap">
+
+
+  <!-- HEADER -->
+  <div class="ab-header">
+    <div class="ab-header-left">
+      <div class="ab-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10" />
+          <line x1="12" y1="20" x2="12" y2="4" />
+          <line x1="6" y1="20" x2="6" y2="14" />
+          <line x1="2" y1="20" x2="22" y2="20" />
+        </svg>
+      </div>
+      <div>
+        <div class="ab-title">Análisis Bancario</div>
+        <div class="ab-subtitle">Categorización de movimientos · {{ mesActivo }}</div>
+      </div>
+    </div>
+    <div class="ab-meses">
+      <button class="ab-mes-btn" *ngFor="let m of meses" [class.activo]="mesActivo === m" (click)="seleccionarMes(m)">
+        {{ m }}
+      </button>
+    </div>
+  </div>
+
+  <!-- TABS BANCOS -->
+  <div class="ab-tabs">
+    <button class="ab-tab" *ngFor="let t of tablas" [class.activo]="tablaActiva === t.key" [style.--tc]="t.color"
+      (click)="seleccionarTabla(t.key)">
+      {{ t.label }}
+    </button>
+  </div>
+
+  <div *ngIf="!cargando && todos.length > 0">
+
+    <!-- KPI CARDS -->
+    <div class="ab-cats">
+      <div class="ab-cat-card" *ngFor="let cat of catKeys" [class.activo]="catActiva === cat"
+        [style.--cc]="catLabels[cat].color" (click)="setCatActiva(cat)">
+
+        <!-- Todos los SVGs presentes, visibilidad por clase -->
+        <div class="ab-cat-icon" [attr.data-icon]="catLabels[cat].icon">
+
+          <!-- ventas -->
+          <svg class="icon-ventas" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <path d="M16 10a4 4 0 0 1-8 0" />
+          </svg>
+
+          <!-- idpop -->
+          <svg class="icon-idpop" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+            <line x1="7" y1="7" x2="7.01" y2="7" />
+          </svg>
+
+          <!-- otros -->
+          <svg class="icon-otros" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="16" />
+            <line x1="8" y1="12" x2="16" y2="12" />
+          </svg>
+
+          <!-- egreso -->
+          <svg class="icon-egreso" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="8 12 12 16 16 12" />
+            <line x1="12" y1="8" x2="12" y2="16" />
+          </svg>
+
+          <!-- ingreso -->
+          <svg class="icon-ingreso" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="16 12 12 8 8 12" />
+            <line x1="12" y1="16" x2="12" y2="8" />
+          </svg>
+
+        </div>
+
+        <div class="ab-cat-info">
+          <div class="ab-cat-label">{{ catLabels[cat].label }}</div>
+          <div class="ab-cat-total">{{ kpis[cat].total | number }} registros</div>
+          <div class="ab-cat-monto">{{ fmtK(kpis[cat].monto) }}</div>
+        </div>
+        <div class="ab-cat-badge">{{ kpis[cat].total }}</div>
+      </div>
+    </div>
+
+    <!-- PANEL -->
+    <div class="ab-panel">
+      <div class="ab-panel-header">
+        <span class="ab-panel-title">{{ catLabels[catActiva].label }}</span>
+        <span class="ab-panel-count">{{ registrosActivos.length }} registros · {{ fmt(kpis[catActiva].monto) }}</span>
+      </div>
+
+      <div class="ab-tabla-wrap">
+        <!-- LOADING -->
+        <div class="ab-loading" *ngIf="cargando">
+          <div class="ab-spinner"></div>
+          <span>Cargando datos...</span>
+        </div>
+
+        <div class="ab-error" *ngIf="error && !cargando">{{ error }}</div>
+
+        <div class="ab-empty-cat" *ngIf="registrosActivos.length === 0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none"
+            stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M7 13l3 3 7-7" />
+          </svg>
+          <p>Sin registros en esta categoría</p>
+        </div>
+
+        <table class="ab-tabla" *ngIf="registrosActivos.length > 0">
+          <thead>
+            <tr>
+              <th>NRO CHEQUE</th>
+              <th>FECHA</th>
+              <th>DESCRIPCIÓN</th>
+              <th>DETALLE</th>
+              <th class="num">INGRESO</th>
+              <th class="num">EGRESO</th>
+              <th>SEDE</th>
+              <th>ID POP</th>
+              <th>CLASIFICACIÓN</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of registrosActivos">
+              <td class="mono">{{ r.nro_cheque || '—' }}</td>
+              <td class="fecha">{{ r.fecha ? r.fecha.toString().slice(0,10) : '—' }}</td>
+              <td class="desc">{{ r.descripcion }}</td>
+              <td class="desc">{{ r.detalle || '—' }}</td>
+              <td class="num ingreso">{{ r.ingreso > 0 ? fmt(r.ingreso) : '—' }}</td>
+              <td class="num egreso">{{ r.egreso > 0 ? fmt(r.egreso) : '—' }}</td>
+              <td>{{ r.sede || '—' }}</td>
+              <td class="mono id-pop">{{ r.id_pop || '—' }}</td>
+              <td class="clasi">{{ r.clasificacion || '—' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- EMPTY -->
+  <div class="ab-empty" *ngIf="!cargando && !error && todos.length === 0 && mesActivo">
+    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 12h-6l-2 3h-4l-2-3H2" />
+      <path
+        d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+    </svg>
+    <p>Sin datos para {{ mesActivo }} · {{ tablaActivaLabel }}</p>
+  </div>
+
+</div>

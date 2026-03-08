@@ -1,0 +1,77 @@
+<div class="login-wrap">
+  <div class="login-left">
+    <div class="login-brand">
+      <div class="login-logo">P</div>
+      <div class="login-brand-text">
+        <div class="login-brand-name">PAUSER</div>
+        <div class="login-brand-sub">Distribuciones S.A.C.</div>
+      </div>
+    </div>
+    <div class="login-tagline">
+      <h1>Working Capital<br><span>Dashboard</span></h1>
+      <p>Plataforma interna de gestión financiera y bancaria.</p>
+    </div>
+    <div class="login-deco">
+      <div class="deco-circle c1"></div>
+      <div class="deco-circle c2"></div>
+      <div class="deco-circle c3"></div>
+    </div>
+  </div>
+
+  <div class="login-right">
+    <div class="login-box">
+      <div class="login-box-header">
+        <h2>Iniciar sesión</h2>
+        <p>Accede con tu correo corporativo</p>
+      </div>
+
+      <div class="login-form">
+        <!-- Email -->
+        <div class="login-field">
+          <label>Correo electrónico</label>
+          <div class="login-input-wrap">
+            <span class="login-input-icon">✉️</span>
+            <input
+              type="email"
+              [(ngModel)]="email"
+              placeholder="usuario@pauserdistribucionessac.onmicrosoft.com"
+              (keyup.enter)="submit()"
+              autocomplete="username"/>
+          </div>
+        </div>
+
+        <!-- Password -->
+        <div class="login-field">
+          <label>Contraseña</label>
+          <div class="login-input-wrap">
+            <span class="login-input-icon">🔒</span>
+            <input
+              [type]="mostrarPassword ? 'text' : 'password'"
+              [(ngModel)]="password"
+              placeholder="••••••••"
+              (keyup.enter)="submit()"
+              autocomplete="current-password"/>
+            <button class="login-eye" type="button" (click)="mostrarPassword = !mostrarPassword">
+              {{ mostrarPassword ? '🙈' : '👁️' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Error -->
+        <div class="login-error" *ngIf="error">
+          <span>⚠️</span> {{ error }}
+        </div>
+
+        <!-- Submit -->
+        <button class="login-btn" (click)="submit()" [disabled]="cargando">
+          <span *ngIf="!cargando">Ingresar</span>
+          <span *ngIf="cargando" class="login-spinner"></span>
+        </button>
+
+        <div class="login-hint">
+          ¿Problemas para acceder? Contacta al administrador del sistema.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

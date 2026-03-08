@@ -53,7 +53,7 @@ export class WkSemanalComponent {
     this.cargando = true; this.error = ''; this.datosApi = null;
     const fd = new FormData();
     fd.append('file', file);
-    this.http.post<RespuestaApi>(`${API_BASE_URL}/procesar-excel`, fd).subscribe({
+    this.http.post<RespuestaApi>(`${API_BASE_URL}/wk/procesar-excel`, fd).subscribe({
       next: (r) => { this.cargando = false; r.estado === 'OK' ? this.datosApi = r : this.error = r.detalle || 'Error'; },
       error: () => { this.cargando = false; this.error = 'Error al conectar con el servidor'; }
     });
