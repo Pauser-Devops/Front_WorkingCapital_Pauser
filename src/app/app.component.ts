@@ -14,31 +14,32 @@ import { AnalisisBancariosComponent } from './views/analisis-bancarios/analisis-
 import { AuthService } from './auth.service';
 import { LoginComponent } from './views/login/login.component';
 import { CambiarPasswordComponent } from './views/cambiar-password/cambiar-password.component';
-
+import { ComparadorIngresosComponent } from './views/comparador-ingresos/comparador-ingresos.component';
 
 const VISTA_NOMBRES: Record<string, string> = {
   semanal: 'WK Semanal 2026',
   mensual: 'WK Mensual 2026',
-  ingresos: 'Ingresos',
+  ingresosbancarios: 'Ingresos Bancarios',
   egresos: 'Egresos',
   stock: 'Stock vs CxP',
   renta: 'Renta y Proyección',
   flujo: 'Flujo de Caja',
-  'reportes-bancarios': 'Reportes Bancarios',
+  'reportes-bancarios': 'Reporte Bancario',
   registroIB: 'Registros Ingresos Bancarios',
-  analisisBancarios: 'Analisis Reportes Bancarios'
+  analisisBancarios: 'Registros Reportes Bancarios',
+  comparadorIngresos: 'Comparar Ingresos Bancarios',
 };
 
 @Component({
   selector: 'app-root',
   standalone: true,
   encapsulation: ViewEncapsulation.None,
-  imports: [CommonModule, SidebarComponent, HeaderComponent, WkSemanalComponent, WkMensualComponent, ReportesBancariosComponent, IngresosComponent, EgresosComponent, StockVsCxpComponent, IngresosBancariosComponent, RegistroIngresosBancariosComponent, AnalisisBancariosComponent, LoginComponent, CambiarPasswordComponent,],
+  imports: [CommonModule, SidebarComponent, HeaderComponent, WkSemanalComponent, WkMensualComponent, ReportesBancariosComponent, IngresosComponent, EgresosComponent, StockVsCxpComponent, IngresosBancariosComponent, RegistroIngresosBancariosComponent, AnalisisBancariosComponent, LoginComponent, CambiarPasswordComponent, ComparadorIngresosComponent,],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
 export class AppComponent {
-  vista = 'semanal';
+  vista = localStorage.getItem('vistaActiva') || 'ingresos-bancarios';
   constructor(public auth: AuthService) { }
   get estaLogueado(): boolean { return this.auth.isLoggedIn; }
   get debeCambiarPassword(): boolean { return !!this.auth.usuarioActual?.debe_cambiar_password; }
@@ -46,9 +47,25 @@ export class AppComponent {
   @ViewChild('wkSemanal') wkSemanalRef?: WkSemanalComponent;
 
   get vistaNombre(): string { return VISTA_NOMBRES[this.vista] || this.vista; }
+  get tituloModulo(): string {
+    const vistasBancarias = [
+      'ingresosbancarios',
+      'registroIB',
+      'reportes-bancarios',
+      'analisisBancarios'
+    ];
+
+    return vistasBancarias.includes(this.vista)
+      ? 'Conciliación Bancaria'
+      : 'Working Capital';
+  }
   get datosApi(): any { return this.wkSemanalRef?.datosApi ?? null; }
 
-  setVista(v: string) { this.vista = v; }
+  setVista(v: string) {
+    this.vista = v;
+    localStorage.setItem('vistaActiva', v);
+  }
+
 
   onFile(event: any) { this.wkSemanalRef?.onFile(event); }
   exportar() { this.wkSemanalRef?.exportar(); }

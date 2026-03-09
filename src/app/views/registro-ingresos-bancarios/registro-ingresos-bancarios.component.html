@@ -1,22 +1,31 @@
-<div class="ib-container">
-  <div class="ib-header">
-    <div class="ib-title">
-      <span>
-        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-        </svg>
-      </span>
+<div class="rib-container">
+
+  <!-- ── HEADER ── -->
+  <div class="rib-header">
+    <div class="rib-title-wrap">
+      <div class="rib-icon-wrap">
+        <span class="material-icons">account_balance</span>
+      </div>
       <div>
-        <h1>Registro Ingresos Bancarios</h1>
+        <h1>Registros Ingresos Bancarios</h1>
         <p>{{ anioActual }} — Conciliación de ingresos por ID POP</p>
       </div>
     </div>
+
+
+    <div class="rib-header-actions">
+      <button class="btn-comparador" (click)="abrirComparador()" title="Comparar con snapshot anterior">
+        <span class="material-icons">compare_arrows</span> Comparar cambios
+      </button>
+      <br>
+      <button class="btn-export" (click)="exportarExcel()" [disabled]="!registrosFiltrados.length">
+        <span class="material-icons">download</span> Exportar Excel
+      </button>
+    </div>
   </div>
 
-  <!-- MESES -->
-  <div class="ib-meses">
+  <!-- ── MESES ── -->
+  <div class="rib-meses">
     <button *ngFor="let mes of meses" class="mes-btn" [class.activo]="mesSeleccionado === mes"
       [class.con-data]="tieneDatos(mes)" (click)="seleccionarMes(mes)">
       {{ mes }}
@@ -24,136 +33,220 @@
     </button>
   </div>
 
-  <div class="ib-panel" *ngIf="mesSeleccionado">
+  <!-- ── PANEL PRINCIPAL ── -->
+  <div class="rib-panel" *ngIf="mesSeleccionado">
 
-    <!-- ACCIONES -->
-    <div class="ib-actions">
-      <h2>{{ mesSeleccionado }} {{ anioActual }}</h2>
-      <div class="ib-btns">
+    <!-- Acciones -->
+    <div class="rib-actions-bar">
+      <div class="rib-acciones-left">
+        <h2>{{ mesSeleccionado }} {{ anioActual }}</h2>
+        <!-- Chips de banco por entidad -->
+        <div class="entidad-chips" *ngIf="entidades.length">
+          <button *ngFor="let e of entidades" class="entidad-chip" [class.activo]="filtroEntidad === e"
+            (click)="setFiltroEntidad(e)">
+            <span class="chip-entidad-nombre">{{ e }}</span>
+            <span class="chip-sep">·</span>
+            <span *ngFor="let b of bancosPorEntidad(e)" class="chip-banco">
+              {{ b.banco }} <em>{{ b.conciliados }}/{{ b.total }}</em>
+            </span>
+          </button>
+          <button class="entidad-chip" [class.activo]="filtroEntidad === 'todas'"
+            (click)="setFiltroEntidad('todas')">Todas</button>
+        </div>
+      </div>
+      <div class="rib-btns">
         <button class="btn-sync" (click)="sincronizar()" [disabled]="cargandoSync || cargandoConciliar">
-          <span *ngIf="!cargandoSync">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
-              style="vertical-align: middle;">
-              <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
-              <path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
-            </svg>
-            Sincronizar
-          </span>
-          <span *ngIf="cargandoSync">Sincronizando...</span>
+          <span class="material-icons">sync</span>
+          <span>{{ cargandoSync ? 'Sincronizando...' : 'Sincronizar' }}</span>
         </button>
         <button class="btn-conciliar" (click)="conciliar()" [disabled]="cargandoConciliar || cargandoSync">
-          <span *ngIf="!cargandoConciliar">
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
-              style="vertical-align: middle;">
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor" stroke="none" />
-            </svg>
-            Conciliar
-          </span>
-          <span *ngIf="cargandoConciliar">Conciliando...</span>
+          <span class="material-icons">bolt</span>
+          <span>{{ cargandoConciliar ? 'Conciliando...' : 'Conciliar' }}</span>
         </button>
       </div>
     </div>
 
-    <div class="ib-msg" *ngIf="mensajeAccion" [class.ok]="!errorAccion" [class.error]="errorAccion">
+    <div class="rib-msg" *ngIf="mensajeAccion" [class.ok]="!errorAccion" [class.error]="errorAccion">
       {{ mensajeAccion }}
     </div>
 
-    <!-- KPIs CONCILIACIÓN -->
-    <div class="ib-kpis" *ngIf="!cargando && registros.length > 0">
-      <div class="kpi-progreso">
-        <div class="progreso-header">
-          <span>Conciliación</span>
-          <span class="pct-num">{{ pct }}%</span>
+    <!-- ── KPIs ── -->
+    <div class="rib-kpis-wrap" *ngIf="!cargando && registros.length > 0">
+
+      <!-- Barra conciliación -->
+      <div class="rib-progreso-card">
+        <div class="progreso-top">
+          <span class="progreso-label">Conciliación</span>
+          <span class="progreso-pct">{{ pct }}%</span>
         </div>
-        <div class="progreso-bar">
+        <div class="progreso-track">
           <div class="progreso-fill" [style.width.%]="pctBar"></div>
         </div>
-        <div class="progreso-detalle">
-          <button class="filtro-btn verde" [class.activo]="filtroEstado === 'conciliado'" (click)="setFiltro('conciliado')">
-            ✓ Conciliados ({{ conciliados | number }})
+        <div class="progreso-btns">
+          <button class="filtro-estado verde" [class.activo]="filtroEstado==='conciliado'"
+            (click)="setFiltro('conciliado')">
+            <span class="material-icons">task_alt</span> Conciliados ({{ conciliados | number }})
           </button>
-          <button class="filtro-btn rojo" [class.activo]="filtroEstado === 'pendiente'" (click)="setFiltro('pendiente')">
-            ⏱ Pendientes ({{ sinConciliar | number }})
+          <button class="filtro-estado naranja" [class.activo]="filtroEstado==='pendiente'"
+            (click)="setFiltro('pendiente')">
+            <span class="material-icons">pending_actions</span> Pendientes ({{ sinConciliar | number }})
           </button>
         </div>
       </div>
-      <div class="kpi-cards">
-        <div class="kpi-card">
-          <span class="kpi-label">Total Registros</span>
-          <span class="kpi-val neutral">{{ total | number }}</span>
+
+      <!-- KPI cards -->
+      <div class="rib-kpi-cards">
+        <div class="rib-kpi-card">
+          <span class="rib-kpi-label">Total Registros</span>
+          <span class="rib-kpi-val blue">{{ totalRegistros | number }}</span>
         </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Monto Total</span>
-          <span class="kpi-val neutral">S/ {{ formatNum(montoTotal) }}</span>
+        <div class="rib-kpi-card">
+          <span class="rib-kpi-label">Monto Total</span>
+          <span class="rib-kpi-val blue">S/ {{ formatNum(montoTotal) }}</span>
         </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Monto Conciliado</span>
-          <span class="kpi-val positivo">S/ {{ formatNum(montoConciliado) }}</span>
+        <div class="rib-kpi-card">
+          <span class="rib-kpi-label">Monto Conciliado</span>
+          <span class="rib-kpi-val green">S/ {{ formatNum(montoConciliado) }}</span>
         </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Monto Pendiente</span>
-          <span class="kpi-val negativo">S/ {{ formatNum(montoPendiente) }}</span>
+        <div class="rib-kpi-card">
+          <span class="rib-kpi-label">Monto Pendiente</span>
+          <span class="rib-kpi-val red">S/ {{ formatNum(montoPendiente) }}</span>
         </div>
       </div>
     </div>
 
-    <!-- KPIs IA COMPROBANTES -->
-    <div class="ib-kpis-ia" *ngIf="!cargando && registros.length > 0">
-      <div class="kpis-ia-titulo">
-        <span class="ia-tag">IA</span>
-        <span>Verificación de Comprobantes</span>
-        <span *ngIf="cargandoIA" class="ia-cargando">cargando...</span>
+    <!-- ── IA COMPROBANTES ── -->
+    <div class="rib-ia-wrap" *ngIf="!cargando && registros.length > 0">
+      <div class="ia-header">
+        <span class="ia-badge">IA</span>
+        <span class="ia-titulo">Verificación de Comprobantes</span>
+        <span class="ia-cargando" *ngIf="cargandoIA">
+          <span class="material-icons spin">refresh</span> cargando...
+        </span>
       </div>
-      <div class="kpis-ia-btns">
-        <button class="filtro-ia" [class.activo]="filtroComprobante === 'todos'"
-          (click)="setFiltroComprobante('todos')">
-          Todos ({{ total | number }})
+      <div class="ia-btns">
+        <button class="ia-btn" [class.activo]="filtroComprobante==='todos'" (click)="setFiltroComp('todos')">
+          <span class="material-icons">list</span> Todos ({{ totalRegistros | number }})
         </button>
-        <button class="filtro-ia verde" [class.activo]="filtroComprobante === 'pauser'"
-          (click)="setFiltroComprobante('pauser')">
-          ✅ Pauser ({{ totalPauser | number }})
+        <button class="ia-btn verde" [class.activo]="filtroComprobante==='pauser'" (click)="setFiltroComp('pauser')">
+          <span class="material-icons">verified</span> Pauser ({{ totalPauser | number }})
         </button>
-        <button class="filtro-ia rojo" [class.activo]="filtroComprobante === 'no_pauser'"
-          (click)="setFiltroComprobante('no_pauser')">
-          ⚠️ No Pauser ({{ totalNoPauser | number }})
+        <button class="ia-btn rojo" [class.activo]="filtroComprobante==='no_pauser'"
+          (click)="setFiltroComp('no_pauser')">
+          <span class="material-icons">warning</span> No Pauser ({{ totalNoPauser | number }})
         </button>
-        <button class="filtro-ia gris" [class.activo]="filtroComprobante === 'sin_comprobante'"
-          (click)="setFiltroComprobante('sin_comprobante')">
-          📄 Sin comprobante ({{ totalSinComprobante | number }})
+        <button class="ia-btn gris" [class.activo]="filtroComprobante==='sin_comprobante'"
+          (click)="setFiltroComp('sin_comprobante')">
+          <span class="material-icons">description</span> Sin comprobante ({{ totalSinComprobante | number }})
         </button>
       </div>
     </div>
 
-    <!-- FILTROS ESTADO -->
-    <div class="ib-filtros" *ngIf="registros.length > 0">
-      <button class="filtro-btn" [class.activo]="filtroEstado === 'todos'" (click)="setFiltro('todos')">
-        Todos ({{ total | number }})
-      </button>
-      <button class="filtro-btn verde" [class.activo]="filtroEstado === 'conciliado'" (click)="setFiltro('conciliado')">
-        ✓ Conciliados ({{ conciliados | number }})
-      </button>
-      <button class="filtro-btn rojo" [class.activo]="filtroEstado === 'pendiente'" (click)="setFiltro('pendiente')">
-        ⏱ Pendientes ({{ sinConciliar | number }})
-      </button>
+    <!-- ── BARRA DE FILTROS Y BÚSQUEDA ── -->
+    <div class="rib-filtros-bar" *ngIf="registros.length > 0">
+
+      <!-- Buscador -->
+      <div class="search-wrap">
+        <span class="material-icons search-icon">search</span>
+        <input class="search-input" type="text" placeholder="Buscar en todos los campos..." [(ngModel)]="busqueda"
+          (ngModelChange)="aplicarFiltro()" />
+        <button class="search-clear" *ngIf="busqueda" (click)="busqueda=''; aplicarFiltro()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+
+      <!-- Filtros en línea -->
+      <div class="filtros-inline">
+
+        <!-- Estado -->
+        <div class="filtro-group">
+          <label class="filtro-label">
+            <span class="material-icons">check_circle</span> Estado
+          </label>
+          <div class="filtro-pills">
+            <button class="fpill" [class.activo]="filtroEstado==='todos'" (click)="setFiltro('todos')">Todos</button>
+            <button class="fpill verde" [class.activo]="filtroEstado==='conciliado'"
+              (click)="setFiltro('conciliado')">Conciliado</button>
+            <button class="fpill naranja" [class.activo]="filtroEstado==='pendiente'"
+              (click)="setFiltro('pendiente')">Pendiente</button>
+          </div>
+        </div>
+
+        <!-- Banco -->
+        <div class="filtro-group">
+          <label class="filtro-label">
+            <span class="material-icons">account_balance</span> Banco
+          </label>
+          <div class="filtro-pills">
+            <button class="fpill" [class.activo]="filtroBanco==='todos'"
+              (click)="setFiltroBanco('todos')">Todos</button>
+            <button class="fpill" *ngFor="let b of bancos" [class.activo]="filtroBanco===b"
+              (click)="setFiltroBanco(b)">{{ b }}</button>
+          </div>
+        </div>
+
+        <!-- Rango ID POP -->
+        <div class="filtro-group">
+          <label class="filtro-label">
+            <span class="material-icons">tag</span> ID POP
+          </label>
+          <div class="range-inputs">
+            <input type="number" class="range-input" placeholder="Desde" [(ngModel)]="filtroIdPopMin"
+              (ngModelChange)="aplicarFiltro()" />
+            <span class="range-sep">—</span>
+            <input type="number" class="range-input" placeholder="Hasta" [(ngModel)]="filtroIdPopMax"
+              (ngModelChange)="aplicarFiltro()" />
+          </div>
+        </div>
+
+        <!-- Rango Fecha -->
+        <div class="filtro-group">
+          <label class="filtro-label">
+            <span class="material-icons">calendar_today</span> Fecha Registro
+          </label>
+          <div class="range-inputs">
+            <input type="date" class="range-input date" [(ngModel)]="filtroFechaDesde"
+              (ngModelChange)="aplicarFiltro()" />
+            <span class="range-sep">—</span>
+            <input type="date" class="range-input date" [(ngModel)]="filtroFechaHasta"
+              (ngModelChange)="aplicarFiltro()" />
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Botón limpiar filtros -->
+      <div class="filtros-footer" *ngIf="tieneFiltrosActivos">
+        <button class="btn-limpiar" (click)="limpiarFiltros()">
+          <span class="material-icons">restart_alt</span> Limpiar todos los filtros
+        </button>
+        <span class="filtros-count">{{ registrosFiltrados.length | number }} de {{ registros.length | number }}
+          registros</span>
+      </div>
     </div>
 
     <!-- LOADING -->
-    <div class="ib-loading" *ngIf="cargando">
-      <div class="spinner"></div>
+    <div class="rib-loading" *ngIf="cargando">
+      <div class="rib-spinner"></div>
       <p>Cargando datos...</p>
     </div>
 
     <!-- EMPTY -->
-    <div class="ib-empty" *ngIf="!cargando && registros.length === 0">
+    <div class="rib-empty" *ngIf="!cargando && registros.length === 0">
+      <span class="material-icons">inbox</span>
       <p>Sin datos para <strong>{{ mesSeleccionado }}</strong></p>
       <small>Sincroniza primero desde SharePoint</small>
     </div>
 
-    <!-- TABLA -->
-    <div class="ib-tabla-wrap" *ngIf="!cargando && registrosFiltrados.length > 0">
-      <table class="ib-tabla">
+    <!-- ── TABLA ── -->
+    <div class="rib-tabla-wrap" *ngIf="!cargando && registrosFiltrados.length > 0">
+      <div class="tabla-header-row">
+        <span class="tabla-count">
+          <strong>{{ registrosFiltrados.length | number }}</strong> registros
+          <span *ngIf="tieneFiltrosActivos" class="tabla-filtrado-tag">filtrado</span>
+        </span>
+      </div>
+      <table class="rib-tabla">
         <thead>
           <tr>
             <th>ID POP</th>
@@ -168,88 +261,107 @@
             <th>Nro Op. Banco</th>
             <th>Banco</th>
             <th>Estado</th>
-            <th>Comprobante</th>
+            <th class="th-center">Comprobante</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let r of registrosFiltrados"
-            [class.conciliado]="r.conciliado"
-            [class.pendiente]="!r.conciliado">
-            <td class="id-pop">
-              <span class="badge" [class.badge-ok]="r.conciliado" [class.badge-no]="!r.conciliado">
-                <svg *ngIf="r.conciliado" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                  stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
-                  <circle cx="12" cy="12" r="10" /><path d="M7 13l3 3 7-7" />
-                </svg>
-                <svg *ngIf="!r.conciliado" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                  stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;">
-                  <circle cx="12" cy="12" r="10" stroke-opacity="0.25" /><path d="M12 6v6l4 2" />
-                </svg>
-              </span>
-              <button class="btn-comprobante" (click)="verComprobante(r)" title="Ver comprobante">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                  fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                  stroke-linejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
-                </svg>
-              </button>
-              {{ r.id_pop || '—' }}
+          <tr *ngFor="let r of registrosFiltrados" [class.conciliado]="r.conciliado" [class.pendiente]="!r.conciliado">
+
+            <td class="td-idpop">
+              <div class="idpop-cell">
+                <span class="badge-estado" [class.badge-ok]="r.conciliado" [class.badge-no]="!r.conciliado">
+                  <span class="material-icons">{{ r.conciliado ? 'check_circle' : 'schedule' }}</span>
+                </span>
+                <button class="btn-doc" (click)="verComprobante(r)" title="Ver comprobante">
+                  <span class="material-icons">description</span>
+                </button>
+                <span class="idpop-num">{{ r.id_pop || '—' }}</span>
+              </div>
             </td>
+
             <td>{{ formatFecha(r.fecha_registro) }}</td>
             <td>{{ formatFecha(r.fecha_voucher) }}</td>
-            <td>{{ r.sucursal || '—' }}</td>
+            <td class="td-sucursal">{{ r.sucursal || '—' }}</td>
             <td>{{ r.negocio || '—' }}</td>
             <td><span class="entidad-tag">{{ r.entidad || '—' }}</span></td>
             <td>{{ r.transporte || '—' }}</td>
             <td class="num">S/ {{ formatNum(r.monto) }}</td>
-            <td class="cod-op">{{ r.cod_operacion || '—' }}</td>
-            <td class="nro-op" [class.identificado]="r.nro_operacion_banco">{{ r.nro_operacion_banco || '—' }}</td>
+            <td class="mono">{{ r.cod_operacion || '—' }}</td>
+            <td class="mono" [class.nro-ok]="r.nro_operacion_banco">{{ r.nro_operacion_banco || '—' }}</td>
             <td>{{ r.banco_tabla || '—' }}</td>
             <td>{{ r.estado || '—' }}</td>
 
-            <!-- Indicador IA en tabla -->
-            <td class="td-ia">
-              <span *ngIf="getEstadoIA(r.id_pop) === 'pauser'" class="ia-ok" title="Destinatario: Pauser">✅</span>
-              <span *ngIf="getEstadoIA(r.id_pop) === 'no_pauser'" class="ia-warn" title="Destinatario no es Pauser">⚠️</span>
+            <td class="td-center">
+              <span *ngIf="getEstadoIA(r.id_pop) === 'pauser'" class="ia-ok" title="Pauser">
+                <span class="material-icons">verified</span>
+              </span>
+              <span *ngIf="getEstadoIA(r.id_pop) === 'no_pauser'" class="ia-warn" title="No Pauser">
+                <span class="material-icons">warning</span>
+              </span>
               <span *ngIf="getEstadoIA(r.id_pop) === 'sin_comprobante'" class="ia-none" title="Sin comprobante">—</span>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
+
+    <!-- Sin resultados del filtro -->
+    <div class="rib-empty-filtro" *ngIf="!cargando && registros.length > 0 && registrosFiltrados.length === 0">
+      <span class="material-icons">filter_list_off</span>
+      <p>Sin registros con los filtros actuales</p>
+      <button class="btn-limpiar" (click)="limpiarFiltros()">
+        <span class="material-icons">restart_alt</span> Limpiar filtros
+      </button>
+    </div>
+
   </div>
 
-  <div class="ib-inicio" *ngIf="!mesSeleccionado">
+  <!-- Sin mes seleccionado -->
+  <div class="rib-inicio" *ngIf="!mesSeleccionado">
+    <span class="material-icons">calendar_month</span>
     <p>Selecciona un mes para ver la conciliación</p>
   </div>
 </div>
 
-<!-- MODAL COMPROBANTE -->
+<!-- ── MODAL COMPROBANTE ── -->
 <div class="modal-overlay" *ngIf="modalAbierto" (click)="cerrarModal()">
   <div class="modal-box" (click)="$event.stopPropagation()">
     <div class="modal-header">
-      <div>
-        <span class="modal-titulo">Comprobante ID POP</span>
+      <div class="modal-header-info">
+        <span class="ia-badge">IA</span>
+        <span class="modal-titulo">Comprobante</span>
         <span class="modal-idpop">#{{ modalIdPop }}</span>
       </div>
-      <button class="modal-close" (click)="cerrarModal()">✕</button>
+      <button class="modal-close" (click)="cerrarModal()">
+        <span class="material-icons">close</span>
+      </button>
     </div>
     <div class="modal-ia" *ngIf="modalDatosIA">
-      <span class="ia-tag">IA</span>
-      <span><strong>Destinatario:</strong> {{ modalDatosIA.destinatario || '—' }}</span>
-      <span><strong>Entidad:</strong> {{ modalDatosIA.entidad || '—' }}</span>
-      <span><strong>Cód. Op:</strong> {{ modalDatosIA.cod_operacion || '—' }}</span>
+      <div class="modal-ia-field">
+        <span class="modal-ia-label">Destinatario</span>
+        <span class="modal-ia-val">{{ modalDatosIA.destinatario || '—' }}</span>
+      </div>
+      <div class="modal-ia-field">
+        <span class="modal-ia-label">Entidad</span>
+        <span class="modal-ia-val">{{ modalDatosIA.entidad || '—' }}</span>
+      </div>
+      <div class="modal-ia-field">
+        <span class="modal-ia-label">Cód. Operación</span>
+        <span class="modal-ia-val mono">{{ modalDatosIA.cod_operacion || '—' }}</span>
+      </div>
+      <div class="modal-ia-field">
+        <span class="modal-ia-label">Tipo Operación</span>
+        <span class="modal-ia-val">{{ modalDatosIA.tipo_operacion || '—' }}</span>
+      </div>
     </div>
     <div class="modal-img-wrap">
       <div *ngIf="modalCargando" class="modal-loading">
-        <div class="spinner"></div>
+        <div class="rib-spinner"></div>
         <p>Cargando imagen...</p>
       </div>
       <div *ngIf="!modalCargando && !modalImgUrl" class="modal-no-img">
-        <p> No se encontró comprobante para este ID POP</p>
+        <span class="material-icons">image_not_supported</span>
+        <p>No se encontró comprobante para este ID POP</p>
       </div>
       <img *ngIf="!modalCargando && modalImgUrl" [src]="modalImgUrl" class="modal-img" alt="Comprobante" />
     </div>

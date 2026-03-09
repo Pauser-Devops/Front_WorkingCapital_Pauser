@@ -18,17 +18,18 @@ export class SidebarComponent {
   @Output() vistaChange = new EventEmitter<string>();
 
   readonly modulos: Modulo[] = [
+    { id: 'ingresosbancarios', label: 'Ingresos Bancarios' },
+    { id: 'registroIB', label: 'Registros Ingresos Bancarios' },
+    { id: 'reportes-bancarios', label: 'Reporte Bancario' },
+    { id: 'analisisBancarios', label: 'Registros Reportes Bancarios' },
     { id: 'semanal', label: 'WK Semanal' },
     { id: 'mensual', label: 'WK Mensual' },
     { id: 'ingresos', label: 'Ingresos' },
     { id: 'egresos', label: 'Egresos' },
     { id: 'stock', label: 'Stock vs CxP' },
     { id: 'renta', label: 'Renta y Proyección' },
-    { id: 'flujo', label: 'Flujo de Caja' },
-    { id: 'ingresosbancarios', label: 'Ingresos Bancarios' },
-    { id: 'registroIB', label: 'Registros Ingresos Bancarios' },
-    { id: 'reportes-bancarios', label: 'Reportes Bancarios' },
-    {id: 'analisisBancarios', label: 'Analisis Reportes Bancarios'}
+    { id: 'flujo', label: 'Flujo de Caja' }
+
   ];
 
   setVista(id: string) { this.vistaChange.emit(id); }

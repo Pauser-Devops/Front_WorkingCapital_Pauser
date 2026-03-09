@@ -5,18 +5,21 @@ import { environment } from '../../../environments/environment';
 
 const API = environment.apiUrl;
 const ORDEN_MESES: Record<string, number> = {
-  enero:1, febrero:2, marzo:3, abril:4, mayo:5, junio:6,
-  julio:7, agosto:8, septiembre:9, octubre:10, noviembre:11, diciembre:12
+  enero: 1, febrero: 2, marzo: 3, abril: 4, mayo: 5, junio: 6,
+  julio: 7, agosto: 8, septiembre: 9, octubre: 10, noviembre: 11, diciembre: 12
+};
+const DIAS_MES: Record<number, number> = {
+  1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30, 7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31
 };
 
-const BANCO_COLORES: Record<string, {color: string, bg: string, light: string}> = {
-  'BCP':           { color: '#003F8A', bg: '#003F8A', light: '#e8f0fa' },
-  'BCP TRU':       { color: '#1565C0', bg: '#1565C0', light: '#e3eefa' },
-  'BCP LN':        { color: '#1976D2', bg: '#1976D2', light: '#e1eefb' },
-  'BBVA':          { color: '#004B95', bg: '#004B95', light: '#e0ecfa' },
-  'BBVA LM':       { color: '#0057A8', bg: '#0057A8', light: '#e0eefb' },
-  'Interbank':     { color: '#007C5E', bg: '#007C5E', light: '#e0f5ee' },
-  'Caja Arequipa': { color: '#B91C1C', bg: '#B91C1C', light: '#fde8e8' },
+const BANCO_COLORES: Record<string, { color: string, light: string }> = {
+  'BCP': { color: '#003F8A', light: '#e8f0fa' },
+  'BCP TRU': { color: '#1565C0', light: '#e3eefa' },
+  'BCP LN': { color: '#1976D2', light: '#e1eefb' },
+  'BBVA': { color: '#004B95', light: '#e0ecfa' },
+  'BBVA LM': { color: '#0057A8', light: '#e0eefb' },
+  'Interbank': { color: '#007C5E', light: '#e0f5ee' },
+  'Caja Arequipa': { color: '#B91C1C', light: '#fde8e8' },
 };
 
 @Component({
@@ -28,44 +31,53 @@ const BANCO_COLORES: Record<string, {color: string, bg: string, light: string}> 
 })
 export class IngresosBancariosComponent implements OnInit {
   cargando = false;
-  error    = '';
+  error = '';
 
-  meses:    string[] = [];
+  meses: string[] = [];
   mesActivo = '';
+  anioActual = new Date().getFullYear();
 
-  todos:      any[] = [];
-  filtrados:  any[] = [];
+  todos: any[] = [];
+  filtrados: any[] = [];
 
-  // Filtros activos
+  // Filtros
+  filtroBanco = 'TODOS';
   filtroSucursal = 'TODAS';
-  filtroBanco    = 'TODOS';
-  filtroEntidad  = 'TODAS';
-  filtroEstado   = 'activos'; // 'activos' | 'inactivos' | 'todos'
+  filtroEntidad = 'TODAS';
+  fechaDesde = '';
+  fechaHasta = '';
 
-  // Listas únicas para dropdowns
+  // Límites de fecha según mes seleccionado
+  fechaMin = '';
+  fechaMax = '';
+
+  // Listas únicas
   sucursales: string[] = [];
-  bancos:     string[] = [];
-  entidades:  string[] = [];
+  bancos: string[] = [];
+  entidades: string[] = [];
 
   // KPIs
-  totalMonto    = 0;
+  totalMonto = 0;
   totalRegistros = 0;
-  totalConc     = 0;
-  totalSinConc  = 0;
-  pctConc       = 0;
+  totalConc = 0;
+  totalSinConc = 0;
+  pctConc = 0;
+  montoConciliado = 0;
+  montoSinConc = 0;
 
   // Charts
-  porBanco:    {label:string, monto:number, pct:number, color:string}[] = [];
-  porSucursal: {label:string, monto:number, pct:number}[] = [];
-  porEntidad:  {label:string, monto:number, pct:number}[] = [];
-  porDia:      {fecha:string, monto:number, pct:number}[] = [];
-  maxDia = 1;
+  porBanco: { label: string, monto: number, pct: number, color: string }[] = [];
+  porSucursal: { label: string, monto: number, pct: number }[] = [];
+  porEntidad: { label: string, monto: number, pct: number }[] = [];
+  porDia: { fecha: string, fechaFull: string, monto: number, pct: number, alto: number }[] = [];
 
-  constructor(private http: HttpClient) {}
+  // Tooltip
+  tooltipDia: { fecha: string, monto: number } | null = null;
+  tooltipX = 0;
 
-  ngOnInit() {
-    this.cargarMeses();
-  }
+  constructor(private http: HttpClient) { }
+
+  ngOnInit() { this.cargarMeses(); }
 
   cargarMeses() {
     this.http.get<any>(`${API}/ingresos/bancarios/meses`).subscribe({
@@ -82,17 +94,33 @@ export class IngresosBancariosComponent implements OnInit {
   }
 
   seleccionarMes(mes: string) {
-    this.mesActivo     = mes;
+    this.mesActivo = mes;
+    this.filtroBanco = 'TODOS';
     this.filtroSucursal = 'TODAS';
-    this.filtroBanco    = 'TODOS';
-    this.filtroEntidad  = 'TODAS';
+    this.filtroEntidad = 'TODAS';
+    this.fechaDesde = '';
+    this.fechaHasta = '';
+    this.tooltipDia = null;
+
+    // Calcular rango de fechas del mes
+    const mesIdx = ORDEN_MESES[mes.toLowerCase()] || 1;
+    const anio = this.anioActual;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const dias = mesIdx === 2 && anio % 4 === 0 ? 29 : (DIAS_MES[mesIdx] || 31);
+    this.fechaMin = `${anio}-${pad(mesIdx)}-01`;
+    this.fechaMax = `${anio}-${pad(mesIdx)}-${pad(dias)}`;
+
     this.cargarDatos();
   }
 
   cargarDatos() {
     this.cargando = true;
-    this.error    = '';
-    this.http.get<any>(`${API}/ingresos/bancarios?mes=${this.mesActivo}`).subscribe({
+    this.error = '';
+    let url = `${API}/ingresos/bancarios?mes=${this.mesActivo}`;
+    if (this.fechaDesde) url += `&fecha_desde=${this.fechaDesde}`;
+    if (this.fechaHasta) url += `&fecha_hasta=${this.fechaHasta}`;
+
+    this.http.get<any>(url).subscribe({
       next: r => {
         this.cargando = false;
         if (r.estado === 'OK') {
@@ -109,67 +137,53 @@ export class IngresosBancariosComponent implements OnInit {
     const setSuc = new Set<string>();
     const setBan = new Set<string>();
     const setEnt = new Set<string>();
-
     for (const r of this.todos) {
-      // Sucursal: Chimbote se separa por negocio
       const suc = this.getSucursalDisplay(r);
       if (suc) setSuc.add(suc);
       if (r.banco_tabla) setBan.add(r.banco_tabla);
-      if (r.entidad)     setEnt.add(r.entidad);
+      if (r.entidad) setEnt.add(r.entidad);
     }
-
     this.sucursales = [...setSuc].sort();
-    this.bancos     = [...setBan].sort();
-    this.entidades  = [...setEnt].sort();
+    this.bancos = [...setBan].sort();
+    this.entidades = [...setEnt].sort();
   }
 
   getSucursalDisplay(r: any): string {
     const suc = (r.sucursal || '').toUpperCase();
     if (suc.includes('CHIMBOTE')) {
-      const neg = (r.negocio || '').toUpperCase();
-      if (neg.includes('SNACK')) return 'CHIMBOTE SNACKS';
-      return 'CHIMBOTE';
+      return (r.negocio || '').toUpperCase().includes('SNACK') ? 'CHIMBOTE SNACKS' : 'CHIMBOTE';
     }
     return r.sucursal || '';
   }
 
   aplicarFiltros() {
     let data = [...this.todos];
-
-    // Filtro estado
-    if (this.filtroEstado === 'activos') {
-      data = data.filter(r => !r.estado || r.estado.toLowerCase() !== 'inactivo');
-    } else if (this.filtroEstado === 'inactivos') {
-      data = data.filter(r => r.estado && r.estado.toLowerCase() === 'inactivo');
-    }
-
-    if (this.filtroSucursal !== 'TODAS') {
+    if (this.filtroSucursal !== 'TODAS')
       data = data.filter(r => this.getSucursalDisplay(r) === this.filtroSucursal);
-    }
-    if (this.filtroBanco !== 'TODOS') {
+    if (this.filtroBanco !== 'TODOS')
       data = data.filter(r => r.banco_tabla === this.filtroBanco);
-    }
-    if (this.filtroEntidad !== 'TODAS') {
+    if (this.filtroEntidad !== 'TODAS')
       data = data.filter(r => r.entidad === this.filtroEntidad);
-    }
-
     this.filtrados = data;
     this.calcularKPIs();
     this.calcularCharts();
   }
 
   calcularKPIs() {
-    this.totalMonto     = this.filtrados.reduce((s, r) => s + (r.monto || 0), 0);
+    this.totalMonto = this.filtrados.reduce((s, r) => s + (r.monto || 0), 0);
     this.totalRegistros = this.filtrados.length;
-    this.totalConc      = this.filtrados.filter(r => r.conciliado).length;
-    this.totalSinConc   = this.totalRegistros - this.totalConc;
-    this.pctConc        = this.totalRegistros ? Math.round(this.totalConc / this.totalRegistros * 100) : 0;
+    this.totalConc = this.filtrados.filter(r => r.conciliado).length;
+    this.totalSinConc = this.totalRegistros - this.totalConc;
+    this.pctConc = this.totalRegistros ? Math.round(this.totalConc / this.totalRegistros * 100) : 0;
+    this.montoConciliado = this.filtrados.filter(r => r.conciliado).reduce((s, r) => s + (r.monto || 0), 0);
+    this.montoSinConc = this.totalMonto - this.montoConciliado;
   }
-
   calcularCharts() {
+    const base = [...this.todos]; // siempre todos para gráficos
+
     // Por banco
     const mapBan: Record<string, number> = {};
-    for (const r of this.filtrados) {
+    for (const r of base) {
       const k = r.banco_tabla || 'Sin banco';
       mapBan[k] = (mapBan[k] || 0) + (r.monto || 0);
     }
@@ -184,7 +198,7 @@ export class IngresosBancariosComponent implements OnInit {
 
     // Por sucursal
     const mapSuc: Record<string, number> = {};
-    for (const r of this.filtrados) {
+    for (const r of base) {
       const k = this.getSucursalDisplay(r) || 'Sin sucursal';
       mapSuc[k] = (mapSuc[k] || 0) + (r.monto || 0);
     }
@@ -192,58 +206,75 @@ export class IngresosBancariosComponent implements OnInit {
     this.porSucursal = Object.entries(mapSuc)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10)
-      .map(([label, monto]) => ({
-        label, monto, pct: Math.round(monto / totalSuc * 100)
-      }));
+      .map(([label, monto]) => ({ label, monto, pct: Math.round(monto / totalSuc * 100) }));
 
     // Por entidad
     const mapEnt: Record<string, number> = {};
-    for (const r of this.filtrados) {
+    for (const r of base) {
       const k = r.entidad || 'Sin entidad';
       mapEnt[k] = (mapEnt[k] || 0) + (r.monto || 0);
     }
     const totalEnt = Object.values(mapEnt).reduce((a, b) => a + b, 0) || 1;
     this.porEntidad = Object.entries(mapEnt)
       .sort((a, b) => b[1] - a[1])
-      .map(([label, monto]) => ({
-        label, monto, pct: Math.round(monto / totalEnt * 100)
-      }));
+      .map(([label, monto]) => ({ label, monto, pct: Math.round(monto / totalEnt * 100) }));
 
-    // Por día
+    // Timeline — usa filtrados si hay filtro fecha, si no usa todos
+    const baseDia = (this.fechaDesde || this.fechaHasta) ? [...this.filtrados] : [...this.todos];
     const mapDia: Record<string, number> = {};
-    for (const r of this.filtrados) {
+    for (const r of baseDia) {
       const f = r.fecha_registro ? String(r.fecha_registro).slice(0, 10) : null;
       if (!f) continue;
       mapDia[f] = (mapDia[f] || 0) + (r.monto || 0);
     }
-    const maxVal = Math.max(...Object.values(mapDia), 1);
-    this.maxDia = maxVal;
+    const valores = Object.values(mapDia);
+    const maxVal = Math.max(...valores, 1);
+    const minVal = Math.min(...valores, 0);
+    const rango = maxVal - minVal || 1;
+
     this.porDia = Object.entries(mapDia)
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([fecha, monto]) => ({
-        fecha: fecha.slice(5), // MM-DD
+        fechaFull: fecha,
+        fecha: fecha.slice(8) + '/' + fecha.slice(5, 7),
         monto,
-        pct: Math.round(monto / maxVal * 100)
+        pct: Math.round(monto / maxVal * 100),
+        alto: Math.round(15 + ((monto - minVal) / rango) * 75)
       }));
   }
+  limpiarFiltros() {
+    this.filtroBanco = 'TODOS';
+    this.filtroSucursal = 'TODAS';
+    this.filtroEntidad = 'TODAS';
+    this.fechaDesde = '';
+    this.fechaHasta = '';
+    this.cargarDatos();
+  }
 
+  setFiltroBanco(b: string) { this.filtroBanco = b; this.aplicarFiltros(); }
   setFiltroSucursal(s: string) { this.filtroSucursal = s; this.aplicarFiltros(); }
-  setFiltroBanco(b: string)    { this.filtroBanco    = b; this.aplicarFiltros(); }
-  setFiltroEntidad(e: string)  { this.filtroEntidad  = e; this.aplicarFiltros(); }
-  setFiltroEstado(e: string)   { this.filtroEstado   = e; this.aplicarFiltros(); }
+  setFiltroEntidad(e: string) { this.filtroEntidad = e; this.aplicarFiltros(); }
+  setFechaDesde(v: string) { this.fechaDesde = v; this.cargarDatos(); }
+  setFechaHasta(v: string) { this.fechaHasta = v; this.cargarDatos(); }
 
-  getBancoColor(label: string)  { return BANCO_COLORES[label]?.color || '#64748b'; }
-  getBancoBg(label: string)     { return BANCO_COLORES[label]?.light || '#f1f5f9'; }
+  showTooltip(d: any, event: MouseEvent) {
+    this.tooltipDia = { fecha: d.fechaFull, monto: d.monto };
+    this.tooltipX = (event.target as HTMLElement).getBoundingClientRect().left;
+  }
+  hideTooltip() { this.tooltipDia = null; }
+
+  getBancoColor(label: string) { return BANCO_COLORES[label]?.color || '#64748b'; }
 
   fmt(n: number) {
     return 'S/ ' + n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
   fmtK(n: number) {
     if (n >= 1_000_000) return 'S/ ' + (n / 1_000_000).toFixed(1) + 'M';
-    if (n >= 1_000)     return 'S/ ' + (n / 1_000).toFixed(0) + 'K';
+    if (n >= 1_000) return 'S/ ' + (n / 1_000).toFixed(0) + 'K';
     return 'S/ ' + n.toFixed(0);
   }
 
   get mesLabel() { return this.mesActivo || '—'; }
-  get pctBar()   { return Math.max(2, this.pctConc); }
+  get pctBar() { return Math.max(2, this.pctConc); }
+  get tieneFiltros() { return this.filtroBanco !== 'TODOS' || this.filtroSucursal !== 'TODAS' || this.filtroEntidad !== 'TODAS' || !!this.fechaDesde || !!this.fechaHasta; }
 }

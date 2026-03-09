@@ -5,50 +5,52 @@
 
 <!-- App normal -->
 <ng-container *ngIf="estaLogueado && !debeCambiarPassword">
-<div class="wk-layout">
+  <div class="wk-layout">
 
-  <app-sidebar [vistaActiva]="vista" (vistaChange)="setVista($event)">
-  <div class="logout-wrap">
-    <div class="logout-user">
-      
-      <span class="logout-avatar">{{ auth.usuarioActual?.nombre?.charAt(0) }}</span>
-      <div>
-        <div class="logout-name">{{ auth.usuarioActual?.nombre }}</div>
-        <div class="logout-rol">{{ auth.usuarioActual?.rol }}</div>
+    <app-sidebar [vistaActiva]="vista" (vistaChange)="setVista($event)">
+      <div class="logout-wrap">
+        <div class="logout-user">
+
+          <span class="logout-avatar">{{ auth.usuarioActual?.nombre?.charAt(0) }}</span>
+          <div>
+            <div class="logout-name">{{ auth.usuarioActual?.nombre }}</div>
+            <div class="logout-rol">{{ auth.usuarioActual?.rol }}</div>
+          </div>
+        </div>
+        <button class="logout-btn" (click)="logout()">Cerrar sesión</button>
       </div>
-    </div>
-    <button class="logout-btn" (click)="logout()">Cerrar sesión</button>
-  </div>
-</app-sidebar>
+    </app-sidebar>
 
-  <main class="wk-main">
+    <main class="wk-main">
 
-    <app-header [vistaNombre]="vistaNombre" [datosApi]="datosApi" (exportar)="exportar()">
-    </app-header>
+      <app-header [tituloModulo]="tituloModulo" [vistaNombre]="vistaNombre" [datosApi]="datosApi"
+        (exportar)="exportar()">
+      </app-header>
 
-    <app-wk-semanal *ngIf="vista === 'semanal'" #wkSemanal></app-wk-semanal>
-    <app-wk-mensual *ngIf="vista === 'mensual'" #wkMensual></app-wk-mensual>
-    <app-ingresos *ngIf="vista === 'ingresos'"></app-ingresos>
-    <app-egresos *ngIf="vista === 'egresos'"></app-egresos>
-    <app-stock-vs-cxp *ngIf="vista === 'stock'"></app-stock-vs-cxp>
+      <app-wk-semanal *ngIf="vista === 'semanal'" #wkSemanal></app-wk-semanal>
+      <app-wk-mensual *ngIf="vista === 'mensual'" #wkMensual></app-wk-mensual>
+      <app-ingresos *ngIf="vista === 'ingresos'"></app-ingresos>
+      <app-egresos *ngIf="vista === 'egresos'"></app-egresos>
+      <app-stock-vs-cxp *ngIf="vista === 'stock'"></app-stock-vs-cxp>
       <app-ingresos-bancarios *ngIf="vista === 'ingresosbancarios'"></app-ingresos-bancarios>
       <app-reportes-bancarios *ngIf="vista === 'reportes-bancarios'"></app-reportes-bancarios>
-    <app-registro-ingresos-bancarios *ngIf="vista === 'registroIB'"></app-registro-ingresos-bancarios>
-     <app-analisis-bancarios *ngIf="vista === 'analisisBancarios'"></app-analisis-bancarios>
-
-     <div class="wk-coming"
-      *ngIf="vista !== 'semanal' && vista !== 'mensual' && vista !== 'ingresos' 
+      <app-registro-ingresos-bancarios *ngIf="vista === 'registroIB'"
+        (navegarA)="setVista($event)"></app-registro-ingresos-bancarios>
+      <app-analisis-bancarios *ngIf="vista === 'analisisBancarios'"></app-analisis-bancarios>
+      <app-comparador-ingresos *ngIf="vista === 'comparadorIngresos'"></app-comparador-ingresos>
+      <div class="wk-coming"
+        *ngIf="vista !== 'semanal' && vista !== 'mensual' && vista !== 'ingresos' 
              && vista !== 'egresos' && vista !== 'stock' && vista !== 'ingresosbancarios' 
-             && vista !== 'reportes-bancarios' && vista !== 'registroIB' && vista !== 'analisisBancarios'">
-      <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
-        <circle cx="26" cy="26" r="23" stroke="#0070C0" stroke-width="2" fill="#EBF3FB" />
-        <path d="M26 15v11l7 4" stroke="#0070C0" stroke-width="2.5" stroke-linecap="round" />
-      </svg>
-      <div class="wk-coming-title">{{ vistaNombre }}</div>
-      <div class="wk-coming-desc">
-        Esta vista se conectará a <strong>SharePoint / OneDrive</strong> de la empresa.
+             && vista !== 'reportes-bancarios' && vista !== 'registroIB' && vista !== 'analisisBancarios' && vista !== 'comparadorIngresos'">
+        <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+          <circle cx="26" cy="26" r="23" stroke="#0070C0" stroke-width="2" fill="#EBF3FB" />
+          <path d="M26 15v11l7 4" stroke="#0070C0" stroke-width="2.5" stroke-linecap="round" />
+        </svg>
+        <div class="wk-coming-title">{{ vistaNombre }}</div>
+        <div class="wk-coming-desc">
+          Esta vista se conectará a <strong>SharePoint / OneDrive</strong> de la empresa.
+        </div>
       </div>
-    </div>
-  </main>
-</div>
+    </main>
+  </div>
 </ng-container>

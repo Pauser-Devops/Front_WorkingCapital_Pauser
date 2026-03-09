@@ -12,4 +12,7 @@ export class HeaderComponent {
   @Input() vistaNombre = '';
   @Input() datosApi: any = null;
   @Output() exportar = new EventEmitter<void>();
+
+
+  @Input() tituloModulo: string = 'Working Capital';
 }

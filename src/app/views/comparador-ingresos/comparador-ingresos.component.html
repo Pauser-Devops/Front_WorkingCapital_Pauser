@@ -1,0 +1,234 @@
+<div class="cmp-container">
+
+  <!-- HEADER -->
+  <div class="cmp-header">
+    <div class="cmp-title-wrap">
+      <div class="cmp-icon-wrap">
+        <span class="material-icons">compare_arrows</span>
+      </div>
+      <div>
+        <h1>Comparador de Registros</h1>
+        <p>Detecta eliminaciones y cambios entre snapshots de ingresos bancarios</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- MESES -->
+  <div class="cmp-meses">
+    <button *ngFor="let mes of meses" class="mes-btn"
+      [class.activo]="mesSeleccionado === mes"
+      [class.con-data]="tieneDatos(mes)"
+      (click)="seleccionarMes(mes)">
+      {{ mes }}
+      <span class="mes-dot" *ngIf="tieneDatos(mes)"></span>
+    </button>
+  </div>
+
+  <!-- SIN MES -->
+  <div class="cmp-inicio" *ngIf="!mesSeleccionado">
+    <span class="material-icons">calendar_month</span>
+    <p>Selecciona el mes que quieres comparar</p>
+  </div>
+
+  <div class="cmp-body" *ngIf="mesSeleccionado">
+
+    <!-- ── STEPPER ── -->
+    <div class="stepper">
+      <div class="step" [class.activo]="paso >= 1" [class.done]="paso > 1">
+        <div class="step-circle">
+          <span class="material-icons" *ngIf="paso > 1">check</span>
+          <span *ngIf="paso <= 1">1</span>
+        </div>
+        <div class="step-label">Subir Excel anterior</div>
+      </div>
+      <div class="step-line" [class.done]="paso > 1"></div>
+      <div class="step" [class.activo]="paso >= 2" [class.done]="paso > 2">
+        <div class="step-circle">
+          <span class="material-icons" *ngIf="paso > 2">check</span>
+          <span *ngIf="paso <= 2">2</span>
+        </div>
+        <div class="step-label">Comparar con BD</div>
+      </div>
+      <div class="step-line" [class.done]="paso > 2"></div>
+      <div class="step" [class.activo]="paso >= 3">
+        <div class="step-circle">3</div>
+        <div class="step-label">Ver resultados</div>
+      </div>
+    </div>
+
+    <!-- ── PASO 1: Subir archivo ── -->
+    <div class="cmp-card" *ngIf="paso === 1">
+      <div class="paso-header">
+        <span class="material-icons paso-icon">upload_file</span>
+        <div>
+          <div class="paso-titulo">Sube el Excel exportado anteriormente</div>
+          <div class="paso-sub">Usa el archivo CSV que exportaste desde "Registros Ingresos Bancarios" antes de sincronizar</div>
+        </div>
+      </div>
+
+      <div class="upload-area" (click)="fileInput.click()" (dragover)="$event.preventDefault()" (drop)="onArchivoSeleccionado($event)">
+        <input #fileInput type="file" accept=".csv" style="display:none" (change)="onArchivoSeleccionado($event)" />
+        <span class="material-icons upload-icon">cloud_upload</span>
+        <div class="upload-titulo">Arrastra el archivo aquí o haz clic para seleccionar</div>
+        <div class="upload-sub">Formato: CSV (exportado desde esta app)</div>
+      </div>
+
+      <div class="error-msg" *ngIf="errorArchivo">
+        <span class="material-icons">error</span> {{ errorArchivo }}
+      </div>
+
+      <div class="cmp-hint">
+        <span class="material-icons">lightbulb</span>
+        <strong>¿Cómo funciona?</strong> Antes de sincronizar el mes, exporta el Excel desde "Registros Ingresos Bancarios".
+        Luego sincroniza. Después sube ese Excel aquí para ver qué ID POP fueron eliminados o modificados.
+      </div>
+    </div>
+
+    <!-- ── PASO 2: Confirmar y comparar ── -->
+    <div class="cmp-card" *ngIf="paso === 2">
+      <div class="paso-header">
+        <span class="material-icons paso-icon ok">check_circle</span>
+        <div>
+          <div class="paso-titulo">Archivo cargado correctamente</div>
+          <div class="paso-sub">
+            <span class="material-icons" style="font-size:14px;vertical-align:middle">description</span>
+            {{ archivoNombre }} — <strong>{{ registrosExcel.length | number }}</strong> registros del mes {{ mesSeleccionado }}
+          </div>
+        </div>
+      </div>
+
+      <div class="paso2-preview">
+        <div class="preview-kpi">
+          <span class="preview-val">{{ registrosExcel.length | number }}</span>
+          <span class="preview-label">Registros en el Excel</span>
+        </div>
+        <div class="preview-arrow">
+          <span class="material-icons">compare_arrows</span>
+        </div>
+        <div class="preview-kpi">
+          <span class="preview-val bd">BD actual</span>
+          <span class="preview-label">{{ mesSeleccionado }}</span>
+        </div>
+      </div>
+
+      <div class="paso2-btns">
+        <button class="btn-volver" (click)="reiniciar()">
+          <span class="material-icons">arrow_back</span> Volver
+        </button>
+        <button class="btn-comparar" (click)="cargarBDYComparar()" [disabled]="cargandoBD">
+          <span class="material-icons">{{ cargandoBD ? 'refresh' : 'compare_arrows' }}</span>
+          {{ cargandoBD ? 'Comparando...' : 'Comparar con BD actual' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- ── PASO 3: Resultados ── -->
+    <div *ngIf="paso === 3">
+
+      <!-- Resumen -->
+      <div class="resumen-grid">
+        <div class="resumen-card eliminado" (click)="setFiltro('eliminado')" [class.activo]="filtroVista==='eliminado'">
+          <div class="resumen-icon"><span class="material-icons">delete</span></div>
+          <div class="resumen-val">{{ totalElim }}</div>
+          <div class="resumen-label">Eliminados</div>
+          <div class="resumen-desc">Estaban en el Excel, ya no están en BD</div>
+        </div>
+        <div class="resumen-card modificado" (click)="setFiltro('modificado')" [class.activo]="filtroVista==='modificado'">
+          <div class="resumen-icon"><span class="material-icons">edit</span></div>
+          <div class="resumen-val">{{ totalMod }}</div>
+          <div class="resumen-label">Modificados</div>
+          <div class="resumen-desc">Campos cambiaron entre versiones</div>
+        </div>
+        <div class="resumen-card nuevo" (click)="setFiltro('nuevo')" [class.activo]="filtroVista==='nuevo'">
+          <div class="resumen-icon"><span class="material-icons">add_circle</span></div>
+          <div class="resumen-val">{{ totalNuev }}</div>
+          <div class="resumen-label">Nuevos</div>
+          <div class="resumen-desc">No estaban en el Excel anterior</div>
+        </div>
+        <div class="resumen-card igual" (click)="setFiltro('igual')" [class.activo]="filtroVista==='igual'">
+          <div class="resumen-icon"><span class="material-icons">check_circle</span></div>
+          <div class="resumen-val">{{ totalIgual }}</div>
+          <div class="resumen-label">Sin cambios</div>
+          <div class="resumen-desc">Idénticos en ambas versiones</div>
+        </div>
+      </div>
+
+      <!-- Acciones resultado -->
+      <div class="resultado-actions">
+        <button class="fpill" [class.activo]="filtroVista==='todos'" (click)="setFiltro('todos')">
+          Todos ({{ resultados.length | number }})
+        </button>
+        <button class="fpill rojo" [class.activo]="filtroVista==='eliminado'" (click)="setFiltro('eliminado')">
+          <span class="material-icons">delete</span> Eliminados ({{ totalElim }})
+        </button>
+        <button class="fpill naranja" [class.activo]="filtroVista==='modificado'" (click)="setFiltro('modificado')">
+          <span class="material-icons">edit</span> Modificados ({{ totalMod }})
+        </button>
+        <button class="fpill verde" [class.activo]="filtroVista==='nuevo'" (click)="setFiltro('nuevo')">
+          <span class="material-icons">add_circle</span> Nuevos ({{ totalNuev }})
+        </button>
+        <div class="resultado-actions-right">
+          <button class="btn-export-elim" (click)="exportarEliminados()" *ngIf="totalElim > 0">
+            <span class="material-icons">download</span> Exportar eliminados
+          </button>
+          <button class="btn-volver" (click)="reiniciar()">
+            <span class="material-icons">restart_alt</span> Nueva comparación
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabla resultados -->
+      <div class="cmp-tabla-wrap" *ngIf="resultadosFiltrados.length > 0">
+        <table class="cmp-tabla">
+          <thead>
+            <tr>
+              <th>Estado</th>
+              <th>ID POP</th>
+              <th>Fecha Registro</th>
+              <th>Sucursal</th>
+              <th>Entidad</th>
+              <th class="num">Monto</th>
+              <th>Banco</th>
+              <th>Conciliado</th>
+              <th>Diferencias</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of resultadosFiltrados" [class]="'fila-' + r.estado">
+              <td>
+                <span class="badge-estado" [class]="'badge-' + r.estado">
+                  <span class="material-icons" *ngIf="r.estado==='eliminado'">delete</span>
+                  <span class="material-icons" *ngIf="r.estado==='modificado'">edit</span>
+                  <span class="material-icons" *ngIf="r.estado==='nuevo'">add_circle</span>
+                  <span class="material-icons" *ngIf="r.estado==='igual'">check_circle</span>
+                  {{ r.estado | titlecase }}
+                </span>
+              </td>
+              <td class="td-idpop">{{ r.id_pop }}</td>
+              <td>{{ r.fecha_registro }}</td>
+              <td>{{ r.sucursal }}</td>
+              <td><span class="entidad-tag">{{ r.entidad }}</span></td>
+              <td class="num">S/ {{ formatNum(r.monto) }}</td>
+              <td>{{ r.banco_tabla }}</td>
+              <td>
+                <span class="conc-tag" [class.conc-si]="r.conciliado" [class.conc-no]="!r.conciliado">
+                  {{ r.conciliado ? 'Sí' : 'No' }}
+                </span>
+              </td>
+              <td class="td-diffs">
+                <span *ngIf="!r.diferencias?.length" class="text-muted">—</span>
+                <div *ngFor="let d of r.diferencias" class="diff-chip">{{ d }}</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="cmp-empty" *ngIf="resultadosFiltrados.length === 0">
+        <span class="material-icons">check_circle</span>
+        <p>No hay registros con ese estado</p>
+      </div>
+    </div>
+
+  </div>
+</div>

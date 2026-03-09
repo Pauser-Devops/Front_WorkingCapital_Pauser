@@ -1,88 +1,89 @@
 <div class="ib-wrap">
 
-
   <!-- HEADER -->
   <div class="ib-header">
     <div class="ib-header-left">
-      <div class="ib-icon">
-        <span class="material-icons">account_balance</span>
-      </div>
+      <div class="ib-icon"><span class="material-icons">account_balance</span></div>
       <div>
         <div class="ib-title">Ingresos Bancarios</div>
         <div class="ib-subtitle">Dashboard desde base de datos · {{ mesLabel }}</div>
       </div>
     </div>
-
-    <!-- MESES -->
     <div class="ib-meses">
-      <button class="ib-mes-btn" *ngFor="let m of meses" [class.activo]="mesActivo === m" (click)="seleccionarMes(m)">
-        {{ m }}
-      </button>
+      <button class="ib-mes-btn" *ngFor="let m of meses"
+        [class.activo]="mesActivo === m" (click)="seleccionarMes(m)">{{ m }}</button>
     </div>
-
   </div>
+
   <!-- LOADING -->
   <div class="ib-loading" *ngIf="cargando">
     <div class="ib-spinner"></div>
     <span>Cargando datos...</span>
   </div>
-
   <div class="ib-error" *ngIf="error && !cargando">{{ error }}</div>
 
-  <div *ngIf="!cargando && filtrados.length > 0">
+  <div *ngIf="!cargando && todos.length > 0">
 
     <!-- FILTROS -->
     <div class="ib-filtros">
+      <div class="ib-filtros-header">
+        <span class="ib-filtros-titulo">
+          <span class="material-icons">tune</span> Filtros
+        </span>
+        <button class="btn-limpiar-todo" *ngIf="tieneFiltros" (click)="limpiarFiltros()">
+          <span class="material-icons">restart_alt</span> Limpiar filtros
+        </button>
+      </div>
 
-      <!-- Estado -->
+      <!-- Fecha -->
       <div class="ib-filtro-group">
-        <div class="ib-filtro-label">Estado</div>
-        <div class="ib-filtro-pills">
-          <button class="ib-pill" [class.activo]="filtroEstado==='activos'"
-            (click)="setFiltroEstado('activos')">Activos</button>
-          <button class="ib-pill" [class.activo]="filtroEstado==='inactivos'"
-            (click)="setFiltroEstado('inactivos')">Inactivos</button>
-          <button class="ib-pill" [class.activo]="filtroEstado==='todos'"
-            (click)="setFiltroEstado('todos')">Todos</button>
+        <div class="ib-filtro-label">
+          <span class="material-icons">date_range</span> Fecha Registro
+        </div>
+        <div class="ib-filtro-fechas">
+          <div class="fecha-input-wrap">
+            <label>Desde</label>
+            <input type="date" class="fecha-input"
+              [min]="fechaMin" [max]="fechaMax" [value]="fechaDesde"
+              (change)="setFechaDesde($any($event.target).value)" />
+          </div>
+          <div class="fecha-input-wrap">
+            <label>Hasta</label>
+            <input type="date" class="fecha-input"
+              [min]="fechaMin" [max]="fechaMax" [value]="fechaHasta"
+              (change)="setFechaHasta($any($event.target).value)" />
+          </div>
         </div>
       </div>
 
-      <!-- Banco tabla -->
+      <!-- Banco -->
       <div class="ib-filtro-group">
-        <div class="ib-filtro-label">Banco (hoja)</div>
+        <div class="ib-filtro-label"><span class="material-icons">account_balance</span> Banco</div>
         <div class="ib-filtro-pills">
-          <button class="ib-pill" [class.activo]="filtroBanco==='TODOS'"
-            (click)="setFiltroBanco('TODOS')">Todos</button>
-          <button class="ib-pill banco-pill" *ngFor="let b of bancos" [class.activo]="filtroBanco === b"
-            [style.--bc]="getBancoColor(b)" (click)="setFiltroBanco(b)">
-            {{ b }}
-          </button>
+          <button class="ib-pill" [class.activo]="filtroBanco==='TODOS'" (click)="setFiltroBanco('TODOS')">Todos</button>
+          <button class="ib-pill banco-pill" *ngFor="let b of bancos"
+            [class.activo]="filtroBanco===b" [style.--bc]="getBancoColor(b)"
+            (click)="setFiltroBanco(b)">{{ b }}</button>
         </div>
       </div>
 
       <!-- Sucursal -->
       <div class="ib-filtro-group">
-        <div class="ib-filtro-label">Sucursal</div>
+        <div class="ib-filtro-label"><span class="material-icons">store</span> Sucursal</div>
         <div class="ib-filtro-pills">
-          <button class="ib-pill" [class.activo]="filtroSucursal==='TODAS'"
-            (click)="setFiltroSucursal('TODAS')">Todas</button>
-          <button class="ib-pill" *ngFor="let s of sucursales" [class.activo]="filtroSucursal === s"
-            (click)="setFiltroSucursal(s)">
-            {{ s }}
-          </button>
+          <button class="ib-pill" [class.activo]="filtroSucursal==='TODAS'" (click)="setFiltroSucursal('TODAS')">Todas</button>
+          <button class="ib-pill" *ngFor="let s of sucursales"
+            [class.activo]="filtroSucursal===s" (click)="setFiltroSucursal(s)">{{ s }}</button>
         </div>
       </div>
 
       <!-- Entidad -->
       <div class="ib-filtro-group">
-        <div class="ib-filtro-label">Entidad</div>
+        <div class="ib-filtro-label"><span class="material-icons">corporate_fare</span> Entidad</div>
         <div class="ib-filtro-pills">
-          <button class="ib-pill" [class.activo]="filtroEntidad==='TODAS'"
-            (click)="setFiltroEntidad('TODAS')">Todas</button>
-          <button class="ib-pill" *ngFor="let e of entidades" [class.activo]="filtroEntidad === e"
-            (click)="setFiltroEntidad(e)">
-            {{ e }}
-          </button>
+          <button class="ib-pill" [class.activo]="filtroEntidad==='TODAS'" (click)="setFiltroEntidad('TODAS')">Todas</button>
+          <button class="ib-pill" *ngFor="let e of entidades"
+            [class.activo]="filtroEntidad===e" (click)="setFiltroEntidad(e)">{{ e }}</button>
         </div>
       </div>
     </div>
@@ -90,42 +91,51 @@
     <!-- KPIs -->
     <div class="ib-kpis">
       <div class="ib-kpi">
-        <div class="ib-kpi-icon">
-          <span class="material-icons">payments</span>
-        </div>
+        <div class="ib-kpi-icon"><span class="material-icons">payments</span></div>
         <div class="ib-kpi-val green">{{ fmt(totalMonto) }}</div>
         <div class="ib-kpi-label">Monto Total</div>
       </div>
       <div class="ib-kpi">
-        <div class="ib-kpi-icon">
-          <span class="material-icons">list_alt</span>
-        </div>
+        <div class="ib-kpi-icon"><span class="material-icons">list_alt</span></div>
         <div class="ib-kpi-val blue">{{ totalRegistros | number }}</div>
         <div class="ib-kpi-label">Registros</div>
       </div>
       <div class="ib-kpi">
-        <div class="ib-kpi-icon">
-          <span class="material-icons">task_alt</span>
-        </div>
+        <div class="ib-kpi-icon"><span class="material-icons">task_alt</span></div>
         <div class="ib-kpi-val teal">{{ totalConc | number }}</div>
         <div class="ib-kpi-label">Conciliados</div>
       </div>
       <div class="ib-kpi">
-        <div class="ib-kpi-icon">
-          <span class="material-icons">pending_actions</span>
-        </div>
+        <div class="ib-kpi-icon"><span class="material-icons">pending_actions</span></div>
         <div class="ib-kpi-val orange">{{ totalSinConc | number }}</div>
         <div class="ib-kpi-label">Sin conciliar</div>
       </div>
+      <div class="ib-kpi">
+        <div class="ib-kpi-icon"><span class="material-icons">check_circle</span></div>
+        <div class="ib-kpi-val teal">{{ fmt(montoConciliado) }}</div>
+        <div class="ib-kpi-label">Monto Conciliado</div>
+      </div>
+      <div class="ib-kpi">
+        <div class="ib-kpi-icon"><span class="material-icons">cancel</span></div>
+        <div class="ib-kpi-val orange">{{ fmt(montoSinConc) }}</div>
+        <div class="ib-kpi-label">Monto Sin Conciliar</div>
+      </div>
+      <!-- Ring -->
       <div class="ib-kpi ib-kpi-pct">
         <div class="ib-kpi-label">Conciliación</div>
         <div class="ib-pct-ring">
           <svg viewBox="0 0 36 36">
             <circle cx="18" cy="18" r="15" fill="none" stroke="#e2e8f0" stroke-width="3" />
-            <circle cx="18" cy="18" r="15" fill="none" stroke="#16a34a" stroke-width="3"
-              [attr.stroke-dasharray]="pctBar + ', 100' " [attr.stroke-dashoffset]="25" stroke-linecap="round" />
+            <circle cx="18" cy="18" r="15" fill="none"
+              [attr.stroke]="pctConc === 0 ? '#e2e8f0' : '#16a34a'"
+              stroke-width="3"
+              [attr.stroke-dasharray]="(pctConc * 0.9425) + ' ' + (94.25 - pctConc * 0.9425)"
+              stroke-dashoffset="23.55"
+              stroke-linecap="round" />
           </svg>
-          <div class="ib-pct-val">{{ pctConc }}%</div>
+          <div class="ib-pct-val" [style.color]="pctConc === 0 ? '#94a3b8' : '#16a34a'">
+            {{ pctConc }}%
+          </div>
         </div>
       </div>
     </div>
@@ -135,15 +145,15 @@
 
       <!-- Por banco -->
       <div class="ib-card">
-        <div class="ib-card-title">Por Banco (hoja)</div>
+        <div class="ib-card-title"><span class="material-icons">account_balance</span> Por Banco</div>
         <div class="ib-bars">
           <div class="ib-bar-row" *ngFor="let b of porBanco">
             <div class="ib-bar-label">
-              <span class="ib-dot" [style.background]="b.color"></span>
-              {{ b.label }}
+              <span class="ib-dot" [style.background]="b.color"></span>{{ b.label }}
             </div>
             <div class="ib-bar-track">
               <div class="ib-bar-fill" [style.width.%]="b.pct" [style.background]="b.color"></div>
+              <div class="ib-bar-tooltip">{{ fmt(b.monto) }}</div>
             </div>
             <div class="ib-bar-nums">
               <span class="ib-bar-monto">{{ fmtK(b.monto) }}</span>
@@ -155,12 +165,13 @@
 
       <!-- Por entidad -->
       <div class="ib-card">
-        <div class="ib-card-title">Por Entidad</div>
+        <div class="ib-card-title"><span class="material-icons">corporate_fare</span> Por Entidad</div>
         <div class="ib-bars">
           <div class="ib-bar-row" *ngFor="let e of porEntidad">
             <div class="ib-bar-label">{{ e.label }}</div>
             <div class="ib-bar-track">
               <div class="ib-bar-fill ib-fill-teal" [style.width.%]="e.pct"></div>
+              <div class="ib-bar-tooltip">{{ fmt(e.monto) }}</div>
             </div>
             <div class="ib-bar-nums">
               <span class="ib-bar-monto">{{ fmtK(e.monto) }}</span>
@@ -172,12 +183,13 @@
 
       <!-- Por sucursal -->
       <div class="ib-card">
-        <div class="ib-card-title">Por Sucursal</div>
+        <div class="ib-card-title"><span class="material-icons">store</span> Por Sucursal</div>
         <div class="ib-bars">
           <div class="ib-bar-row" *ngFor="let s of porSucursal">
             <div class="ib-bar-label">{{ s.label }}</div>
             <div class="ib-bar-track">
               <div class="ib-bar-fill ib-fill-blue" [style.width.%]="s.pct"></div>
+              <div class="ib-bar-tooltip">{{ fmt(s.monto) }}</div>
             </div>
             <div class="ib-bar-nums">
               <span class="ib-bar-monto">{{ fmtK(s.monto) }}</span>
@@ -186,20 +198,31 @@
           </div>
         </div>
       </div>
-
     </div>
 
     <!-- TIMELINE -->
     <div class="ib-card ib-card-full">
-      <div class="ib-card-title">Evolución Diaria — {{ mesLabel }}</div>
-      <div class="ib-timeline">
-        <div class="ib-tbar-col" *ngFor="let d of porDia" [title]="d.fecha + ': ' + fmt(d.monto)">
-          <div class="ib-tbar-val">{{ fmtK(d.monto) }}</div>
+      <div class="ib-card-title">
+        <span class="material-icons">show_chart</span>
+        Evolución Diaria — {{ mesLabel }}
+      </div>
+      <div class="ib-timeline" *ngIf="porDia.length > 0">
+        <div class="ib-tbar-col" *ngFor="let d of porDia"
+          (mouseenter)="showTooltip(d, $event)"
+          (mouseleave)="hideTooltip()">
           <div class="ib-tbar-wrap">
-            <div class="ib-tbar" [style.height.%]="d.pct || 2"></div>
+            <div class="ib-tbar" [style.height.%]="d.alto"></div>
           </div>
           <div class="ib-tbar-label">{{ d.fecha }}</div>
+          <div class="ib-tbar-popup" *ngIf="tooltipDia?.fecha === d.fechaFull">
+            <div class="popup-fecha">{{ d.fechaFull }}</div>
+            <div class="popup-monto">{{ fmt(d.monto) }}</div>
+          </div>
         </div>
+      </div>
+      <div class="ib-empty-chart" *ngIf="porDia.length === 0">
+        <span class="material-icons">bar_chart</span>
+        <p>Sin datos de fechas para graficar</p>
       </div>
     </div>
 

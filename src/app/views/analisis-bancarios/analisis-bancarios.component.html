@@ -1,11 +1,10 @@
 <div class="ab-wrap">
 
-
   <!-- HEADER -->
   <div class="ab-header">
     <div class="ab-header-left">
       <div class="ab-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
+        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="20" x2="18" y2="10" />
           <line x1="12" y1="20" x2="12" y2="4" />
@@ -14,15 +13,36 @@
         </svg>
       </div>
       <div>
-        <div class="ab-title">Análisis Bancario</div>
-        <div class="ab-subtitle">Categorización de movimientos · {{ mesActivo }}</div>
+        <div class="ab-title">Registros Reportes Bancarios</div>
+        <div class="ab-subtitle">{{ tablaActivaLabel }} · {{ periodoLabel }}</div>
       </div>
     </div>
-    <div class="ab-meses">
-      <button class="ab-mes-btn" *ngFor="let m of meses" [class.activo]="mesActivo === m" (click)="seleccionarMes(m)">
-        {{ m }}
+    <div class="ab-header-right">
+      <button class="ab-btn-sync" (click)="sincronizar()" [disabled]="cargandoSync || cargando">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+          [class.spinning]="cargandoSync">
+          <path d="M21 2v6h-6" />
+          <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+          <path d="M3 22v-6h6" />
+          <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+        </svg>
+        {{ cargandoSync ? 'Sincronizando...' : 'Sincronizar' }}
       </button>
     </div>
+  </div>
+
+  <!-- MENSAJE SYNC -->
+  <div class="ab-msg-sync" *ngIf="mensajeSync" [class.ok]="!errorSync" [class.error]="errorSync">
+    {{ mensajeSync }}
+  </div>
+
+  <!-- PERIODOS -->
+  <div class="ab-periodos">
+    <button class="ab-periodo-btn" *ngFor="let p of periodos" [class.activo]="periodoActivo?.label === p.label"
+      (click)="seleccionarPeriodo(p)">
+      {{ p.label }}
+    </button>
   </div>
 
   <!-- TABS BANCOS -->
@@ -33,63 +53,132 @@
     </button>
   </div>
 
-  <div *ngIf="!cargando && todos.length > 0">
+  <!-- SPINNER — visible siempre que cargando=true, fuera del bloque de datos -->
+  <div class="ab-loading" *ngIf="cargando">
+    <div class="ab-spinner"></div>
+    <span>Cargando datos...</span>
+  </div>
 
-    <!-- KPI CARDS -->
+  <!-- ERROR -->
+  <div class="ab-error" *ngIf="error && !cargando">{{ error }}</div>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <ng-container *ngIf="!cargando && todos.length > 0">
+
+    <!-- FILTRO FECHA -->
+    <div class="ab-fecha-filtro">
+      <div class="ab-fecha-icono">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+          <line x1="16" y1="2" x2="16" y2="6" />
+          <line x1="8" y1="2" x2="8" y2="6" />
+          <line x1="3" y1="10" x2="21" y2="10" />
+        </svg>
+        <span>Filtrar por fecha</span>
+      </div>
+      <div class="ab-fecha-inputs">
+        <div class="ab-fecha-group">
+          <label>Desde</label>
+          <input type="date" [(ngModel)]="fechaDesde" (ngModelChange)="onFechaChange()" />
+        </div>
+        <div class="ab-fecha-separador">—</div>
+        <div class="ab-fecha-group">
+          <label>Hasta</label>
+          <input type="date" [(ngModel)]="fechaHasta" (ngModelChange)="onFechaChange()" />
+        </div>
+        <button class="ab-fecha-clear" *ngIf="hayFiltroFecha" (click)="limpiarFechas()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+          Limpiar
+        </button>
+      </div>
+      <div class="ab-fecha-pill" *ngIf="hayFiltroFecha">
+        {{ todosFiltradosFecha.length }} de {{ todos.length }} registros
+      </div>
+    </div>
+
+    <!-- KPIs GENERALES -->
+    <div class="ab-kpis-generales">
+      <div class="ab-kpi-g ingresos">
+        <span class="ab-kpi-g-label">Total Ingresos</span>
+        <span class="ab-kpi-g-val">{{ fmt(kpiGeneral.totalIngresos) }}</span>
+        <span class="ab-kpi-g-sub">{{ kpiGeneral.registros | number }} registros</span>
+      </div>
+      <div class="ab-kpi-g egresos">
+        <span class="ab-kpi-g-label">Total Egresos</span>
+        <span class="ab-kpi-g-val">{{ fmt(kpiGeneral.totalEgresos) }}</span>
+        <span class="ab-kpi-g-sub">&nbsp;</span>
+      </div>
+      <div class="ab-kpi-g" [class.neto-pos]="kpiGeneral.neto >= 0" [class.neto-neg]="kpiGeneral.neto < 0">
+        <span class="ab-kpi-g-label">Neto</span>
+        <span class="ab-kpi-g-val">{{ fmt(kpiGeneral.neto) }}</span>
+        <span class="ab-kpi-g-sub">Ingresos − Egresos</span>
+      </div>
+      <div class="ab-kpi-sep"></div>
+      <div class="ab-kpi-g alerta">
+        <span class="ab-kpi-g-label">⚠ Sin ID POP</span>
+        <span class="ab-kpi-g-val">{{ kpiGeneral.sinIdPop | number }}</span>
+        <span class="ab-kpi-g-sub">{{ fmt(kpiGeneral.montoSinId) }}</span>
+      </div>
+      <div class="ab-kpi-g ok">
+        <span class="ab-kpi-g-label">✓ Con ID POP</span>
+        <span class="ab-kpi-g-val">{{ kpiGeneral.conIdPop | number }}</span>
+        <span class="ab-kpi-g-sub">{{ fmt(kpiGeneral.montoConId) }}</span>
+      </div>
+    </div>
+
+    <!-- TABS CATEGORÍAS -->
     <div class="ab-cats">
       <div class="ab-cat-card" *ngFor="let cat of catKeys" [class.activo]="catActiva === cat"
         [style.--cc]="catLabels[cat].color" (click)="setCatActiva(cat)">
 
-        <!-- Todos los SVGs presentes, visibilidad por clase -->
-        <div class="ab-cat-icon" [attr.data-icon]="catLabels[cat].icon">
-
-          <!-- ventas -->
-          <svg class="icon-ventas" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white"
+        <div class="ab-cat-icon">
+          <svg *ngIf="cat === 'todos'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white"
             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-            <line x1="3" y1="6" x2="21" y2="6" />
-            <path d="M16 10a4 4 0 0 1-8 0" />
+            <line x1="8" y1="6" x2="21" y2="6" />
+            <line x1="8" y1="12" x2="21" y2="12" />
+            <line x1="8" y1="18" x2="21" y2="18" />
+            <line x1="3" y1="6" x2="3.01" y2="6" />
+            <line x1="3" y1="12" x2="3.01" y2="12" />
+            <line x1="3" y1="18" x2="3.01" y2="18" />
           </svg>
-
-          <!-- idpop -->
-          <svg class="icon-idpop" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white"
-            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
-            <line x1="7" y1="7" x2="7.01" y2="7" />
-          </svg>
-
-          <!-- otros -->
-          <svg class="icon-otros" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white"
-            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg *ngIf="cat === 'sin_id'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+            stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="16" />
-            <line x1="8" y1="12" x2="16" y2="12" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
-
-          <!-- egreso -->
-          <svg class="icon-egreso" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white"
-            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="8 12 12 16 16 12" />
-            <line x1="12" y1="8" x2="12" y2="16" />
+          <svg *ngIf="cat === 'prosegur'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+            stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
           </svg>
-
-          <!-- ingreso -->
-          <svg class="icon-ingreso" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white"
-            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="16 12 12 8 8 12" />
-            <line x1="12" y1="16" x2="12" y2="8" />
+          <svg *ngIf="cat === 'ventas_credito'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+            stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+            <line x1="1" y1="10" x2="23" y2="10" />
           </svg>
-
+          <svg *ngIf="cat === 'ingresos_id'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+            stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
         </div>
 
         <div class="ab-cat-info">
           <div class="ab-cat-label">{{ catLabels[cat].label }}</div>
-          <div class="ab-cat-total">{{ kpis[cat].total | number }} registros</div>
-          <div class="ab-cat-monto">{{ fmtK(kpis[cat].monto) }}</div>
+          <div class="ab-cat-total">
+            {{ cat === 'todos' ? (kpiGeneral.registros | number) : (kpis[cat].total | number) }} registros
+          </div>
+          <div class="ab-cat-submonto">
+            {{ cat === 'todos' ? fmt(kpiGeneral.totalIngresos) : fmt(kpis[cat].monto || 0) }}
+          </div>
         </div>
-        <div class="ab-cat-badge">{{ kpis[cat].total }}</div>
+
+        <!-- Badge monto arriba derecha -->
+        <div class="ab-cat-badge">{{ badgeMonto(cat) }}</div>
       </div>
     </div>
 
@@ -97,30 +186,76 @@
     <div class="ab-panel">
       <div class="ab-panel-header">
         <span class="ab-panel-title">{{ catLabels[catActiva].label }}</span>
-        <span class="ab-panel-count">{{ registrosActivos.length }} registros · {{ fmt(kpis[catActiva].monto) }}</span>
+        <span class="ab-panel-count">
+          {{ registrosActivos.length }} registros · {{ fmt(montoActivo) }}
+        </span>
       </div>
 
+      <!-- DESGLOSE sin_id -->
+      <div class="ab-sinid-desglose" *ngIf="catActiva === 'sin_id' && categorias['sin_id'].length > 0">
+        <button class="ab-desglose-card ingresos" [class.activo]="sinIdFiltro === 'ingresos'"
+          (click)="setSinIdFiltro('ingresos')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="16 12 12 8 8 12" />
+            <line x1="12" y1="16" x2="12" y2="8" />
+          </svg>
+          <div class="ab-desglose-info">
+            <span class="ab-desglose-label">Ingresos</span>
+            <span class="ab-desglose-total">{{ sinIdDesglose.ingresos.total }} registros</span>
+            <span class="ab-desglose-monto">{{ fmt(sinIdDesglose.ingresos.monto) }}</span>
+          </div>
+        </button>
+        <button class="ab-desglose-card egresos" [class.activo]="sinIdFiltro === 'egresos'"
+          (click)="setSinIdFiltro('egresos')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="8 12 12 16 16 12" />
+            <line x1="12" y1="8" x2="12" y2="16" />
+          </svg>
+          <div class="ab-desglose-info">
+            <span class="ab-desglose-label">Egresos</span>
+            <span class="ab-desglose-total">{{ sinIdDesglose.egresos.total }} registros</span>
+            <span class="ab-desglose-monto">{{ fmt(sinIdDesglose.egresos.monto) }}</span>
+          </div>
+        </button>
+      </div>
+
+      <!-- BUSCADOR -->
+      <div class="ab-buscador-wrap">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8"
+          stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <input class="ab-buscador" type="text" [(ngModel)]="busqueda"
+          placeholder="Buscar por descripción, fecha, sede, ID POP..." />
+        <button class="ab-buscador-clear" *ngIf="busqueda" (click)="busqueda = ''">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- TABLA -->
       <div class="ab-tabla-wrap">
-        <!-- LOADING -->
-        <div class="ab-loading" *ngIf="cargando">
-          <div class="ab-spinner"></div>
-          <span>Cargando datos...</span>
-        </div>
-
-        <div class="ab-error" *ngIf="error && !cargando">{{ error }}</div>
-
         <div class="ab-empty-cat" *ngIf="registrosActivos.length === 0">
-          <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none"
+          <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24" fill="none"
             stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10" />
             <path d="M7 13l3 3 7-7" />
           </svg>
-          <p>Sin registros en esta categoría</p>
+          <p>{{ busqueda ? 'Sin resultados para "' + busqueda + '"' : 'Sin registros en esta categoría' }}</p>
         </div>
 
         <table class="ab-tabla" *ngIf="registrosActivos.length > 0">
           <thead>
             <tr>
+              <th *ngIf="catActiva === 'todos'">CATEGORÍA</th>
               <th>NRO CHEQUE</th>
               <th>FECHA</th>
               <th>DESCRIPCIÓN</th>
@@ -133,7 +268,14 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let r of registrosActivos">
+            <tr *ngFor="let r of registrosActivos" [class.fila-egreso]="r.egreso > 0 && r.ingreso === 0">
+              <td *ngIf="catActiva === 'todos'">
+                <span class="ab-cat-tag" [style.background]="catLabels[r.categoria].color + '18'"
+                  [style.color]="catLabels[r.categoria].color"
+                  [style.border-color]="catLabels[r.categoria].color + '44'">
+                  {{ catLabels[r.categoria].label || r.categoria }}
+                </span>
+              </td>
               <td class="mono">{{ r.nro_cheque || '—' }}</td>
               <td class="fecha">{{ r.fecha ? r.fecha.toString().slice(0,10) : '—' }}</td>
               <td class="desc">{{ r.descripcion }}</td>
@@ -149,17 +291,17 @@
       </div>
     </div>
 
-  </div>
+  </ng-container>
 
   <!-- EMPTY -->
-  <div class="ab-empty" *ngIf="!cargando && !error && todos.length === 0 && mesActivo">
-    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8"
+  <div class="ab-empty" *ngIf="!cargando && !error && todos.length === 0 && periodoActivo">
+    <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#94a3b8"
       stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
       <path d="M22 12h-6l-2 3h-4l-2-3H2" />
       <path
         d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
     </svg>
-    <p>Sin datos para {{ mesActivo }} · {{ tablaActivaLabel }}</p>
+    <p>Sin datos para {{ periodoLabel }} · {{ tablaActivaLabel }}</p>
   </div>
 
 </div>

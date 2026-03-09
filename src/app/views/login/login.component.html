@@ -1,14 +1,10 @@
 <div class="login-wrap">
   <div class="login-left">
     <div class="login-brand">
-      <div class="login-logo">P</div>
-      <div class="login-brand-text">
-        <div class="login-brand-name">PAUSER</div>
-        <div class="login-brand-sub">Distribuciones S.A.C.</div>
-      </div>
+      <img src="pauserdistribuciones_logo.png" alt="Pauser" class="login-brand-img" />
     </div>
     <div class="login-tagline">
-      <h1>Working Capital<br><span>Dashboard</span></h1>
+      <h1>Working Capital<br><span>Conciliación Bancaria</span></h1>
       <p>Plataforma interna de gestión financiera y bancaria.</p>
     </div>
     <div class="login-deco">
@@ -32,12 +28,8 @@
           <label>Correo electrónico</label>
           <div class="login-input-wrap">
             <span class="login-input-icon material-icons">mail_outline</span>
-            <input
-              type="email"
-              [(ngModel)]="email"
-              placeholder="usuario@pauserdistribucionessac.onmicrosoft.com"
-              (keyup.enter)="submit()"
-              autocomplete="username"/>
+            <input type="email" [(ngModel)]="email" placeholder="usuario@pauserdistribucionessac.onmicrosoft.com"
+              (keyup.enter)="submit()" autocomplete="username" />
           </div>
         </div>
 
@@ -46,12 +38,8 @@
           <label>Contraseña</label>
           <div class="login-input-wrap">
             <span class="login-input-icon material-icons">lock_outline</span>
-            <input
-              [type]="mostrarPassword ? 'text' : 'password'"
-              [(ngModel)]="password"
-              placeholder="••••••••"
-              (keyup.enter)="submit()"
-              autocomplete="current-password"/>
+            <input [type]="mostrarPassword ? 'text' : 'password'" [(ngModel)]="password" placeholder="••••••••"
+              (keyup.enter)="submit()" autocomplete="current-password" />
             <button class="login-eye" type="button" (click)="mostrarPassword = !mostrarPassword">
               <span class="material-icons">{{ mostrarPassword ? 'visibility_off' : 'visibility' }}</span>
             </button>

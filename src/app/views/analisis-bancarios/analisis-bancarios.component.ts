@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 
@@ -8,6 +9,12 @@ const API = environment.apiUrl;
 const ORDEN_MESES: Record<string, number> = {
     enero: 1, febrero: 2, marzo: 3, abril: 4, mayo: 5, junio: 6,
     julio: 7, agosto: 8, septiembre: 9, octubre: 10, noviembre: 11, diciembre: 12
+};
+
+const MESES_CORTOS: Record<string, string> = {
+    enero: 'Ene', febrero: 'Feb', marzo: 'Mar', abril: 'Abr',
+    mayo: 'May', junio: 'Jun', julio: 'Jul', agosto: 'Ago',
+    septiembre: 'Sep', octubre: 'Oct', noviembre: 'Nov', diciembre: 'Dic'
 };
 
 const TABLAS = [
@@ -20,7 +27,10 @@ const TABLAS = [
     { key: 'caja_arequipa_1', label: 'Caja Arequipa', color: '#B91C1C' },
 ];
 
-type CatKey = 'prosegur' | 'ventas_credito' | 'ingresos_id' | 'sin_id' | 'otros';
+type CatKey = 'prosegur' | 'ventas_credito' | 'ingresos_id' | 'sin_id';
+type ViewKey = CatKey | 'todos';
+
+interface PeriodoItem { mes: string; anio: number; label: string; }
 
 interface CategorizadoRow {
     categoria: CatKey;
@@ -39,81 +49,133 @@ interface CategorizadoRow {
 @Component({
     selector: 'app-analisis-bancarios',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, FormsModule],
     templateUrl: './analisis-bancarios.component.html',
     styleUrls: ['./analisis-bancarios.component.css']
 })
 export class AnalisisBancariosComponent implements OnInit {
     cargando = false;
+    cargandoSync = false;
     error = '';
+    mensajeSync = '';
+    errorSync = false;
 
-    meses: string[] = [];
-    mesActivo = '';
+    periodos: PeriodoItem[] = [];
+    periodoActivo: PeriodoItem | null = null;
+
     tablaActiva = 'bcp_1';
-
     tablas = TABLAS;
     todos: any[] = [];
 
-    // Categorizados
+    todasFilas: CategorizadoRow[] = [];
+
     categorias: Record<CatKey, CategorizadoRow[]> = {
-        prosegur: [],
-        ventas_credito: [],
-        ingresos_id: [],
-        sin_id: [],
-        otros: [],
+        prosegur: [], ventas_credito: [], ingresos_id: [], sin_id: [],
     };
 
-    catActiva: CatKey = 'sin_id';
+    catActiva: ViewKey = 'todos';
 
-    // KPIs
+    kpiGeneral = {
+        registros: 0,
+        totalIngresos: 0,
+        totalEgresos: 0,
+        neto: 0,
+        conIdPop: 0,
+        sinIdPop: 0,
+        montoConId: 0,
+        montoSinId: 0,
+    };
+
     kpis: Record<CatKey, { total: number, monto: number }> = {
         prosegur: { total: 0, monto: 0 },
         ventas_credito: { total: 0, monto: 0 },
         ingresos_id: { total: 0, monto: 0 },
         sin_id: { total: 0, monto: 0 },
-        otros: { total: 0, monto: 0 },
     };
 
-    // Modal inactivos
-    modalAbierto = false;
-    modalRegistros: CategorizadoRow[] = [];
-    catKeys: CatKey[] = ['sin_id', 'prosegur', 'ventas_credito', 'ingresos_id', 'otros'];
+    sinIdDesglose = {
+        ingresos: { total: 0, monto: 0 },
+        egresos: { total: 0, monto: 0 },
+    };
+
+    sinIdFiltro: 'todos' | 'ingresos' | 'egresos' = 'todos';
+    busqueda = '';
+    fechaDesde = '';
+    fechaHasta = '';
+
+    catKeys: ViewKey[] = ['todos', 'sin_id', 'prosegur', 'ventas_credito', 'ingresos_id'];
+
+    catLabels: Record<ViewKey, { label: string, color: string }> = {
+        todos: { label: 'Todos', color: '#1e3a5f' },
+        sin_id: { label: 'Sin ID POP', color: '#dc2626' },
+        prosegur: { label: 'Prosegur', color: '#7c3aed' },
+        ventas_credito: { label: 'Ventas al Crédito', color: '#0891b2' },
+        ingresos_id: { label: 'Con ID POP', color: '#16a34a' },
+    };
+
     constructor(private http: HttpClient) { }
 
-    ngOnInit() {
-        this.cargarMeses();
-    }
+    ngOnInit() { this.cargarMeses(); }
 
     cargarMeses() {
         this.http.get<any>(`${API}/bancos/meses`).subscribe({
             next: r => {
                 if (r.estado === 'OK') {
-                    const set = new Set<string>();
-                    r.meses.forEach((m: any) => set.add(m.mes));
-                    this.meses = [...set].sort((a, b) =>
-                        (ORDEN_MESES[a.toLowerCase()] || 99) - (ORDEN_MESES[b.toLowerCase()] || 99)
+                    const vistos = new Set<string>();
+                    const lista: PeriodoItem[] = [];
+                    for (const m of r.meses) {
+                        const key = `${m.mes}-${m.anio}`;
+                        if (!vistos.has(key)) {
+                            vistos.add(key);
+                            const mesLower = (m.mes || '').toLowerCase();
+                            lista.push({
+                                mes: m.mes,
+                                anio: m.anio,
+                                label: `${MESES_CORTOS[mesLower] || m.mes} ${m.anio}`
+                            });
+                        }
+                    }
+                    this.periodos = lista.sort((a, b) =>
+                        a.anio !== b.anio
+                            ? a.anio - b.anio
+                            : (ORDEN_MESES[a.mes.toLowerCase()] || 99) - (ORDEN_MESES[b.mes.toLowerCase()] || 99)
                     );
-                    if (this.meses.length) this.seleccionarMes(this.meses[0]);
+                    if (this.periodos.length) this.seleccionarPeriodo(this.periodos[this.periodos.length - 1]);
                 }
             },
             error: () => this.error = 'No se pudo conectar a la API'
         });
     }
 
-    seleccionarMes(mes: string) {
-        this.mesActivo = mes;
+    seleccionarPeriodo(p: PeriodoItem) {
+        this.periodoActivo = p;
+        this.resetFiltros();
         this.cargarTabla();
     }
 
     seleccionarTabla(tabla: string) {
         this.tablaActiva = tabla;
+        this.resetFiltros();
         this.cargarTabla();
     }
 
+    resetFiltros() {
+        this.fechaDesde = '';
+        this.fechaHasta = '';
+        this.busqueda = '';
+        this.sinIdFiltro = 'todos';
+        this.catActiva = 'todos';
+        this.mensajeSync = '';
+        this.todos = [];   // ← limpia para que el spinner aparezca
+        this.todasFilas = [];
+    }
+
     cargarTabla() {
+        if (!this.periodoActivo) return;
         this.cargando = true;
         this.error = '';
-        this.http.get<any>(`${API}/bancos/${this.tablaActiva}?mes=${this.mesActivo}`).subscribe({
+        const { mes, anio } = this.periodoActivo;
+        this.http.get<any>(`${API}/bancos/${this.tablaActiva}?mes=${mes}&anio=${anio}`).subscribe({
             next: r => {
                 this.cargando = false;
                 if (r.estado === 'OK') {
@@ -125,32 +187,64 @@ export class AnalisisBancariosComponent implements OnInit {
         });
     }
 
+    sincronizar() {
+        if (!this.periodoActivo) return;
+        this.cargandoSync = true;
+        this.mensajeSync = '';
+        const { mes, anio } = this.periodoActivo;
+        this.http.post<any>(`${API}/bancos/sync?mes=${mes}&anio=${anio}`, {}).subscribe({
+            next: r => {
+                this.cargandoSync = false;
+                this.mensajeSync = r.mensaje || r.detalle || 'Sincronización completada';
+                this.errorSync = r.estado !== 'OK';
+                if (r.estado === 'OK') { this.cargarMeses(); this.cargarTabla(); }
+            },
+            error: () => {
+                this.cargandoSync = false;
+                this.mensajeSync = 'Error de conexión';
+                this.errorSync = true;
+            }
+        });
+    }
+
+    get todosFiltradosFecha(): any[] {
+        if (!this.fechaDesde && !this.fechaHasta) return this.todos;
+        const desde = this.fechaDesde ? new Date(this.fechaDesde) : null;
+        const hasta = this.fechaHasta ? new Date(this.fechaHasta + 'T23:59:59') : null;
+        return this.todos.filter(r => {
+            if (!r.fecha) return true;
+            const f = new Date(r.fecha);
+            if (desde && f < desde) return false;
+            if (hasta && f > hasta) return false;
+            return true;
+        });
+    }
+
     categorizar() {
         const cats: Record<CatKey, CategorizadoRow[]> = {
-            prosegur: [],
-            ventas_credito: [],
-            ingresos_id: [],
-            sin_id: [],
-            otros: [],
+            prosegur: [], ventas_credito: [], ingresos_id: [], sin_id: [],
         };
+        const allFilas: CategorizadoRow[] = [];
 
         const tablaLabel = TABLAS.find(t => t.key === this.tablaActiva)?.label || this.tablaActiva;
         const esIBK = this.tablaActiva === 'ibk_1';
         const esBBVA = this.tablaActiva === 'bbva_1' || this.tablaActiva === 'bbva_lm_1';
 
-        for (const r of this.todos) {
+        for (const r of this.todosFiltradosFecha) {
             const desc = (r.descripcion || '').toUpperCase();
             const clasi = (r.clasificacion || '').toUpperCase();
             const idPop = (r.id_pop || '').trim();
+            const ingreso = parseFloat(r.ingreso) || 0;
+            const egreso = Math.abs(parseFloat(r.egreso) || 0);
 
             const fila: CategorizadoRow = {
-                categoria: 'otros',
+                categoria: 'sin_id',
                 nro_cheque: r.nro_cheque || '',
                 fecha: r.fecha || '',
                 descripcion: r.descripcion || '',
                 detalle: r.detalle || '',
-                ingreso: r.ingreso || 0,
-                egreso: r.egreso || 0,
+                ingreso,
+                egreso,
                 sede: r.sede || '',
                 id_pop: idPop,
                 clasificacion: r.clasificacion || '',
@@ -158,78 +252,132 @@ export class AnalisisBancariosComponent implements OnInit {
             };
 
             // Prosegur
-            if ((esIBK && desc.includes('ABONO MAQUINA RECAU')) ||
+            if ((esIBK && (desc.includes('ABONO MAQUINA RECAU') || desc.includes('N/A VARIOS'))) ||
                 (esBBVA && desc.includes('PROSEGUR'))) {
                 fila.categoria = 'prosegur';
-                cats.prosegur.push(fila);
+                cats['prosegur'].push(fila);
+                allFilas.push(fila);
                 continue;
             }
 
             // Ventas al crédito
             const clasiLower = clasi.toLowerCase();
-
             if (clasiLower.includes('ventas al credito') || clasiLower.includes('ventas al crédito') || fila.sede?.includes('©')) {
                 fila.categoria = 'ventas_credito';
-                cats.ventas_credito.push(fila);
+                cats['ventas_credito'].push(fila);
+                allFilas.push(fila);
                 continue;
             }
 
             // Sin ID POP
             if (!idPop || idPop === 'null' || idPop === 'None') {
                 fila.categoria = 'sin_id';
-                cats.sin_id.push(fila);
+                cats['sin_id'].push(fila);
+                allFilas.push(fila);
                 continue;
             }
 
-            // Con ID POP (ingresos identificados)
-            if (idPop) {
-                fila.categoria = 'ingresos_id';
-                cats.ingresos_id.push(fila);
-                continue;
-            }
-
-            cats.otros.push(fila);
+            // Con ID POP
+            fila.categoria = 'ingresos_id';
+            cats['ingresos_id'].push(fila);
+            allFilas.push(fila);
         }
 
         this.categorias = cats;
+        this.todasFilas = allFilas;
 
-        // KPIs
-        for (const cat of Object.keys(cats) as CatKey[]) {
+        const catKeysList: CatKey[] = ['prosegur', 'ventas_credito', 'ingresos_id', 'sin_id'];
+        for (const cat of catKeysList) {
             this.kpis[cat] = {
                 total: cats[cat].length,
-                monto: cats[cat].reduce((s, r) => s + r.ingreso, 0)
+                monto: cats[cat].reduce((s, r) => s + r.ingreso, 0),
             };
         }
+
+        const totalIngresos = allFilas.reduce((s, r) => s + r.ingreso, 0);
+        const totalEgresos = allFilas.reduce((s, r) => s + r.egreso, 0);
+        const conId = allFilas.filter(r => r.id_pop && r.id_pop !== 'null' && r.id_pop !== 'None' && r.id_pop !== '');
+        const sinId = allFilas.filter(r => !r.id_pop || r.id_pop === 'null' || r.id_pop === 'None' || r.id_pop === '');
+
+        this.kpiGeneral = {
+            registros: allFilas.length,
+            totalIngresos,
+            totalEgresos,
+            neto: totalIngresos - totalEgresos,
+            conIdPop: conId.length,
+            sinIdPop: sinId.length,
+            montoConId: conId.reduce((s, r) => s + r.ingreso, 0),
+            montoSinId: sinId.reduce((s, r) => s + r.ingreso, 0),
+        };
+
+        const sinIdRows = cats['sin_id'];
+        const soloIngresos = sinIdRows.filter(r => r.ingreso > 0);
+        const soloEgresos = sinIdRows.filter(r => r.egreso > 0);
+        this.sinIdDesglose = {
+            ingresos: { total: soloIngresos.length, monto: soloIngresos.reduce((s, r) => s + r.ingreso, 0) },
+            egresos: { total: soloEgresos.length, monto: soloEgresos.reduce((s, r) => s + r.egreso, 0) },
+        };
     }
 
-    setCatActiva(cat: CatKey) { this.catActiva = cat; }
+    onFechaChange() { this.categorizar(); }
+    limpiarFechas() { this.fechaDesde = ''; this.fechaHasta = ''; this.categorizar(); }
+    get hayFiltroFecha(): boolean { return !!(this.fechaDesde || this.fechaHasta); }
+
+    setCatActiva(cat: ViewKey) {
+        this.catActiva = cat;
+        this.sinIdFiltro = 'todos';
+        this.busqueda = '';
+    }
+
+    setSinIdFiltro(filtro: 'ingresos' | 'egresos') {
+        this.sinIdFiltro = this.sinIdFiltro === filtro ? 'todos' : filtro;
+        this.busqueda = '';
+    }
 
     get registrosActivos(): CategorizadoRow[] {
-        return this.categorias[this.catActiva] || [];
+        let rows: CategorizadoRow[];
+        if (this.catActiva === 'todos') {
+            rows = [...this.todasFilas];
+        } else {
+            rows = this.categorias[this.catActiva as CatKey] || [];
+            if (this.catActiva === 'sin_id') {
+                if (this.sinIdFiltro === 'ingresos') rows = rows.filter(r => r.ingreso > 0);
+                if (this.sinIdFiltro === 'egresos') rows = rows.filter(r => r.egreso > 0);
+            }
+        }
+        const q = this.busqueda.trim().toLowerCase();
+        if (q) {
+            rows = rows.filter(r =>
+                [r.nro_cheque, r.fecha, r.descripcion, r.detalle,
+                r.sede, r.id_pop, r.clasificacion, r.categoria,
+                r.ingreso.toString(), r.egreso.toString()]
+                    .some(v => (v || '').toString().toLowerCase().includes(q))
+            );
+        }
+        return rows;
     }
+
+    badgeMonto(cat: ViewKey): string {
+        if (cat === 'todos') return this.fmtK(this.kpiGeneral.totalIngresos);
+        return this.fmtK(this.kpis[cat as CatKey]?.monto || 0);
+    }
+
+    get periodoLabel(): string { return this.periodoActivo?.label || ''; }
 
     get tablaActivaLabel(): string {
         return TABLAS.find(t => t.key === this.tablaActiva)?.label || this.tablaActiva;
     }
 
-    get tablaActivaColor(): string {
-        return TABLAS.find(t => t.key === this.tablaActiva)?.color || '#1e3a5f';
-    }
-
     fmt(n: number) {
         return 'S/ ' + n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
+
     fmtK(n: number) {
         if (n >= 1_000_000) return 'S/ ' + (n / 1_000_000).toFixed(1) + 'M';
         if (n >= 1_000) return 'S/ ' + (n / 1_000).toFixed(0) + 'K';
         return 'S/ ' + n.toFixed(0);
     }
-
-    catLabels: Record<CatKey, { label: string, icon: string, color: string }> = {
-        sin_id: { label: 'Sin ID POP', icon: '❓', color: '#dc2626' },
-        prosegur: { label: 'Prosegur', icon: '🔒', color: '#7c3aed' },
-        ventas_credito: { label: 'Ventas al Crédito', icon: '💳', color: '#0891b2' },
-        ingresos_id: { label: 'Con ID POP', icon: '✅', color: '#16a34a' },
-        otros: { label: 'Otros', icon: '📦', color: '#64748b' },
-    };
+    get montoActivo(): number {
+        return this.registrosActivos.reduce((s, r) => s + r.ingreso, 0);
+    }
 }

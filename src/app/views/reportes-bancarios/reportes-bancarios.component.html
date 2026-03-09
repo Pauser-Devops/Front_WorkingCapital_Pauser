@@ -1,148 +1,318 @@
-<div class="rb-container">
+<div class="rb-wrap">
 
   <!-- HEADER -->
   <div class="rb-header">
-    <div class="rb-title">
-      <span class="rb-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2H2v10l9.29 9.29a1 1 0 0 0 1.41 0l7.59-7.59a1 1 0 0 0 0-1.41L12 2z" />
-          <circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none" />
+    <div class="rb-header-left">
+      <div class="rb-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2" />
+          <line x1="8" y1="21" x2="16" y2="21" />
+          <line x1="12" y1="17" x2="12" y2="21" />
         </svg>
-      </span>
+      </div>
       <div>
-        <h1>Reportes Bancarios</h1>
-        <p>{{ anioActual }} — Selecciona un mes para ver los movimientos</p>
+        <div class="rb-title">Reporte Bancario</div>
+        <div class="rb-subtitle">Resumen consolidado · {{ periodoLabel }}</div>
       </div>
     </div>
-  </div>
 
-  <!-- MESES -->
-  <div class="rb-meses">
-    <button *ngFor="let mes of meses" class="mes-btn" [class.activo]="mesSeleccionado === mes"
-      [class.con-data]="tieneDatos(mes)" (click)="seleccionarMes(mes)">
-      <span class="mes-nombre">{{ mes }}</span>
-      <span class="mes-dot" *ngIf="tieneDatos(mes)"></span>
-    </button>
-  </div>
-
-  <!-- PANEL PRINCIPAL -->
-  <div class="rb-panel" *ngIf="mesSeleccionado">
-
-    <!-- BARRA ACCIONES -->
-    <div class="rb-actions">
-      <div class="rb-mes-titulo">
-        <h2>{{ mesSeleccionado }} {{ anioActual }}</h2>
-      </div>
-      <button class="sync-btn" (click)="sincronizar()" [disabled]="cargandoSync">
-        <span *ngIf="!cargandoSync">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
-            style="vertical-align: middle;">
-            <path d="M21 2v6h-6" />
-            <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
-            <path d="M3 22v-6h6" />
-            <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
-          </svg>
-          Sincronizar desde SharePoint
-        </span>
-        <span *ngIf="cargandoSync" class="spinner">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-            <circle cx="12" cy="12" r="10" stroke-opacity="0.25" />
-            <path d="M12 2a10 10 0 0 1 10 10" />
-          </svg>
-          Sincronizando...
-        </span>
+    <!-- PERIODOS -->
+    <div class="rb-periodos">
+      <button class="rb-periodo-btn" *ngFor="let p of periodos" [class.activo]="periodoActivo?.label === p.label"
+        (click)="seleccionarPeriodo(p)">
+        {{ p.label }}
       </button>
     </div>
-
-    <!-- MENSAJE SYNC -->
-    <div class="sync-msg" *ngIf="mensajeSync" [class.error]="errorSync" [class.ok]="!errorSync">
-      {{ mensajeSync }}
-    </div>
-
-    <!-- TABS BANCOS -->
-    <div class="rb-tabs">
-      <button *ngFor="let banco of bancos" class="tab-btn" [class.activo]="bancoSeleccionado.key === banco.key"
-        [style.--banco-color]="banco.color" (click)="seleccionarBanco(banco)">
-        {{ banco.label }}
-      </button>
-    </div>
-
-    <!-- KPIs -->
-    <div class="rb-kpis" *ngIf="registros.length > 0">
-      <div class="kpi">
-        <span class="kpi-label">Registros</span>
-        <span class="kpi-valor neutral">{{ totalRegistros | number }}</span>
-      </div>
-      <div class="kpi">
-        <span class="kpi-label">Total Ingresos</span>
-        <span class="kpi-valor positivo">S/ {{ formatNum(totalIngreso) }}</span>
-      </div>
-      <div class="kpi">
-        <span class="kpi-label">Total Egresos</span>
-        <span class="kpi-valor negativo">S/ {{ formatNum(totalEgreso) }}</span>
-      </div>
-      <div class="kpi">
-        <span class="kpi-label">Neto</span>
-        <span class="kpi-valor" [class.positivo]="totalIngreso - totalEgreso >= 0"
-          [class.negativo]="totalIngreso - totalEgreso < 0">
-          S/ {{ formatNum(totalIngreso - totalEgreso) }}
-        </span>
-      </div>
-    </div>
-
-    <!-- LOADING -->
-    <div class="rb-loading" *ngIf="cargandoTabla">
-      <div class="loading-spinner"></div>
-      <p>Cargando datos...</p>
-    </div>
-
-    <!-- SIN DATOS -->
-    <div class="rb-empty" *ngIf="!cargandoTabla && registros.length === 0">
-      <span>📭</span>
-      <p>Sin datos para <strong>{{ bancoSeleccionado.label }}</strong> en {{ mesSeleccionado }}</p>
-      <small>Sincroniza desde SharePoint para cargar la data</small>
-    </div>
-
-    <!-- TABLA -->
-    <div class="rb-tabla-wrap" *ngIf="!cargandoTabla && registros.length > 0">
-      <table class="rb-tabla">
-        <thead>
-          <tr>
-            <th *ngFor="let col of columnas" [class.num]="esCifra(col)">
-              {{ col.replace('_', ' ') | uppercase }}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let row of registros">
-            <td *ngFor="let col of columnas" [class.num]="esCifra(col)"
-              [class.ingreso]="col === 'ingreso' && row[col] > 0" [class.egreso]="col === 'egreso' && row[col] > 0">
-              <ng-container *ngIf="esFecha(col)">{{ formatFecha(row[col]) }}</ng-container>
-              <ng-container *ngIf="esCifra(col)">{{ row[col] > 0 ? formatNum(row[col]) : '—' }}</ng-container>
-              <ng-container *ngIf="!esFecha(col) && !esCifra(col)">{{ row[col] || '—' }}</ng-container>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
   </div>
 
-  <!-- ESTADO INICIAL -->
-  <div class="rb-inicio" *ngIf="!mesSeleccionado">
-    <span>
-      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="4" width="18" height="18" rx="2" />
-        <line x1="16" y1="2" x2="16" y2="6" />
-        <line x1="8" y1="2" x2="8" y2="6" />
-        <line x1="3" y1="10" x2="21" y2="10" />
-        <rect x="7" y="14" width="3" height="3" rx="0.5" fill="currentColor" stroke="none" />
-      </svg>
-    </span>
-    <p>Selecciona un mes para ver los movimientos bancarios</p>
+  <!-- LOADING -->
+  <div class="rb-loading" *ngIf="cargando">
+    <div class="rb-spinner"></div>
+    <span>Cargando datos de todos los bancos...</span>
   </div>
+
+  <!-- ERROR -->
+  <div class="rb-error" *ngIf="error">{{ error }}</div>
+
+  <ng-container *ngIf="!cargando && filas.length > 0">
+
+    <!-- FILTROS ENTIDAD + BANCO -->
+    <div class="rb-filtros">
+      <div class="rb-filtros-grupo">
+        <span class="rb-filtros-label">Entidad</span>
+        <div class="rb-filtros-btns">
+          <button class="rb-filtro-btn" [class.activo]="filtroEntidad === 'todas' && filtroBanco === 'todos'"
+            (click)="setFiltroEntidad('todas')">
+            Todas
+          </button>
+          <button class="rb-filtro-btn entidad" *ngFor="let e of entidades"
+            [class.activo]="filtroEntidad === e && filtroBanco === 'todos'" [style.--ec]="colorEntidad(e)"
+            (click)="setFiltroEntidad(e)">
+            {{ e }}
+          </button>
+        </div>
+      </div>
+
+      <div class="rb-filtros-sep"></div>
+
+      <div class="rb-filtros-grupo">
+        <span class="rb-filtros-label">Banco</span>
+        <div class="rb-filtros-btns">
+          <button class="rb-filtro-btn" [class.activo]="filtroBanco === 'todos'" (click)="setFiltroBanco('todos')">
+            Todos
+          </button>
+          <button class="rb-filtro-btn banco" *ngFor="let b of bancosDeEntidad" [class.activo]="filtroBanco === b"
+            [style.--bc]="colorBanco(b)" (click)="setFiltroBanco(b)">
+            {{ labelBanco(b) }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPIs PRINCIPALES -->
+    <div class="rb-kpis">
+      <div class="rb-kpi ingresos">
+        <div class="rb-kpi-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+            <polyline points="17 6 23 6 23 12" />
+          </svg>
+        </div>
+        <div>
+          <div class="rb-kpi-label">Total Ingresos</div>
+          <div class="rb-kpi-val">{{ fmt(kpis.totalIngresos) }}</div>
+          <div class="rb-kpi-sub">{{ filasFiltradas.length | number }} registros</div>
+        </div>
+      </div>
+
+      <div class="rb-kpi egresos">
+        <div class="rb-kpi-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" />
+            <polyline points="17 18 23 18 23 12" />
+          </svg>
+        </div>
+        <div>
+          <div class="rb-kpi-label">Total Egresos</div>
+          <div class="rb-kpi-val">{{ fmt(kpis.totalEgresos) }}</div>
+          <div class="rb-kpi-sub">&nbsp;</div>
+        </div>
+      </div>
+
+      <div class="rb-kpi neto" [class.pos]="kpis.neto >= 0" [class.neg]="kpis.neto < 0">
+        <div class="rb-kpi-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="1" x2="12" y2="23" />
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+          </svg>
+        </div>
+        <div>
+          <div class="rb-kpi-label">Neto</div>
+          <div class="rb-kpi-val">{{ fmt(kpis.neto) }}</div>
+          <div class="rb-kpi-sub">Ingresos − Egresos</div>
+        </div>
+      </div>
+
+      <div class="rb-kpi conciliacion">
+        <div class="rb-kpi-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
+        </div>
+        <div>
+          <div class="rb-kpi-label">Conciliación</div>
+          <div class="rb-kpi-val">{{ kpis.pctConciliado }}%</div>
+          <div class="rb-kpi-sub">{{ kpis.conciliados | number }} / {{ (kpis.conciliados + kpis.pendientes) | number }}
+          </div>
+        </div>
+        <!-- Barra de progreso -->
+        <div class="rb-kpi-prog">
+          <div class="rb-kpi-prog-fill" [style.width.%]="kpis.pctConciliado"></div>
+        </div>
+      </div>
+
+      <div class="rb-kpi alerta">
+        <div class="rb-kpi-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+        </div>
+        <div>
+          <div class="rb-kpi-label">Sin ID POP</div>
+          <div class="rb-kpi-val">{{ kpis.sinIdPop | number }}</div>
+          <div class="rb-kpi-sub">{{ fmtK(kpis.montoSinId) }}</div>
+        </div>
+      </div>
+
+      <div class="rb-kpi duplicados">
+        <div class="rb-kpi-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+          </svg>
+        </div>
+        <div>
+          <div class="rb-kpi-label">ID POP Duplicados</div>
+          <div class="rb-kpi-val">{{ kpis.idPopDuplicados | number }}</div>
+          <div class="rb-kpi-sub">IDs con más de 1 registro</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRÁFICOS FILA 1: Categorías + Conciliación + Bancos -->
+    <div class="rb-charts-row">
+
+      <!-- Distribución categorías -->
+      <div class="rb-chart-card">
+        <div class="rb-chart-header">
+          <span class="rb-chart-title">Distribución por Categoría</span>
+          <span class="rb-chart-sub">Monto de ingresos</span>
+        </div>
+        <div class="rb-chart-body">
+          <canvas #chartCategoria></canvas>
+        </div>
+      </div>
+
+      <!-- Conciliado vs Pendiente -->
+      <div class="rb-chart-card">
+        <div class="rb-chart-header">
+          <span class="rb-chart-title">Conciliado vs Pendiente</span>
+          <span class="rb-chart-sub">Por número de registros</span>
+        </div>
+        <div class="rb-chart-body">
+          <canvas #chartConciliado></canvas>
+        </div>
+        <!-- Resumen debajo -->
+        <div class="rb-conc-resumen">
+          <div class="rb-conc-item verde">
+            <span class="rb-conc-dot"></span>
+            <span>Conciliados</span>
+            <strong>{{ kpis.conciliados | number }}</strong>
+          </div>
+          <div class="rb-conc-item rojo">
+            <span class="rb-conc-dot"></span>
+            <span>Pendientes</span>
+            <strong>{{ kpis.pendientes | number }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ingresos/Egresos por banco -->
+      <div class="rb-chart-card wide">
+        <div class="rb-chart-header">
+          <span class="rb-chart-title">Ingresos y Egresos por Banco</span>
+          <span class="rb-chart-sub">Comparativo</span>
+        </div>
+        <div class="rb-chart-body tall">
+          <canvas #chartBancos></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- GRÁFICO EVOLUCIÓN -->
+    <div class="rb-chart-card full">
+      <div class="rb-chart-header">
+        <span class="rb-chart-title">Evolución por Día del Mes</span>
+        <span class="rb-chart-sub">Ingresos y egresos diarios · {{ periodoLabel }}</span>
+      </div>
+      <div class="rb-chart-body tall">
+        <canvas #chartEvolucion></canvas>
+      </div>
+    </div>
+
+    <!-- FILA INFERIOR: Sin ID por banco + Top Duplicados -->
+    <div class="rb-bottom-row">
+
+      <!-- Sin ID POP por banco -->
+      <div class="rb-table-card">
+        <div class="rb-table-header">
+          <span class="rb-table-title">Sin ID POP por Banco</span>
+          <span class="rb-table-badge rojo">{{ kpis.sinIdPop }} registros</span>
+        </div>
+        <div class="rb-table-empty" *ngIf="sinIdPorBanco.length === 0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
+            stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
+          <p>Sin registros pendientes</p>
+        </div>
+        <table class="rb-mini-tabla" *ngIf="sinIdPorBanco.length > 0">
+          <thead>
+            <tr>
+              <th>Banco</th>
+              <th class="num">Registros</th>
+              <th class="num">Monto</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of sinIdPorBanco">
+              <td><span class="rb-banco-chip">{{ r.banco }}</span></td>
+              <td class="num alerta-num">{{ r.count }}</td>
+              <td class="num">{{ fmt(r.monto) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Top ID POP duplicados -->
+      <div class="rb-table-card">
+        <div class="rb-table-header">
+          <span class="rb-table-title">Top ID POP Duplicados</span>
+          <span class="rb-table-badge naranja">{{ kpis.idPopDuplicados }} IDs</span>
+        </div>
+        <div class="rb-table-empty" *ngIf="topDuplicados.length === 0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
+            stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
+          <p>Sin duplicados detectados</p>
+        </div>
+        <table class="rb-mini-tabla" *ngIf="topDuplicados.length > 0">
+          <thead>
+            <tr>
+              <th>ID POP</th>
+              <th class="num">Apariciones</th>
+              <th class="num">Monto Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of topDuplicados">
+              <td class="id-pop-cell">{{ r.id_pop }}</td>
+              <td class="num">
+                <span class="rb-count-badge">{{ r.count }}</span>
+              </td>
+              <td class="num">{{ fmt(r.monto) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </ng-container>
+
+  <!-- EMPTY -->
+  <div class="rb-empty" *ngIf="!cargando && filas.length === 0 && periodoActivo">
+    <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#94a3b8"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 12h-6l-2 3h-4l-2-3H2" />
+      <path
+        d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+    </svg>
+    <p>Sin datos para {{ periodoLabel }}</p>
+  </div>
+
 </div>
