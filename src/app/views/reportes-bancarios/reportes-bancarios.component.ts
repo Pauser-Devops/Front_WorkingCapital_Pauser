@@ -344,7 +344,7 @@ export class ReportesBancariosComponent implements OnInit, OnDestroy, AfterViewI
         // 1. Categorías
         if (this.chartCategoriaRef?.nativeElement) {
             const cats    = ['sin_id', 'ingresos_id', 'prosegur', 'ventas_credito', 'solo_monto'];
-            const labels  = ['Pendientes', 'Con ID POP', 'Prosegur', 'Ventas Crédito', 'Otros Bancos'];
+            const labels  = ['Ingresos Pendientes', 'Ingresos Conciliados', 'Prosegur', 'Ventas Crédito', 'Otros Bancos'];
             const colores = ['#dc2626', '#16a34a', '#e6e204', '#0891b2', '#94a3b8'];
             this.charts[0] = new Chart(this.chartCategoriaRef.nativeElement, {
                 type: 'doughnut',

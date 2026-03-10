@@ -2,21 +2,22 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import * as XLSX from 'xlsx';
 
 const API = environment.apiUrl;
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
   'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 interface RegistroComp {
-  id_pop:        string;
+  id_pop:         string;
   fecha_registro: string;
-  sucursal:      string;
-  entidad:       string;
-  monto:         number;
-  banco_tabla:   string;
-  conciliado:    boolean;
-  estado:        'igual' | 'eliminado' | 'nuevo' | 'modificado';
-  diferencias?:  string[];
+  sucursal:       string;
+  entidad:        string;
+  monto:          number;
+  banco_tabla:    string;
+  conciliado:     boolean;
+  estado:         'igual' | 'eliminado' | 'nuevo' | 'modificado';
+  diferencias?:   string[];
 }
 
 @Component({
@@ -31,24 +32,18 @@ export class ComparadorIngresosComponent {
   mesSeleccionado: string | null = null;
   mesesConData: string[] = [];
 
-  // Estado del flujo
   paso: 1 | 2 | 3 = 1;
-
-  // Archivo subido
   archivoNombre = '';
   cargandoArchivo = false;
   errorArchivo    = '';
 
-  // Datos
-  registrosExcel: any[] = [];   // del CSV subido (snapshot anterior)
-  registrosBD:    any[] = [];   // de la BD actual
+  registrosExcel: any[] = [];
+  registrosBD:    any[] = [];
   cargandoBD      = false;
 
-  // Resultado comparación
   resultados: RegistroComp[] = [];
   filtroVista: 'todos' | 'eliminado' | 'nuevo' | 'modificado' | 'igual' = 'todos';
 
-  // Resumen
   totalElim = 0;
   totalNuev = 0;
   totalMod  = 0;
@@ -68,18 +63,14 @@ export class ComparadorIngresosComponent {
 
   seleccionarMes(mes: string) {
     this.mesSeleccionado = mes;
-    this.paso = 1;
-    this.archivoNombre   = '';
-    this.registrosExcel  = [];
-    this.registrosBD     = [];
-    this.resultados      = [];
-    this.errorArchivo    = '';
+    this.reiniciar();
   }
 
   onArchivoSeleccionado(event: Event) {
     const input = event.target as HTMLInputElement;
     const file  = input.files?.[0];
     if (!file) return;
+
     this.archivoNombre   = file.name;
     this.cargandoArchivo = true;
     this.errorArchivo    = '';
@@ -87,49 +78,21 @@ export class ComparadorIngresosComponent {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const text = e.target?.result as string;
-        this.registrosExcel = this.parsearCSV(text);
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        
+        this.registrosExcel = XLSX.utils.sheet_to_json(worksheet, { range: 3 });
         this.cargandoArchivo = false;
         this.paso = 2;
       } catch (err) {
         this.cargandoArchivo = false;
-        this.errorArchivo = 'No se pudo leer el archivo. Asegúrate de subir el CSV exportado desde esta app.';
+        this.errorArchivo = 'Error al procesar el Excel. Usa el archivo exportado de la App.';
       }
     };
-    reader.readAsText(file, 'utf-8');
+    reader.readAsArrayBuffer(file);
     input.value = '';
-  }
-
-  parsearCSV(text: string): any[] {
-    // Remover BOM si existe
-    const clean = text.startsWith('\ufeff') ? text.slice(1) : text;
-    const lines  = clean.split('\n').filter(l => l.trim());
-    if (lines.length < 2) throw new Error('CSV vacío');
-
-    const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
-    const rows: any[] = [];
-
-    for (let i = 1; i < lines.length; i++) {
-      const vals = this.splitCSVLine(lines[i]);
-      const obj: any = {};
-      headers.forEach((h, idx) => { obj[h] = vals[idx] || ''; });
-      rows.push(obj);
-    }
-    return rows;
-  }
-
-  splitCSVLine(line: string): string[] {
-    const result: string[] = [];
-    let current = '';
-    let inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i];
-      if (ch === '"') { inQuotes = !inQuotes; }
-      else if (ch === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
-      else { current += ch; }
-    }
-    result.push(current.trim());
-    return result;
   }
 
   cargarBDYComparar() {
@@ -151,8 +114,8 @@ export class ComparadorIngresosComponent {
   comparar() {
     const mapExcel = new Map<string, any>();
     for (const r of this.registrosExcel) {
-      const id = String(r['ID POP'] || '').trim();
-      if (id) mapExcel.set(id, r);
+      const id = String(r['ID POP'] || r['id_pop'] || '').trim();
+      if (id && id !== 'undefined') mapExcel.set(id, r);
     }
 
     const mapBD = new Map<string, any>();
@@ -163,66 +126,68 @@ export class ComparadorIngresosComponent {
 
     const resultado: RegistroComp[] = [];
 
-    // Registros del Excel — comparar con BD
     for (const [id, excelRow] of mapExcel) {
       const bdRow = mapBD.get(id);
+      
+      const eMonto    = parseFloat(excelRow['MONTO (S/)'] || excelRow['monto'] || 0);
+      const eSucursal = String(excelRow['SUCURSAL'] || excelRow['sucursal'] || '').trim();
+      const eEntidad  = String(excelRow['ENTIDAD']  || excelRow['entidad']  || '').trim();
+      const eBanco    = String(excelRow['BANCO']    || excelRow['banco_tabla'] || '').trim();
+      const eFecha    = excelRow['FECHA REGISTRO'] || excelRow['fecha_voucher'] || '—';
+
       if (!bdRow) {
-        // Está en Excel pero NO en BD → fue eliminado
         resultado.push({
-          id_pop:         id,
-          fecha_registro: excelRow['Fecha Registro'] || '—',
-          sucursal:       excelRow['Sucursal']        || '—',
-          entidad:        excelRow['Entidad']         || '—',
-          monto:          parseFloat(excelRow['Monto']) || 0,
-          banco_tabla:    excelRow['Banco']           || '—',
-          conciliado:     excelRow['Estado Conciliación'] === 'Conciliado',
+          id_pop: id,
+          fecha_registro: eFecha,
+          sucursal: eSucursal,
+          entidad: eEntidad,
+          monto: eMonto,
+          banco_tabla: eBanco,
+          conciliado: excelRow['CONCILIADO'] === 'Sí',
           estado: 'eliminado',
         });
       } else {
-        // Está en ambos — revisar diferencias clave
         const diffs: string[] = [];
-        const montoExcel = parseFloat(excelRow['Monto']) || 0;
-        const montoBD    = bdRow.monto || 0;
-        if (Math.abs(montoExcel - montoBD) > 0.01)
-          diffs.push(`Monto: ${montoExcel} → ${montoBD}`);
-        if ((excelRow['Sucursal'] || '') !== (bdRow.sucursal || ''))
-          diffs.push(`Sucursal: ${excelRow['Sucursal']} → ${bdRow.sucursal}`);
-        if ((excelRow['Entidad'] || '') !== (bdRow.entidad || ''))
-          diffs.push(`Entidad: ${excelRow['Entidad']} → ${bdRow.entidad}`);
-        if ((excelRow['Banco'] || '') !== (bdRow.banco_tabla || ''))
-          diffs.push(`Banco: ${excelRow['Banco']} → ${bdRow.banco_tabla}`);
+        const montoBD = bdRow.monto || 0;
+
+        if (Math.abs(eMonto - montoBD) > 0.01)
+          diffs.push(`Monto: ${eMonto} → ${montoBD}`);
+        if (eSucursal !== (bdRow.sucursal || '').trim())
+          diffs.push(`Sucursal: ${eSucursal} → ${bdRow.sucursal}`);
+        if (eEntidad !== (bdRow.entidad || '').trim())
+          diffs.push(`Entidad: ${eEntidad} → ${bdRow.entidad}`);
+        if (eBanco !== (bdRow.banco_tabla || '').trim())
+          diffs.push(`Banco: ${eBanco} → ${bdRow.banco_tabla}`);
 
         resultado.push({
-          id_pop:         id,
-          fecha_registro: bdRow.fecha_registro ? String(bdRow.fecha_registro).slice(0,10) : excelRow['Fecha Registro'] || '—',
-          sucursal:       bdRow.sucursal    || '—',
-          entidad:        bdRow.entidad     || '—',
-          monto:          montoBD,
-          banco_tabla:    bdRow.banco_tabla || '—',
-          conciliado:     bdRow.conciliado,
+          id_pop: id,
+          fecha_registro: bdRow.fecha_registro ? String(bdRow.fecha_registro).slice(0,10) : eFecha,
+          sucursal: bdRow.sucursal || '—',
+          entidad: bdRow.entidad || '—',
+          monto: montoBD,
+          banco_tabla: bdRow.banco_tabla || '—',
+          conciliado: bdRow.conciliado,
           estado: diffs.length > 0 ? 'modificado' : 'igual',
           diferencias: diffs,
         });
       }
     }
 
-    // Registros en BD que NO estaban en Excel → nuevos
     for (const [id, bdRow] of mapBD) {
       if (!mapExcel.has(id)) {
         resultado.push({
-          id_pop:         id,
+          id_pop: id,
           fecha_registro: bdRow.fecha_registro ? String(bdRow.fecha_registro).slice(0,10) : '—',
-          sucursal:       bdRow.sucursal    || '—',
-          entidad:        bdRow.entidad     || '—',
-          monto:          bdRow.monto       || 0,
-          banco_tabla:    bdRow.banco_tabla || '—',
-          conciliado:     bdRow.conciliado,
+          sucursal: bdRow.sucursal || '—',
+          entidad: bdRow.entidad || '—',
+          monto: bdRow.monto || 0,
+          banco_tabla: bdRow.banco_tabla || '—',
+          conciliado: bdRow.conciliado,
           estado: 'nuevo',
         });
       }
     }
 
-    // Ordenar: eliminados primero, luego modificados, nuevos, igual
     const orden: Record<string,number> = { eliminado:0, modificado:1, nuevo:2, igual:3 };
     resultado.sort((a,b) => (orden[a.estado]||99) - (orden[b.estado]||99) || Number(a.id_pop) - Number(b.id_pop));
 
@@ -246,6 +211,7 @@ export class ComparadorIngresosComponent {
     this.registrosExcel = [];
     this.registrosBD    = [];
     this.resultados     = [];
+    this.errorArchivo   = '';
   }
 
   exportarEliminados() {

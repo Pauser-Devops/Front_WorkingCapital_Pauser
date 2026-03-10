@@ -1,36 +1,213 @@
-<div class="wk-loading" *ngIf="cargando"><div class="wk-loading-bar"></div></div>
-<div class="wk-error" *ngIf="error">{{ error }}</div>
+<div class="ing-wrap">
 
-<div class="ing-content">
-  <div class="ing-table-card">
-    <div class="ing-table-head">
-      <span class="ing-table-title">Ingresos 2026</span>
-      <span class="ing-table-sub">Montos en Soles (S/) — {{ fechas.length }} semanas</span>
+  <!-- HEADER -->
+  <div class="ing-header">
+    <div class="ing-header-left">
+      <div class="ing-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="1" x2="12" y2="23"/>
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+      </div>
+      <div>
+        <div class="ing-title">Ingresos</div>
+        <div class="ing-subtitle">Working Capital · Vista por fecha</div>
+      </div>
     </div>
-    <div class="ing-table-scroll">
-      <table class="ing-table">
-        <thead>
-          <tr>
-            <th class="ing-th-concepto">CONCEPTO</th>
-            <th class="ing-th-num" *ngFor="let f of fechas">{{ f }}</th>
-            <th class="ing-th-num">VARIACIÓN</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let f of filas" class="ing-row-{{f.tipo}}">
-            <td class="ing-td-concepto" [style.padding-left.px]="14 + f.indent * 18">
-              {{ f.nombre }}
-            </td>
-            <td class="ing-td-num" *ngFor="let m of f.montos"
-                [class.ing-neg]="m! < 0"
-                [class.ing-empty]="m === null">{{ fmt(m) }}</td>
-            <td class="ing-td-num"
-                [class.ing-neg]="f.variacion! < 0"
-                [class.ing-pos]="f.variacion! > 0"
-                [class.ing-empty]="f.variacion === null">{{ fmt(f.variacion) }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <button class="ing-btn-nueva" (click)="abrirPanel()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Nueva fecha
+    </button>
   </div>
+
+  <!-- LOADING -->
+  <div class="ing-loading" *ngIf="cargando">
+    <div class="ing-spinner"></div>
+    <span>Cargando datos...</span>
+  </div>
+
+  <!-- ERROR -->
+  <div class="ing-error" *ngIf="error && !cargando">{{ error }}</div>
+
+  <!-- TABLA PRINCIPAL -->
+  <div class="ing-tabla-wrap" *ngIf="!cargando && conceptos.length > 0">
+    <table class="ing-tabla">
+      <thead>
+        <tr>
+          <th class="ing-th-concepto">Concepto</th>
+          <th class="ing-th-fecha" *ngFor="let col of columnas; trackBy: trackByFecha">
+            {{ col.label }}
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <ng-container *ngFor="let c of conceptos; trackBy: trackById">
+
+          <!-- SECCIÓN -->
+          <tr *ngIf="esSeccion(c)" class="ing-row-seccion">
+            <td class="ing-td-seccion" [attr.colspan]="columnas.length + 1">{{ c.nombre }}</td>
+          </tr>
+
+          <!-- TOTAL -->
+          <tr *ngIf="esTotal(c)" class="ing-row-total">
+            <td class="ing-td-label total">{{ c.nombre }}</td>
+            <td class="ing-td-val total" *ngFor="let col of columnas; trackBy: trackByFecha">
+              {{ fmt(getTotal(c, col.fecha)) }}
+            </td>
+          </tr>
+
+          <!-- ITEM -->
+          <tr *ngIf="esItem(c)" class="ing-row-item" [class.auto]="esAuto(c)">
+            <td class="ing-td-label" [style.paddingLeft.px]="16 + (c.indent || 0) * 10">
+              {{ c.nombre }}
+              <span class="ing-badge-auto" *ngIf="esAuto(c)">BD</span>
+            </td>
+            <td class="ing-td-val"
+              *ngFor="let col of columnas; trackBy: trackByFecha"
+              (dblclick)="!esAuto(c) && iniciarEdicion(c.id, col.fecha)"
+              [class.editable]="!esAuto(c)"
+              [class.vacio]="getValor(c.id, col.fecha) === null">
+
+              <input *ngIf="esEditando(c.id, col.fecha)"
+                class="ing-input-celda" type="number"
+                [(ngModel)]="valorEditando"
+                (keydown.enter)="confirmarEdicion()"
+                (keydown.escape)="cancelarEdicion()"
+                (blur)="confirmarEdicion()"
+                autofocus />
+
+              <span *ngIf="!esEditando(c.id, col.fecha)">
+                {{ fmt(getValor(c.id, col.fecha)) }}
+              </span>
+            </td>
+          </tr>
+
+        </ng-container>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- EMPTY -->
+  <div class="ing-empty" *ngIf="!cargando && !error && columnas.length === 0">
+    <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none"
+      stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2"/>
+      <line x1="3" y1="9" x2="21" y2="9"/>
+      <line x1="3" y1="15" x2="21" y2="15"/>
+      <line x1="9" y1="3" x2="9" y2="21"/>
+    </svg>
+    <p>Sin datos aún · Agrega la primera fecha</p>
+    <button class="ing-btn-nueva" (click)="abrirPanel()">+ Nueva fecha</button>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PANEL LATERAL
+═══════════════════════════════════════════ -->
+<div class="ing-overlay" *ngIf="mostrarPanel" (click)="cerrarPanel()"></div>
+
+<div class="ing-panel" [class.abierto]="mostrarPanel">
+
+  <div class="ing-panel-header">
+    <div class="ing-panel-header-left">
+      <span class="ing-panel-title">
+        {{ fechaExistente ? 'Editar fecha' : 'Nueva fecha' }}
+      </span>
+      <span class="ing-badge-existente" *ngIf="fechaExistente">Editando</span>
+    </div>
+    <button class="ing-panel-close" (click)="cerrarPanel()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="ing-panel-body">
+
+    <!-- Fecha corte -->
+    <div class="ing-field">
+      <label class="ing-label">Fecha de corte</label>
+      <input class="ing-input" type="date" [(ngModel)]="nuevaFecha" (change)="onFechaChange()" />
+    </div>
+
+    <!-- Verificando -->
+    <div class="ing-loading-fecha" *ngIf="cargandoFecha">
+      <div class="ing-spinner-sm"></div>
+      <span>Verificando fecha...</span>
+    </div>
+
+    <!-- Aviso fecha existente -->
+    <div class="ing-aviso-existente" *ngIf="fechaExistente && !cargandoFecha">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      Esta fecha ya tiene datos. Edita y guarda para actualizar.
+    </div>
+
+    <!-- Contenido del panel (solo si hay fecha seleccionada) -->
+    <ng-container *ngIf="nuevaFecha && !cargandoFecha">
+
+      <!-- SECCIÓN BANCOS -->
+      <div class="ing-panel-seccion">SALDOS BANCOS</div>
+
+      <div class="ing-bancos-grid">
+        <div class="ing-banco-row" *ngFor="let c of conceptosBancoAuto">
+          <span class="ing-banco-label">{{ c.nombre }}</span>
+          <div class="ing-banco-val" [class.cargando]="calculandoBancos">
+            <div class="ing-spinner-sm" *ngIf="calculandoBancos"></div>
+            <span *ngIf="!calculandoBancos">
+              {{ valorBancoCalculado(c.id) > 0 ? fmt(valorBancoCalculado(c.id)) : '—' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <button class="ing-btn-calcular" (click)="calcularBancos()"
+        [disabled]="!nuevaFecha || calculandoBancos">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"/>
+          <polyline points="1 20 1 14 7 14"/>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </svg>
+        Recalcular desde BD
+      </button>
+
+      <!-- SECCIÓN MANUALES -->
+      <ng-container *ngIf="conceptosManuales.length > 0">
+        <div class="ing-panel-seccion" style="margin-top: 24px">INGRESOS MANUALES</div>
+
+        <div class="ing-manual-grid">
+          <div class="ing-manual-row" *ngFor="let c of conceptosManuales">
+            <label class="ing-manual-label">{{ c.nombre }}</label>
+            <input class="ing-input-manual" type="number" placeholder="0"
+              [value]="getValorManualPanel(c.id) ?? ''"
+              (input)="setValorManualPanel(c.id, $any($event.target).value)" />
+          </div>
+        </div>
+      </ng-container>
+
+    </ng-container>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="ing-panel-footer">
+    <button class="ing-btn-cancelar" (click)="cerrarPanel()">Cancelar</button>
+    <button class="ing-btn-guardar" (click)="guardarFecha()"
+      [disabled]="!nuevaFecha || guardandoFecha">
+      <div class="ing-spinner-sm" *ngIf="guardandoFecha"></div>
+      {{ guardandoFecha ? 'Guardando...' : (fechaExistente ? 'Actualizar' : 'Guardar fecha') }}
+    </button>
+  </div>
+
 </div>
