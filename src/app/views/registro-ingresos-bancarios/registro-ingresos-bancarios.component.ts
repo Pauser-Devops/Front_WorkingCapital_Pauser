@@ -4,9 +4,19 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { Output, EventEmitter } from '@angular/core';
+import * as XLSX from 'xlsx';
+
 const API = environment.apiUrl;
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+// Colores por estado IA (para colorear filas en el Excel)
+const COLOR_PAUSER      = 'C6EFCE';   // verde claro
+const COLOR_NO_PAUSER   = 'FFCCCC';   // rojo claro
+const COLOR_SIN_COMP    = 'FFF3CD';   // amarillo claro
+const COLOR_CONCILIADO  = 'E8F5E9';
+const COLOR_HEADER_BG   = '1E3A5F';
+const COLOR_TITLE_BG    = '2D5A8E';
 
 @Component({
   selector: 'app-registro-ingresos-bancarios',
@@ -39,7 +49,7 @@ export class RegistroIngresosBancariosComponent {
   entidades: string[] = [];
   bancos: string[] = [];
 
-  // KPIs (reactivos al filtro)
+  // KPIs
   totalRegistros = 0;
   conciliados = 0;
   sinConciliar = 0;
@@ -113,11 +123,11 @@ export class RegistroIngresosBancariosComponent {
           const setEnt = new Set<string>();
           const setBan = new Set<string>();
           for (const reg of this.registros) {
-            if (reg.entidad) setEnt.add(reg.entidad);
+            if (reg.entidad)     setEnt.add(reg.entidad);
             if (reg.banco_tabla) setBan.add(reg.banco_tabla);
           }
           this.entidades = [...setEnt].sort();
-          this.bancos = [...setBan].sort();
+          this.bancos    = [...setBan].sort();
           this.aplicarFiltro();
           this.cargarResumenIA();
         }
@@ -143,11 +153,9 @@ export class RegistroIngresosBancariosComponent {
   aplicarFiltro() {
     let data = [...this.registros];
 
-    // Estado conciliación
-    if (this.filtroEstado === 'conciliado') data = data.filter(r => r.conciliado);
+    if (this.filtroEstado === 'conciliado') data = data.filter(r =>  r.conciliado);
     else if (this.filtroEstado === 'pendiente') data = data.filter(r => !r.conciliado);
 
-    // Comprobante IA
     if (this.filtroComprobante === 'pauser')
       data = data.filter(r => this.indiceComprobantes[String(r.id_pop)] === true);
     else if (this.filtroComprobante === 'no_pauser')
@@ -155,25 +163,24 @@ export class RegistroIngresosBancariosComponent {
     else if (this.filtroComprobante === 'sin_comprobante')
       data = data.filter(r => !(String(r.id_pop) in this.indiceComprobantes));
 
-    // Entidad y banco
-    if (this.filtroEntidad !== 'todas') data = data.filter(r => r.entidad === this.filtroEntidad);
-    if (this.filtroBanco !== 'todos') data = data.filter(r => r.banco_tabla === this.filtroBanco);
+    if (this.filtroEntidad !== 'todas') data = data.filter(r => r.entidad   === this.filtroEntidad);
+    if (this.filtroBanco   !== 'todos') data = data.filter(r => r.banco_tabla === this.filtroBanco);
 
-    // Rango ID POP
     if (this.filtroIdPopMin) data = data.filter(r => Number(r.id_pop) >= Number(this.filtroIdPopMin));
     if (this.filtroIdPopMax) data = data.filter(r => Number(r.id_pop) <= Number(this.filtroIdPopMax));
 
-    // Rango fecha
     if (this.filtroFechaDesde)
       data = data.filter(r => r.fecha_registro && String(r.fecha_registro).slice(0, 10) >= this.filtroFechaDesde);
     if (this.filtroFechaHasta)
       data = data.filter(r => r.fecha_registro && String(r.fecha_registro).slice(0, 10) <= this.filtroFechaHasta);
 
-    // Búsqueda libre
     if (this.busqueda.trim()) {
-      const q = this.busqueda.trim().toLowerCase();
+      const q = this.busqueda.replace(/\s+/g, '').toLowerCase();
       data = data.filter(r =>
-        Object.values(r).some(v => v !== null && v !== undefined && String(v).toLowerCase().includes(q))
+        Object.values(r).some(v =>
+          v !== null && v !== undefined &&
+          String(v).replace(/\s+/g, '').toLowerCase().includes(q)
+        )
       );
     }
 
@@ -183,13 +190,13 @@ export class RegistroIngresosBancariosComponent {
   }
 
   calcularKPIs(data: any[]) {
-    this.totalRegistros = data.length;
-    this.conciliados = data.filter(r => r.conciliado).length;
-    this.sinConciliar = this.totalRegistros - this.conciliados;
-    this.pct = this.totalRegistros ? Math.round(this.conciliados / this.totalRegistros * 100) : 0;
-    this.montoTotal = data.reduce((s, r) => s + (r.monto || 0), 0);
+    this.totalRegistros  = data.length;
+    this.conciliados     = data.filter(r =>  r.conciliado).length;
+    this.sinConciliar    = this.totalRegistros - this.conciliados;
+    this.pct             = this.totalRegistros ? Math.round(this.conciliados / this.totalRegistros * 100) : 0;
+    this.montoTotal      = data.reduce((s, r) => s + (r.monto || 0), 0);
     this.montoConciliado = data.filter(r => r.conciliado).reduce((s, r) => s + (r.monto || 0), 0);
-    this.montoPendiente = this.montoTotal - this.montoConciliado;
+    this.montoPendiente  = this.montoTotal - this.montoConciliado;
   }
 
   calcularKPIsIA(data: any[]) {
@@ -197,16 +204,19 @@ export class RegistroIngresosBancariosComponent {
     for (const r of data) {
       const id = String(r.id_pop);
       if (!(id in this.indiceComprobantes)) this.totalSinComprobante++;
-      else if (this.indiceComprobantes[id]) this.totalPauser++;
-      else this.totalNoPauser++;
+      else if (this.indiceComprobantes[id])  this.totalPauser++;
+      else                                   this.totalNoPauser++;
     }
   }
 
   get tieneFiltrosActivos(): boolean {
-    return this.filtroEstado !== 'todos' || this.filtroComprobante !== 'todos' ||
-      this.filtroEntidad !== 'todas' || this.filtroBanco !== 'todos' ||
-      !!this.filtroIdPopMin || !!this.filtroIdPopMax ||
-      !!this.filtroFechaDesde || !!this.filtroFechaHasta || !!this.busqueda.trim();
+    return this.filtroEstado      !== 'todos'
+        || this.filtroComprobante !== 'todos'
+        || this.filtroEntidad     !== 'todas'
+        || this.filtroBanco       !== 'todos'
+        || !!this.filtroIdPopMin  || !!this.filtroIdPopMax
+        || !!this.filtroFechaDesde || !!this.filtroFechaHasta
+        || !!this.busqueda.trim();
   }
 
   limpiarFiltros() {
@@ -229,7 +239,7 @@ export class RegistroIngresosBancariosComponent {
       next: r => {
         this.cargandoSync = false;
         this.mensajeAccion = r.mensaje || r.detalle;
-        this.errorAccion = r.estado !== 'OK';
+        this.errorAccion   = r.estado !== 'OK';
         if (r.estado === 'OK') { this.cargarMeses(); this.cargarDatos(); }
       },
       error: () => { this.cargandoSync = false; this.mensajeAccion = 'Error de conexión'; this.errorAccion = true; }
@@ -243,50 +253,30 @@ export class RegistroIngresosBancariosComponent {
       next: r => {
         this.cargandoConciliar = false;
         this.mensajeAccion = r.mensaje || r.detalle;
-        this.errorAccion = r.estado !== 'OK';
+        this.errorAccion   = r.estado !== 'OK';
         if (r.estado === 'OK') this.cargarDatos();
       },
       error: () => { this.cargandoConciliar = false; this.mensajeAccion = 'Error de conexión'; this.errorAccion = true; }
     });
   }
 
-  exportarExcel() {
-    const data = this.registrosFiltrados;
-    if (!data.length) return;
+  // ── Excel con formato ─────────────────────────────────
+ exportarExcel() {
+  if (!this.mesSeleccionado) return;
+  let url = `${API}/ingresos/bancarios/exportar-excel?mes=${this.mesSeleccionado}`;
+  if (this.filtroFechaDesde) url += `&fecha_desde=${this.filtroFechaDesde}`;
+  if (this.filtroFechaHasta) url += `&fecha_hasta=${this.filtroFechaHasta}`;
+  if (this.filtroIdPopMin)   url += `&id_pop_min=${this.filtroIdPopMin}`;
+  if (this.filtroIdPopMax)   url += `&id_pop_max=${this.filtroIdPopMax}`;
+  window.open(url, '_blank');
+}
 
-    const headers = ['ID POP', 'Fecha Registro', 'Fecha Voucher', 'Sucursal', 'Negocio',
-      'Entidad', 'Transporte', 'Monto', 'Cod. Operación', 'Nro Op. Banco', 'Banco', 'Estado', 'Comprobante IA'];
-
-    const rows = data.map(r => [
-      r.id_pop || '',
-      this.formatFecha(r.fecha_registro),
-      this.formatFecha(r.fecha_voucher),
-      r.sucursal || '',
-      r.negocio || '',
-      r.entidad || '',
-      r.transporte || '',
-      r.monto || 0,
-      r.cod_operacion || '',
-      r.nro_operacion_banco || '',
-      r.banco_tabla || '',
-      r.estado || '',
-      this.getEstadoIALabel(r.id_pop)
-    ]);
-
-    let csv = headers.join(',') + '\n';
-    for (const row of rows) {
-      csv += row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',') + '\n';
-    }
-
-    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `ingresos_bancarios_${this.mesSeleccionado}_${this.anioActual}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  private _thinBorder() {
+    const s = { style: 'thin', color: { rgb: 'CCCCCC' } };
+    return { top: s, bottom: s, left: s, right: s };
   }
 
+  // ── Comprobante / Modal ───────────────────────────────
   verComprobante(r: any) {
     if (!r.id_pop) return;
     this.modalIdPop = r.id_pop; this.modalImgUrl = '';
@@ -295,7 +285,7 @@ export class RegistroIngresosBancariosComponent {
       next: res => {
         if (res.estado === 'OK') {
           this.modalDatosIA = res.ia;
-          this.modalImgUrl = res.imagen_directa || `${API}/comprobante/${r.id_pop}/imagen`;
+          this.modalImgUrl  = res.imagen_directa || `${API}/comprobante/${r.id_pop}/imagen`;
         }
         this.modalCargando = false;
       },
@@ -328,9 +318,9 @@ export class RegistroIngresosBancariosComponent {
   }
 
   setFiltroEntidad(e: string) { this.filtroEntidad = e; this.aplicarFiltro(); }
-  setFiltroBanco(b: string) { this.filtroBanco = b; this.aplicarFiltro(); }
-  setFiltro(f: any) { this.filtroEstado = f; this.aplicarFiltro(); }
-  setFiltroComp(f: any) { this.filtroComprobante = f; this.aplicarFiltro(); }
+  setFiltroBanco(b: string)   { this.filtroBanco   = b; this.aplicarFiltro(); }
+  setFiltro(f: any)           { this.filtroEstado  = f; this.aplicarFiltro(); }
+  setFiltroComp(f: any)       { this.filtroComprobante = f; this.aplicarFiltro(); }
 
   formatNum(v: any): string {
     if (v === null || v === undefined || v === '') return '—';
@@ -346,8 +336,19 @@ export class RegistroIngresosBancariosComponent {
 
   get pctBar() { return Math.min(this.pct, 100); }
 
+  abrirComparador() { this.navegarA.emit('comparadorIngresos'); }
 
-  abrirComparador() {
-    this.navegarA.emit('comparadorIngresos');
+  marcarPauser(id: number, esPauser: boolean) {
+    this.http.post<any>(`${API}/comprobante/revisar`, {
+      id_pop: id, es_pauser: esPauser
+    }).subscribe({
+      next: res => {
+        if (res.ok) {
+          this.indiceComprobantes = { ...this.indiceComprobantes, [String(id)]: esPauser };
+          this.aplicarFiltro();
+        }
+      },
+      error: err => console.error('Error al marcar comprobante:', err)
+    });
   }
 }

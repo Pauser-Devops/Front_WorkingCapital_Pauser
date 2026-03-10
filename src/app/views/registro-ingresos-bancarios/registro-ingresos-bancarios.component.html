@@ -260,7 +260,6 @@
             <th>Cod. Operación</th>
             <th>Nro Op. Banco</th>
             <th>Banco</th>
-            <th>Estado</th>
             <th class="th-center">Comprobante</th>
           </tr>
         </thead>
@@ -289,16 +288,20 @@
             <td class="mono">{{ r.cod_operacion || '—' }}</td>
             <td class="mono" [class.nro-ok]="r.nro_operacion_banco">{{ r.nro_operacion_banco || '—' }}</td>
             <td>{{ r.banco_tabla || '—' }}</td>
-            <td>{{ r.estado || '—' }}</td>
+            <td class="td-contar">
+              <div class="status-actions">
+                <button [class.active-check]="getEstadoIA(r.id_pop) === 'pauser'" (click)="marcarPauser(r.id_pop, true)"
+                  title="Marcar como Pauser">
+                  <span class="material-icons">{{ getEstadoIA(r.id_pop) === 'pauser' ? 'check_circle' :
+                    'check_circle_outline' }}</span>
+                </button>
 
-            <td class="td-center">
-              <span *ngIf="getEstadoIA(r.id_pop) === 'pauser'" class="ia-ok" title="Pauser">
-                <span class="material-icons">verified</span>
-              </span>
-              <span *ngIf="getEstadoIA(r.id_pop) === 'no_pauser'" class="ia-warn" title="No Pauser">
-                <span class="material-icons">warning</span>
-              </span>
-              <span *ngIf="getEstadoIA(r.id_pop) === 'sin_comprobante'" class="ia-none" title="Sin comprobante">—</span>
+                <button [class.active-error]="getEstadoIA(r.id_pop) === 'no_pauser'"
+                  (click)="marcarPauser(r.id_pop, false)" title="Marcar como No Pauser">
+                  <span class="material-icons">{{ getEstadoIA(r.id_pop) === 'no_pauser' ? 'cancel' : 'highlight_off'
+                    }}</span>
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>

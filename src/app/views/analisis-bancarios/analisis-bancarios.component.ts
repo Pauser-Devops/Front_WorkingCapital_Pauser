@@ -3,7 +3,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
-
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import * as XLSX from 'xlsx';
 const API = environment.apiUrl;
 
 const ORDEN_MESES: Record<string, number> = {
@@ -18,12 +20,12 @@ const MESES_CORTOS: Record<string, string> = {
 };
 
 const TABLAS = [
-    { key: 'bcp_1', label: 'BCP', color: '#003F8A' },
-    { key: 'bcp_tru_1', label: 'BCP TRU', color: '#1565C0' },
-    { key: 'bcp_ln_1', label: 'BCP LN', color: '#1976D2' },
-    { key: 'bbva_1', label: 'BBVA', color: '#004B95' },
-    { key: 'bbva_lm_1', label: 'BBVA LM', color: '#0057A8' },
-    { key: 'ibk_1', label: 'Interbank', color: '#007C5E' },
+    { key: 'bcp_1',           label: 'BCP',           color: '#003F8A' },
+    { key: 'bcp_tru_1',       label: 'BCP TRU',       color: '#1565C0' },
+    { key: 'bcp_ln_1',        label: 'BCP LN',        color: '#1976D2' },
+    { key: 'bbva_1',          label: 'BBVA',          color: '#004B95' },
+    { key: 'bbva_lm_1',       label: 'BBVA LM',       color: '#0057A8' },
+    { key: 'ibk_1',           label: 'Interbank',     color: '#007C5E' },
     { key: 'caja_arequipa_1', label: 'Caja Arequipa', color: '#B91C1C' },
 ];
 
@@ -54,19 +56,24 @@ interface CategorizadoRow {
     styleUrls: ['./analisis-bancarios.component.css']
 })
 export class AnalisisBancariosComponent implements OnInit {
-    cargando = false;
+    cargando     = false;
     cargandoSync = false;
-    error = '';
-    mensajeSync = '';
-    errorSync = false;
+    error        = '';
+    mensajeSync  = '';
+    errorSync    = false;
 
-    periodos: PeriodoItem[] = [];
+    periodos:      PeriodoItem[] = [];
     periodoActivo: PeriodoItem | null = null;
 
     tablaActiva = 'bcp_1';
-    tablas = TABLAS;
-    todos: any[] = [];
+    tablas      = TABLAS;
 
+    // Cache por periodo: guarda los datos raw de todas las tablas
+    // key: "mes-anio", value: Record<tabla, rows[]>
+    private cache: Record<string, Record<string, any[]>> = {};
+
+    // Datos raw de la tabla activa (ya desde cache)
+    todos:      any[] = [];
     todasFilas: CategorizadoRow[] = [];
 
     categorias: Record<CatKey, CategorizadoRow[]> = {
@@ -76,46 +83,42 @@ export class AnalisisBancariosComponent implements OnInit {
     catActiva: ViewKey = 'todos';
 
     kpiGeneral = {
-        registros: 0,
-        totalIngresos: 0,
-        totalEgresos: 0,
-        neto: 0,
-        conIdPop: 0,
-        sinIdPop: 0,
-        montoConId: 0,
-        montoSinId: 0,
+        registros: 0, totalIngresos: 0, totalEgresos: 0, neto: 0,
+        conIdPop: 0, sinIdPop: 0, montoConId: 0, montoSinId: 0,
     };
 
     kpis: Record<CatKey, { total: number, monto: number }> = {
-        prosegur: { total: 0, monto: 0 },
+        prosegur:       { total: 0, monto: 0 },
         ventas_credito: { total: 0, monto: 0 },
-        ingresos_id: { total: 0, monto: 0 },
-        sin_id: { total: 0, monto: 0 },
+        ingresos_id:    { total: 0, monto: 0 },
+        sin_id:         { total: 0, monto: 0 },
     };
 
     sinIdDesglose = {
         ingresos: { total: 0, monto: 0 },
-        egresos: { total: 0, monto: 0 },
+        egresos:  { total: 0, monto: 0 },
     };
 
     sinIdFiltro: 'todos' | 'ingresos' | 'egresos' = 'todos';
-    busqueda = '';
+    busqueda   = '';
     fechaDesde = '';
     fechaHasta = '';
 
     catKeys: ViewKey[] = ['todos', 'sin_id', 'prosegur', 'ventas_credito', 'ingresos_id'];
 
     catLabels: Record<ViewKey, { label: string, color: string }> = {
-        todos: { label: 'Todos', color: '#1e3a5f' },
-        sin_id: { label: 'Sin ID POP', color: '#dc2626' },
-        prosegur: { label: 'Prosegur', color: '#7c3aed' },
+        todos:          { label: 'Todos',             color: '#1e3a5f' },
+        sin_id:         { label: 'Sin ID POP',        color: '#dc2626' },
+        prosegur:       { label: 'Prosegur',          color: '#7c3aed' },
         ventas_credito: { label: 'Ventas al Crédito', color: '#0891b2' },
-        ingresos_id: { label: 'Con ID POP', color: '#16a34a' },
+        ingresos_id:    { label: 'Con ID POP',        color: '#16a34a' },
     };
 
     constructor(private http: HttpClient) { }
 
     ngOnInit() { this.cargarMeses(); }
+
+    // ── carga de meses ───────────────────────────────────
 
     cargarMeses() {
         this.http.get<any>(`${API}/bancos/meses`).subscribe({
@@ -129,8 +132,7 @@ export class AnalisisBancariosComponent implements OnInit {
                             vistos.add(key);
                             const mesLower = (m.mes || '').toLowerCase();
                             lista.push({
-                                mes: m.mes,
-                                anio: m.anio,
+                                mes: m.mes, anio: m.anio,
                                 label: `${MESES_CORTOS[mesLower] || m.mes} ${m.anio}`
                             });
                         }
@@ -147,65 +149,113 @@ export class AnalisisBancariosComponent implements OnInit {
         });
     }
 
+    // ── selección de periodo: carga TODO en paralelo ─────
+
     seleccionarPeriodo(p: PeriodoItem) {
         this.periodoActivo = p;
         this.resetFiltros();
-        this.cargarTabla();
+        this.cargarTodasLasTablas();
     }
 
+    /**
+     * Cambia de tabla SIN hacer ningún request —
+     * los datos ya están en cache desde la carga inicial.
+     */
     seleccionarTabla(tabla: string) {
         this.tablaActiva = tabla;
         this.resetFiltros();
-        this.cargarTabla();
+        this.usarCacheParaTablaActiva();
     }
 
     resetFiltros() {
-        this.fechaDesde = '';
-        this.fechaHasta = '';
-        this.busqueda = '';
+        this.fechaDesde  = '';
+        this.fechaHasta  = '';
+        this.busqueda    = '';
         this.sinIdFiltro = 'todos';
-        this.catActiva = 'todos';
+        this.catActiva   = 'todos';
         this.mensajeSync = '';
-        this.todos = [];   // ← limpia para que el spinner aparezca
-        this.todasFilas = [];
+        this.todos       = [];
+        this.todasFilas  = [];
     }
 
-    cargarTabla() {
+    /**
+     * Carga las 7 tablas en paralelo con forkJoin.
+     * Si ya están en cache, las usa directo sin llamar al backend.
+     */
+    cargarTodasLasTablas() {
         if (!this.periodoActivo) return;
-        this.cargando = true;
-        this.error = '';
         const { mes, anio } = this.periodoActivo;
-        this.http.get<any>(`${API}/bancos/${this.tablaActiva}?mes=${mes}&anio=${anio}`).subscribe({
-            next: r => {
+        const cacheKey = `${mes}-${anio}`;
+
+        // Si ya está en cache, usar directo
+        if (this.cache[cacheKey]) {
+            this.usarCacheParaTablaActiva();
+            return;
+        }
+
+        this.cargando = true;
+        this.error    = '';
+
+        // forkJoin lanza los 7 requests en paralelo y espera a que todos terminen
+        const requests: Record<string, any> = {};
+        for (const t of TABLAS) {
+            requests[t.key] = this.http.get<any>(
+                `${API}/bancos/${t.key}?mes=${mes}&anio=${anio}`
+            ).pipe(catchError(() => of({ estado: 'ERROR', registros: [] })));
+        }
+
+        forkJoin(requests).subscribe({
+            next: (resultados: any) => {
                 this.cargando = false;
-                if (r.estado === 'OK') {
-                    this.todos = r.registros;
-                    this.categorizar();
+                const datosCache: Record<string, any[]> = {};
+                for (const t of TABLAS) {
+                    datosCache[t.key] = resultados[t.key]?.registros || [];
                 }
+                this.cache[cacheKey] = datosCache;
+                this.usarCacheParaTablaActiva();
             },
             error: () => { this.cargando = false; this.error = 'Error al cargar datos'; }
         });
     }
 
+    /**
+     * Toma los datos de la tabla activa desde el cache y categoriza.
+     * No hace ningún request HTTP.
+     */
+    private usarCacheParaTablaActiva() {
+        if (!this.periodoActivo) return;
+        const cacheKey = `${this.periodoActivo.mes}-${this.periodoActivo.anio}`;
+        const datosCache = this.cache[cacheKey];
+        if (!datosCache) return;
+        this.todos = datosCache[this.tablaActiva] || [];
+        this.categorizar();
+    }
+
+    // ── sincronizar (invalida cache del periodo) ─────────
+
     sincronizar() {
         if (!this.periodoActivo) return;
         this.cargandoSync = true;
-        this.mensajeSync = '';
+        this.mensajeSync  = '';
         const { mes, anio } = this.periodoActivo;
         this.http.post<any>(`${API}/bancos/sync?mes=${mes}&anio=${anio}`, {}).subscribe({
             next: r => {
                 this.cargandoSync = false;
-                this.mensajeSync = r.mensaje || r.detalle || 'Sincronización completada';
-                this.errorSync = r.estado !== 'OK';
-                if (r.estado === 'OK') { this.cargarMeses(); this.cargarTabla(); }
+                this.mensajeSync  = r.mensaje || r.detalle || 'Sincronización completada';
+                this.errorSync    = r.estado !== 'OK';
+                if (r.estado === 'OK') {
+                    // Invalidar cache para forzar recarga fresca
+                    const cacheKey = `${mes}-${anio}`;
+                    delete this.cache[cacheKey];
+                    this.cargarMeses();
+                    this.cargarTodasLasTablas();
+                }
             },
-            error: () => {
-                this.cargandoSync = false;
-                this.mensajeSync = 'Error de conexión';
-                this.errorSync = true;
-            }
+            error: () => { this.cargandoSync = false; this.mensajeSync = 'Error de conexión'; this.errorSync = true; }
         });
     }
+
+    // ── filtro fecha ─────────────────────────────────────
 
     get todosFiltradosFecha(): any[] {
         if (!this.fechaDesde && !this.fechaHasta) return this.todos;
@@ -220,6 +270,8 @@ export class AnalisisBancariosComponent implements OnInit {
         });
     }
 
+    // ── categorización ───────────────────────────────────
+
     categorizar() {
         const cats: Record<CatKey, CategorizadoRow[]> = {
             prosegur: [], ventas_credito: [], ingresos_id: [], sin_id: [],
@@ -227,57 +279,61 @@ export class AnalisisBancariosComponent implements OnInit {
         const allFilas: CategorizadoRow[] = [];
 
         const tablaLabel = TABLAS.find(t => t.key === this.tablaActiva)?.label || this.tablaActiva;
-        const esIBK = this.tablaActiva === 'ibk_1';
+        const esIBK  = this.tablaActiva === 'ibk_1';
         const esBBVA = this.tablaActiva === 'bbva_1' || this.tablaActiva === 'bbva_lm_1';
 
         for (const r of this.todosFiltradosFecha) {
-            const desc = (r.descripcion || '').toUpperCase();
-            const clasi = (r.clasificacion || '').toUpperCase();
-            const idPop = (r.id_pop || '').trim();
+            const desc    = (r.descripcion   || '').toUpperCase();
+            const clasi   = (r.clasificacion || '').toUpperCase();
+            const idPop   = (r.id_pop        || '').trim();
+            const sede    = (r.sede          || '').trim();
             const ingreso = parseFloat(r.ingreso) || 0;
-            const egreso = Math.abs(parseFloat(r.egreso) || 0);
+            const egreso  = Math.abs(parseFloat(r.egreso) || 0);
 
             const fila: CategorizadoRow = {
                 categoria: 'sin_id',
-                nro_cheque: r.nro_cheque || '',
-                fecha: r.fecha || '',
-                descripcion: r.descripcion || '',
-                detalle: r.detalle || '',
-                ingreso,
-                egreso,
-                sede: r.sede || '',
-                id_pop: idPop,
+                nro_cheque:    r.nro_cheque    || '',
+                fecha:         r.fecha         || '',
+                descripcion:   r.descripcion   || '',
+                detalle:       r.detalle       || '',
+                ingreso, egreso, sede,
+                id_pop:        idPop,
                 clasificacion: r.clasificacion || '',
-                banco: tablaLabel,
+                banco:         tablaLabel,
             };
 
-            // Prosegur
-            if ((esIBK && (desc.includes('ABONO MAQUINA RECAU') || desc.includes('N/A VARIOS'))) ||
-                (esBBVA && desc.includes('PROSEGUR'))) {
+            // 1. Prosegur
+            if ((esIBK  && (desc.includes('ABONO MAQUINA RECAU') || desc.includes('N/A VARIOS'))) ||
+                (esBBVA &&  desc.includes('PROSEGUR'))) {
                 fila.categoria = 'prosegur';
                 cats['prosegur'].push(fila);
                 allFilas.push(fila);
                 continue;
             }
 
-            // Ventas al crédito
+            // 2. Ventas al crédito
             const clasiLower = clasi.toLowerCase();
-            if (clasiLower.includes('ventas al credito') || clasiLower.includes('ventas al crédito') || fila.sede?.includes('©')) {
+            if (clasiLower.includes('ventas al credito') ||
+                clasiLower.includes('ventas al crédito') ||
+                fila.sede?.includes('©')) {
                 fila.categoria = 'ventas_credito';
                 cats['ventas_credito'].push(fila);
                 allFilas.push(fila);
                 continue;
             }
 
-            // Sin ID POP
-            if (!idPop || idPop === 'null' || idPop === 'None') {
+            // 3. Sin ID POP — solo si AMBOS id_pop Y sede están vacíos
+            const sinIdPop = !idPop || idPop === 'null' || idPop === 'None';
+            const sinSede  = !sede  || sede  === 'null' || sede  === 'None';
+
+            if (sinIdPop && sinSede) {
                 fila.categoria = 'sin_id';
                 cats['sin_id'].push(fila);
                 allFilas.push(fila);
                 continue;
             }
 
-            // Con ID POP
+            // 4. Con ID POP (tiene id_pop O tiene sede llena)
             fila.categoria = 'ingresos_id';
             cats['ingresos_id'].push(fila);
             allFilas.push(fila);
@@ -295,27 +351,26 @@ export class AnalisisBancariosComponent implements OnInit {
         }
 
         const totalIngresos = allFilas.reduce((s, r) => s + r.ingreso, 0);
-        const totalEgresos = allFilas.reduce((s, r) => s + r.egreso, 0);
+        const totalEgresos  = allFilas.reduce((s, r) => s + r.egreso,  0);
         const conId = allFilas.filter(r => r.id_pop && r.id_pop !== 'null' && r.id_pop !== 'None' && r.id_pop !== '');
         const sinId = allFilas.filter(r => !r.id_pop || r.id_pop === 'null' || r.id_pop === 'None' || r.id_pop === '');
 
         this.kpiGeneral = {
             registros: allFilas.length,
-            totalIngresos,
-            totalEgresos,
-            neto: totalIngresos - totalEgresos,
-            conIdPop: conId.length,
-            sinIdPop: sinId.length,
+            totalIngresos, totalEgresos,
+            neto:       totalIngresos - totalEgresos,
+            conIdPop:   conId.length,
+            sinIdPop:   sinId.length,
             montoConId: conId.reduce((s, r) => s + r.ingreso, 0),
             montoSinId: sinId.reduce((s, r) => s + r.ingreso, 0),
         };
 
-        const sinIdRows = cats['sin_id'];
+        const sinIdRows    = cats['sin_id'];
         const soloIngresos = sinIdRows.filter(r => r.ingreso > 0);
-        const soloEgresos = sinIdRows.filter(r => r.egreso > 0);
+        const soloEgresos  = sinIdRows.filter(r => r.egreso  > 0);
         this.sinIdDesglose = {
             ingresos: { total: soloIngresos.length, monto: soloIngresos.reduce((s, r) => s + r.ingreso, 0) },
-            egresos: { total: soloEgresos.length, monto: soloEgresos.reduce((s, r) => s + r.egreso, 0) },
+            egresos:  { total: soloEgresos.length,  monto: soloEgresos.reduce((s,  r) => s + r.egreso,  0) },
         };
     }
 
@@ -324,15 +379,17 @@ export class AnalisisBancariosComponent implements OnInit {
     get hayFiltroFecha(): boolean { return !!(this.fechaDesde || this.fechaHasta); }
 
     setCatActiva(cat: ViewKey) {
-        this.catActiva = cat;
+        this.catActiva   = cat;
         this.sinIdFiltro = 'todos';
-        this.busqueda = '';
+        this.busqueda    = '';
     }
 
     setSinIdFiltro(filtro: 'ingresos' | 'egresos') {
         this.sinIdFiltro = this.sinIdFiltro === filtro ? 'todos' : filtro;
-        this.busqueda = '';
+        this.busqueda    = '';
     }
+
+    // ── registros visibles (búsqueda omite espacios) ─────
 
     get registrosActivos(): CategorizadoRow[] {
         let rows: CategorizadoRow[];
@@ -342,19 +399,41 @@ export class AnalisisBancariosComponent implements OnInit {
             rows = this.categorias[this.catActiva as CatKey] || [];
             if (this.catActiva === 'sin_id') {
                 if (this.sinIdFiltro === 'ingresos') rows = rows.filter(r => r.ingreso > 0);
-                if (this.sinIdFiltro === 'egresos') rows = rows.filter(r => r.egreso > 0);
+                if (this.sinIdFiltro === 'egresos')  rows = rows.filter(r => r.egreso  > 0);
             }
         }
-        const q = this.busqueda.trim().toLowerCase();
+
+        const q = this.busqueda.replace(/\s+/g, '').toLowerCase();
         if (q) {
             rows = rows.filter(r =>
                 [r.nro_cheque, r.fecha, r.descripcion, r.detalle,
-                r.sede, r.id_pop, r.clasificacion, r.categoria,
-                r.ingreso.toString(), r.egreso.toString()]
-                    .some(v => (v || '').toString().toLowerCase().includes(q))
+                 r.sede, r.id_pop, r.clasificacion, r.categoria,
+                 r.ingreso.toString(), r.egreso.toString()]
+                    .some(v => (v || '').toString().replace(/\s+/g, '').toLowerCase().includes(q))
             );
         }
         return rows;
+    }
+
+    // ── exportar Excel ───────────────────────────────────
+
+    exportarExcel() {
+  if (!this.periodoActivo) return;
+  const { mes, anio } = this.periodoActivo;
+  const url = `${API}/bancos/exportar-excel?tabla=${this.tablaActiva}&mes=${mes}&anio=${anio}`;
+  window.open(url, '_blank');
+}
+
+    // ── utils ─────────────────────────────────────────────
+
+    private formatFechaExcel(v: string): string {
+        if (!v) return '—';
+        const d = new Date(v);
+        return isNaN(d.getTime()) ? v : d.toLocaleDateString('es-PE');
+    }
+
+    private fmtNum(n: number): string {
+        return n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
     badgeMonto(cat: ViewKey): string {
@@ -362,21 +441,21 @@ export class AnalisisBancariosComponent implements OnInit {
         return this.fmtK(this.kpis[cat as CatKey]?.monto || 0);
     }
 
-    get periodoLabel(): string { return this.periodoActivo?.label || ''; }
-
+    get periodoLabel():     string { return this.periodoActivo?.label || ''; }
     get tablaActivaLabel(): string {
         return TABLAS.find(t => t.key === this.tablaActiva)?.label || this.tablaActiva;
     }
 
-    fmt(n: number) {
+    fmt(n: number): string {
         return 'S/ ' + n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    fmtK(n: number) {
+    fmtK(n: number): string {
         if (n >= 1_000_000) return 'S/ ' + (n / 1_000_000).toFixed(1) + 'M';
-        if (n >= 1_000) return 'S/ ' + (n / 1_000).toFixed(0) + 'K';
+        if (n >= 1_000)     return 'S/ ' + (n / 1_000).toFixed(0)     + 'K';
         return 'S/ ' + n.toFixed(0);
     }
+
     get montoActivo(): number {
         return this.registrosActivos.reduce((s, r) => s + r.ingreso, 0);
     }

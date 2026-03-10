@@ -35,7 +35,7 @@
         </button>
       </div>
 
-      <!-- Fecha -->
+      <!-- Fecha — sin min/max, rango libre -->
       <div class="ib-filtro-group">
         <div class="ib-filtro-label">
           <span class="material-icons">date_range</span> Fecha Registro
@@ -44,15 +44,48 @@
           <div class="fecha-input-wrap">
             <label>Desde</label>
             <input type="date" class="fecha-input"
-              [min]="fechaMin" [max]="fechaMax" [value]="fechaDesde"
+              [value]="fechaDesde"
               (change)="setFechaDesde($any($event.target).value)" />
           </div>
           <div class="fecha-input-wrap">
             <label>Hasta</label>
             <input type="date" class="fecha-input"
-              [min]="fechaMin" [max]="fechaMax" [value]="fechaHasta"
+              [value]="fechaHasta"
               (change)="setFechaHasta($any($event.target).value)" />
           </div>
+        </div>
+      </div>
+
+      <!-- ID POP — rango numérico -->
+      <div class="ib-filtro-group">
+        <div class="ib-filtro-label">
+          <span class="material-icons">tag</span>ID POP
+        </div>
+        <div class="ib-filtro-fechas">
+          <div class="fecha-input-wrap">
+            <label>Desde</label>
+            <input type="number" class="fecha-input" placeholder="ej. 235000"
+              [(ngModel)]="idPopDesde"
+              (ngModelChange)="onIdPopChange()" />
+          </div>
+          <div class="fecha-input-wrap">
+            <label>Hasta</label>
+            <input type="number" class="fecha-input" placeholder="ej. 235999"
+              [(ngModel)]="idPopHasta"
+              (ngModelChange)="onIdPopChange()" />
+          </div>
+        </div>
+        <!-- Badge resumen cuando hay filtro activo -->
+        <div class="ib-idpop-badge" *ngIf="idPopDesde || idPopHasta">
+          <span class="material-icons" style="font-size:13px">filter_alt</span>
+          ID POP
+          <ng-container *ngIf="idPopDesde">desde {{ idPopDesde }}</ng-container>
+          <ng-container *ngIf="idPopDesde && idPopHasta"> — </ng-container>
+          <ng-container *ngIf="idPopHasta">hasta {{ idPopHasta }}</ng-container>
+          &nbsp;·&nbsp; {{ filtrados.length }} resultado{{ filtrados.length !== 1 ? 's' : '' }}
+          <button class="ib-idpop-clear" (click)="idPopDesde=''; idPopHasta=''; onIdPopChange()">
+            <span class="material-icons" style="font-size:13px">close</span>
+          </button>
         </div>
       </div>
 

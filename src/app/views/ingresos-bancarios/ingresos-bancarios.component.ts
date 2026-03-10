@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 
@@ -8,68 +9,65 @@ const ORDEN_MESES: Record<string, number> = {
   enero: 1, febrero: 2, marzo: 3, abril: 4, mayo: 5, junio: 6,
   julio: 7, agosto: 8, septiembre: 9, octubre: 10, noviembre: 11, diciembre: 12
 };
-const DIAS_MES: Record<number, number> = {
-  1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30, 7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31
-};
 
 const BANCO_COLORES: Record<string, { color: string, light: string }> = {
-  'BCP': { color: '#003F8A', light: '#e8f0fa' },
-  'BCP TRU': { color: '#1565C0', light: '#e3eefa' },
-  'BCP LN': { color: '#1976D2', light: '#e1eefb' },
-  'BBVA': { color: '#004B95', light: '#e0ecfa' },
-  'BBVA LM': { color: '#0057A8', light: '#e0eefb' },
-  'Interbank': { color: '#007C5E', light: '#e0f5ee' },
+  'BCP':           { color: '#003F8A', light: '#e8f0fa' },
+  'BCP TRU':       { color: '#1565C0', light: '#e3eefa' },
+  'BCP LN':        { color: '#1976D2', light: '#e1eefb' },
+  'BBVA':          { color: '#004B95', light: '#e0ecfa' },
+  'BBVA LM':       { color: '#0057A8', light: '#e0eefb' },
+  'Interbank':     { color: '#007C5E', light: '#e0f5ee' },
   'Caja Arequipa': { color: '#B91C1C', light: '#fde8e8' },
 };
 
 @Component({
   selector: 'app-ingresos-bancarios',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './ingresos-bancarios.component.html',
   styleUrls: ['./ingresos-bancarios.component.css']
 })
 export class IngresosBancariosComponent implements OnInit {
   cargando = false;
-  error = '';
+  error    = '';
 
-  meses: string[] = [];
-  mesActivo = '';
+  meses:     string[] = [];
+  mesActivo  = '';
   anioActual = new Date().getFullYear();
 
-  todos: any[] = [];
+  todos:     any[] = [];
   filtrados: any[] = [];
 
   // Filtros
-  filtroBanco = 'TODOS';
+  filtroBanco    = 'TODOS';
   filtroSucursal = 'TODAS';
-  filtroEntidad = 'TODAS';
-  fechaDesde = '';
-  fechaHasta = '';
+  filtroEntidad  = 'TODAS';
+  fechaDesde     = '';
+  fechaHasta     = '';
 
-  // Límites de fecha según mes seleccionado
-  fechaMin = '';
-  fechaMax = '';
+  // Filtro rango ID POP
+  idPopDesde = '';
+  idPopHasta = '';
 
   // Listas únicas
   sucursales: string[] = [];
-  bancos: string[] = [];
-  entidades: string[] = [];
+  bancos:     string[] = [];
+  entidades:  string[] = [];
 
   // KPIs
-  totalMonto = 0;
-  totalRegistros = 0;
-  totalConc = 0;
-  totalSinConc = 0;
-  pctConc = 0;
+  totalMonto      = 0;
+  totalRegistros  = 0;
+  totalConc       = 0;
+  totalSinConc    = 0;
+  pctConc         = 0;
   montoConciliado = 0;
-  montoSinConc = 0;
+  montoSinConc    = 0;
 
   // Charts
-  porBanco: { label: string, monto: number, pct: number, color: string }[] = [];
+  porBanco:    { label: string, monto: number, pct: number, color: string }[] = [];
   porSucursal: { label: string, monto: number, pct: number }[] = [];
-  porEntidad: { label: string, monto: number, pct: number }[] = [];
-  porDia: { fecha: string, fechaFull: string, monto: number, pct: number, alto: number }[] = [];
+  porEntidad:  { label: string, monto: number, pct: number }[] = [];
+  porDia:      { fecha: string, fechaFull: string, monto: number, pct: number, alto: number }[] = [];
 
   // Tooltip
   tooltipDia: { fecha: string, monto: number } | null = null;
@@ -78,6 +76,8 @@ export class IngresosBancariosComponent implements OnInit {
   constructor(private http: HttpClient) { }
 
   ngOnInit() { this.cargarMeses(); }
+
+  // ── Meses ─────────────────────────────────────────────
 
   cargarMeses() {
     this.http.get<any>(`${API}/ingresos/bancarios/meses`).subscribe({
@@ -94,28 +94,23 @@ export class IngresosBancariosComponent implements OnInit {
   }
 
   seleccionarMes(mes: string) {
-    this.mesActivo = mes;
-    this.filtroBanco = 'TODOS';
+    this.mesActivo     = mes;
+    this.filtroBanco   = 'TODOS';
     this.filtroSucursal = 'TODAS';
     this.filtroEntidad = 'TODAS';
-    this.fechaDesde = '';
-    this.fechaHasta = '';
-    this.tooltipDia = null;
-
-    // Calcular rango de fechas del mes
-    const mesIdx = ORDEN_MESES[mes.toLowerCase()] || 1;
-    const anio = this.anioActual;
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const dias = mesIdx === 2 && anio % 4 === 0 ? 29 : (DIAS_MES[mesIdx] || 31);
-    this.fechaMin = `${anio}-${pad(mesIdx)}-01`;
-    this.fechaMax = `${anio}-${pad(mesIdx)}-${pad(dias)}`;
-
+    this.fechaDesde    = '';
+    this.fechaHasta    = '';
+    this.idPopDesde    = '';
+    this.idPopHasta    = '';
+    this.tooltipDia    = null;
     this.cargarDatos();
   }
 
+  // ── Carga ─────────────────────────────────────────────
+
   cargarDatos() {
     this.cargando = true;
-    this.error = '';
+    this.error    = '';
     let url = `${API}/ingresos/bancarios?mes=${this.mesActivo}`;
     if (this.fechaDesde) url += `&fecha_desde=${this.fechaDesde}`;
     if (this.fechaHasta) url += `&fecha_hasta=${this.fechaHasta}`;
@@ -141,11 +136,11 @@ export class IngresosBancariosComponent implements OnInit {
       const suc = this.getSucursalDisplay(r);
       if (suc) setSuc.add(suc);
       if (r.banco_tabla) setBan.add(r.banco_tabla);
-      if (r.entidad) setEnt.add(r.entidad);
+      if (r.entidad)     setEnt.add(r.entidad);
     }
     this.sucursales = [...setSuc].sort();
-    this.bancos = [...setBan].sort();
-    this.entidades = [...setEnt].sort();
+    this.bancos     = [...setBan].sort();
+    this.entidades  = [...setEnt].sort();
   }
 
   getSucursalDisplay(r: any): string {
@@ -156,32 +151,75 @@ export class IngresosBancariosComponent implements OnInit {
     return r.sucursal || '';
   }
 
+  // ── Filtros ───────────────────────────────────────────
+
   aplicarFiltros() {
     let data = [...this.todos];
+
     if (this.filtroSucursal !== 'TODAS')
       data = data.filter(r => this.getSucursalDisplay(r) === this.filtroSucursal);
     if (this.filtroBanco !== 'TODOS')
       data = data.filter(r => r.banco_tabla === this.filtroBanco);
     if (this.filtroEntidad !== 'TODAS')
       data = data.filter(r => r.entidad === this.filtroEntidad);
+
+    // Filtro rango ID POP — compara numéricamente
+    if (this.idPopDesde || this.idPopHasta) {
+      const desde = this.idPopDesde ? parseInt(this.idPopDesde, 10) : null;
+      const hasta = this.idPopHasta ? parseInt(this.idPopHasta, 10) : null;
+      data = data.filter(r => {
+        const id = parseInt((r.id_pop || '').toString().trim(), 10);
+        if (isNaN(id)) return false;          // sin ID POP queda excluido
+        if (desde !== null && id < desde) return false;
+        if (hasta !== null && id > hasta) return false;
+        return true;
+      });
+    }
+
     this.filtrados = data;
     this.calcularKPIs();
     this.calcularCharts();
   }
 
-  calcularKPIs() {
-    this.totalMonto = this.filtrados.reduce((s, r) => s + (r.monto || 0), 0);
-    this.totalRegistros = this.filtrados.length;
-    this.totalConc = this.filtrados.filter(r => r.conciliado).length;
-    this.totalSinConc = this.totalRegistros - this.totalConc;
-    this.pctConc = this.totalRegistros ? Math.round(this.totalConc / this.totalRegistros * 100) : 0;
-    this.montoConciliado = this.filtrados.filter(r => r.conciliado).reduce((s, r) => s + (r.monto || 0), 0);
-    this.montoSinConc = this.totalMonto - this.montoConciliado;
-  }
-  calcularCharts() {
-    const base = [...this.todos]; // siempre todos para gráficos
+  setFiltroBanco(b: string)    { this.filtroBanco    = b; this.aplicarFiltros(); }
+  setFiltroSucursal(s: string) { this.filtroSucursal = s; this.aplicarFiltros(); }
+  setFiltroEntidad(e: string)  { this.filtroEntidad  = e; this.aplicarFiltros(); }
+  onIdPopChange()              { this.aplicarFiltros(); }   // llamar en (ngModelChange)
 
-    // Por banco
+  // Fechas libres — recarga backend sin límite de mes
+  setFechaDesde(v: string) { this.fechaDesde = v; this.cargarDatos(); }
+  setFechaHasta(v: string) { this.fechaHasta = v; this.cargarDatos(); }
+
+  limpiarFiltros() {
+    this.filtroBanco    = 'TODOS';
+    this.filtroSucursal = 'TODAS';
+    this.filtroEntidad  = 'TODAS';
+    this.idPopDesde     = '';
+    this.idPopHasta     = '';
+    this.fechaDesde     = '';
+    this.fechaHasta     = '';
+    this.cargarDatos();
+  }
+
+  // ── KPIs ──────────────────────────────────────────────
+
+  calcularKPIs() {
+    const d = this.filtrados;
+    this.totalMonto      = d.reduce((s, r) => s + (r.monto || 0), 0);
+    this.totalRegistros  = d.length;
+    this.totalConc       = d.filter(r =>  r.conciliado).length;
+    this.totalSinConc    = d.filter(r => !r.conciliado).length;
+    this.pctConc         = this.totalRegistros
+      ? Math.round(this.totalConc / this.totalRegistros * 100) : 0;
+    this.montoConciliado = d.filter(r =>  r.conciliado).reduce((s, r) => s + (r.monto || 0), 0);
+    this.montoSinConc    = this.totalMonto - this.montoConciliado;
+  }
+
+  // ── Charts ────────────────────────────────────────────
+
+  calcularCharts() {
+    const base = [...this.todos];
+
     const mapBan: Record<string, number> = {};
     for (const r of base) {
       const k = r.banco_tabla || 'Sin banco';
@@ -192,11 +230,10 @@ export class IngresosBancariosComponent implements OnInit {
       .sort((a, b) => b[1] - a[1])
       .map(([label, monto]) => ({
         label, monto,
-        pct: Math.round(monto / totalBan * 100),
+        pct:   Math.round(monto / totalBan * 100),
         color: BANCO_COLORES[label]?.color || '#64748b'
       }));
 
-    // Por sucursal
     const mapSuc: Record<string, number> = {};
     for (const r of base) {
       const k = this.getSucursalDisplay(r) || 'Sin sucursal';
@@ -208,7 +245,6 @@ export class IngresosBancariosComponent implements OnInit {
       .slice(0, 10)
       .map(([label, monto]) => ({ label, monto, pct: Math.round(monto / totalSuc * 100) }));
 
-    // Por entidad
     const mapEnt: Record<string, number> = {};
     for (const r of base) {
       const k = r.entidad || 'Sin entidad';
@@ -219,7 +255,6 @@ export class IngresosBancariosComponent implements OnInit {
       .sort((a, b) => b[1] - a[1])
       .map(([label, monto]) => ({ label, monto, pct: Math.round(monto / totalEnt * 100) }));
 
-    // Timeline — usa filtrados si hay filtro fecha, si no usa todos
     const baseDia = (this.fechaDesde || this.fechaHasta) ? [...this.filtrados] : [...this.todos];
     const mapDia: Record<string, number> = {};
     for (const r of baseDia) {
@@ -228,40 +263,30 @@ export class IngresosBancariosComponent implements OnInit {
       mapDia[f] = (mapDia[f] || 0) + (r.monto || 0);
     }
     const valores = Object.values(mapDia);
-    const maxVal = Math.max(...valores, 1);
-    const minVal = Math.min(...valores, 0);
-    const rango = maxVal - minVal || 1;
+    const maxVal  = Math.max(...valores, 1);
+    const minVal  = Math.min(...valores, 0);
+    const rango   = maxVal - minVal || 1;
 
     this.porDia = Object.entries(mapDia)
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([fecha, monto]) => ({
         fechaFull: fecha,
-        fecha: fecha.slice(8) + '/' + fecha.slice(5, 7),
+        fecha:     fecha.slice(8) + '/' + fecha.slice(5, 7),
         monto,
-        pct: Math.round(monto / maxVal * 100),
+        pct:  Math.round(monto / maxVal * 100),
         alto: Math.round(15 + ((monto - minVal) / rango) * 75)
       }));
   }
-  limpiarFiltros() {
-    this.filtroBanco = 'TODOS';
-    this.filtroSucursal = 'TODAS';
-    this.filtroEntidad = 'TODAS';
-    this.fechaDesde = '';
-    this.fechaHasta = '';
-    this.cargarDatos();
-  }
 
-  setFiltroBanco(b: string) { this.filtroBanco = b; this.aplicarFiltros(); }
-  setFiltroSucursal(s: string) { this.filtroSucursal = s; this.aplicarFiltros(); }
-  setFiltroEntidad(e: string) { this.filtroEntidad = e; this.aplicarFiltros(); }
-  setFechaDesde(v: string) { this.fechaDesde = v; this.cargarDatos(); }
-  setFechaHasta(v: string) { this.fechaHasta = v; this.cargarDatos(); }
+  // ── Tooltip ───────────────────────────────────────────
 
   showTooltip(d: any, event: MouseEvent) {
     this.tooltipDia = { fecha: d.fechaFull, monto: d.monto };
-    this.tooltipX = (event.target as HTMLElement).getBoundingClientRect().left;
+    this.tooltipX   = (event.target as HTMLElement).getBoundingClientRect().left;
   }
   hideTooltip() { this.tooltipDia = null; }
+
+  // ── Utils ─────────────────────────────────────────────
 
   getBancoColor(label: string) { return BANCO_COLORES[label]?.color || '#64748b'; }
 
@@ -270,11 +295,19 @@ export class IngresosBancariosComponent implements OnInit {
   }
   fmtK(n: number) {
     if (n >= 1_000_000) return 'S/ ' + (n / 1_000_000).toFixed(1) + 'M';
-    if (n >= 1_000) return 'S/ ' + (n / 1_000).toFixed(0) + 'K';
+    if (n >= 1_000)     return 'S/ ' + (n / 1_000).toFixed(0)     + 'K';
     return 'S/ ' + n.toFixed(0);
   }
 
-  get mesLabel() { return this.mesActivo || '—'; }
-  get pctBar() { return Math.max(2, this.pctConc); }
-  get tieneFiltros() { return this.filtroBanco !== 'TODOS' || this.filtroSucursal !== 'TODAS' || this.filtroEntidad !== 'TODAS' || !!this.fechaDesde || !!this.fechaHasta; }
+  get mesLabel()     { return this.mesActivo || '—'; }
+  get pctBar()       { return Math.max(2, this.pctConc); }
+  get tieneFiltros() {
+    return this.filtroBanco    !== 'TODOS'
+        || this.filtroSucursal !== 'TODAS'
+        || this.filtroEntidad  !== 'TODAS'
+        || !!this.idPopDesde
+        || !!this.idPopHasta
+        || !!this.fechaDesde
+        || !!this.fechaHasta;
+  }
 }
