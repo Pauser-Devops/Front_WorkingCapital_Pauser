@@ -37,7 +37,7 @@
       <app-registro-ingresos-bancarios *ngIf="vista === 'registroIB'"
         (navegarA)="setVista($event)"></app-registro-ingresos-bancarios>
       <app-analisis-bancarios *ngIf="vista === 'analisisBancarios'"></app-analisis-bancarios>
-      <app-comparador-ingresos *ngIf="vista === 'comparadorIngresos'"></app-comparador-ingresos>
+      <app-comparador-ingresos *ngIf="vista === 'comparadorIngresos'" (navegarA)="onNavegarA($event)"></app-comparador-ingresos>
       <div class="wk-coming"
         *ngIf="vista !== 'semanal' && vista !== 'mensual' && vista !== 'ingresos' 
              && vista !== 'egresos' && vista !== 'stock' && vista !== 'ingresosbancarios' 

@@ -32,6 +32,9 @@
       <button  class="ab-btn-sync"  (click)="exportarExcel()">
         Exportar Excel
       </button>
+      <button  class="ab-btn-sync"  (click)="exportarCompleto()">
+        Exportar Excel del Mes
+      </button>
     </div>
   </div>
 
@@ -268,6 +271,9 @@
               <th>SEDE</th>
               <th>ID POP</th>
               <th>CLASIFICACIÓN</th>
+              <th>RUC</th>
+              <th>PROVEEDOR / CLIENTE</th>
+              <th>DOCUMENTO</th>
             </tr>
           </thead>
           <tbody>
@@ -288,6 +294,9 @@
               <td>{{ r.sede || '—' }}</td>
               <td class="mono id-pop">{{ r.id_pop || '—' }}</td>
               <td class="clasi">{{ r.clasificacion || '—' }}</td>
+              <td class="clasi">{{ r.ruc || '—' }}</td>
+              <td class="clasi">{{ r.proveedor || '—' }}</td>
+              <td class="clasi">{{ r.documento || '—' }}</td>
             </tr>
           </tbody>
         </table>

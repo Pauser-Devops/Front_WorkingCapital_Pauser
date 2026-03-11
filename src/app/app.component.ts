@@ -66,7 +66,7 @@ export class AppComponent {
     localStorage.setItem('vistaActiva', v);
   }
 
-
+  onNavegarA(vista: string) { this.setVista(vista); }
   onFile(event: any) { this.wkSemanalRef?.onFile(event); }
   exportar() { this.wkSemanalRef?.exportar(); }
 }

@@ -1,6 +1,11 @@
 <div class="cmp-container">
 
   <!-- HEADER -->
+  <button (click)="volver()" class="btn-volver">
+    <span class="material-icons">arrow_back</span>
+    Volver
+  </button>
+  <br>
   <div class="cmp-header">
     <div class="cmp-title-wrap">
       <div class="cmp-icon-wrap">
@@ -15,10 +20,8 @@
 
   <!-- MESES -->
   <div class="cmp-meses">
-    <button *ngFor="let mes of meses" class="mes-btn"
-      [class.activo]="mesSeleccionado === mes"
-      [class.con-data]="tieneDatos(mes)"
-      (click)="seleccionarMes(mes)">
+    <button *ngFor="let mes of meses" class="mes-btn" [class.activo]="mesSeleccionado === mes"
+      [class.con-data]="tieneDatos(mes)" (click)="seleccionarMes(mes)">
       {{ mes }}
       <span class="mes-dot" *ngIf="tieneDatos(mes)"></span>
     </button>
@@ -62,15 +65,17 @@
         <span class="material-icons paso-icon">upload_file</span>
         <div>
           <div class="paso-titulo">Sube el Excel exportado anteriormente</div>
-          <div class="paso-sub">Usa el archivo CSV que exportaste desde "Registros Ingresos Bancarios" antes de sincronizar</div>
+          <div class="paso-sub">Usa el archivo XLSX que exportaste desde "Registros Ingresos Bancarios" antes de
+            sincronizar</div>
         </div>
       </div>
 
-      <div class="upload-area" (click)="fileInput.click()" (dragover)="$event.preventDefault()" (drop)="onArchivoSeleccionado($event)">
+      <div class="upload-area" (click)="fileInput.click()" (dragover)="$event.preventDefault()"
+        (drop)="onArchivoSeleccionado($event)">
         <input #fileInput type="file" accept=".xlsx" style="display:none" (change)="onArchivoSeleccionado($event)" />
         <span class="material-icons upload-icon">cloud_upload</span>
         <div class="upload-titulo">Arrastra el archivo aquí o haz clic para seleccionar</div>
-        <div class="upload-sub">Formato: CSV (exportado desde esta app)</div>
+        <div class="upload-sub">Formato: XLSX (exportado desde esta app)</div>
       </div>
 
       <div class="error-msg" *ngIf="errorArchivo">
@@ -79,7 +84,8 @@
 
       <div class="cmp-hint">
         <span class="material-icons">lightbulb</span>
-        <strong>¿Cómo funciona?</strong> Antes de sincronizar el mes, exporta el Excel desde "Registros Ingresos Bancarios".
+        <strong>¿Cómo funciona?</strong> Antes de sincronizar el mes, exporta el Excel desde "Registros Ingresos
+        Bancarios".
         Luego sincroniza. Después sube ese Excel aquí para ver qué ID POP fueron eliminados o modificados.
       </div>
     </div>
@@ -92,7 +98,8 @@
           <div class="paso-titulo">Archivo cargado correctamente</div>
           <div class="paso-sub">
             <span class="material-icons" style="font-size:14px;vertical-align:middle">description</span>
-            {{ archivoNombre }} — <strong>{{ registrosExcel.length | number }}</strong> registros del mes {{ mesSeleccionado }}
+            {{ archivoNombre }} — <strong>{{ registrosExcel.length | number }}</strong> registros del mes {{
+            mesSeleccionado }}
           </div>
         </div>
       </div>
@@ -133,7 +140,8 @@
           <div class="resumen-label">Eliminados</div>
           <div class="resumen-desc">Estaban en el Excel, ya no están en BD</div>
         </div>
-        <div class="resumen-card modificado" (click)="setFiltro('modificado')" [class.activo]="filtroVista==='modificado'">
+        <div class="resumen-card modificado" (click)="setFiltro('modificado')"
+          [class.activo]="filtroVista==='modificado'">
           <div class="resumen-icon"><span class="material-icons">edit</span></div>
           <div class="resumen-val">{{ totalMod }}</div>
           <div class="resumen-label">Modificados</div>

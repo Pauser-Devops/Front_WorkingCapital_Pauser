@@ -48,6 +48,9 @@ interface CategorizadoRow {
     sede: string;
     id_pop: string;
     clasificacion: string;
+    ruc: string;
+    proveedor: string;
+    documento: string;
     banco: string;
 }
 
@@ -302,6 +305,9 @@ export class AnalisisBancariosComponent implements OnInit {
                 ingreso, egreso, sede,
                 id_pop: idPop,
                 clasificacion: r.clasificacion || '',
+                ruc: r.ruc || '',
+                proveedor: r.proveedor_cliente || '',
+                documento: r.documento || '',
                 banco: tablaLabel,
             };
 
@@ -411,6 +417,7 @@ export class AnalisisBancariosComponent implements OnInit {
             rows = rows.filter(r =>
                 [r.nro_cheque, r.fecha, r.descripcion, r.detalle,
                 r.sede, r.id_pop, r.clasificacion, r.categoria,
+                r.ruc, r.proveedor, r.documento,
                 r.ingreso.toString(), r.egreso.toString()]
                     .some(v => (v || '').toString().replace(/\s+/g, '').toLowerCase().includes(q))
             );
@@ -427,6 +434,14 @@ export class AnalisisBancariosComponent implements OnInit {
         window.open(url, '_blank');
     }
 
+    exportarCompleto() {
+        if (!this.periodoActivo) return;
+        const mes = (this.periodoActivo as any).mes;
+        const anio = (this.periodoActivo as any).anio;
+        const url = `${API}/bancos/exportar-excel-completo?mes=${mes}&anio=${anio}`;
+        console.log(url);
+        window.open(url, '_blank');
+    }
     // ── utils ─────────────────────────────────────────────
 
     private formatFechaExcel(v: string): string {
@@ -462,4 +477,6 @@ export class AnalisisBancariosComponent implements OnInit {
     get montoActivo(): number {
         return this.registrosActivos.reduce((s, r) => s + r.ingreso, 0);
     }
+
+
 }
