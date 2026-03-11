@@ -135,10 +135,6 @@
           (click)="setFiltroComp('no_pauser')">
           <span class="material-icons">warning</span> No Pauser ({{ totalNoPauser | number }})
         </button>
-        <button class="ia-btn gris" [class.activo]="filtroComprobante==='sin_comprobante'"
-          (click)="setFiltroComp('sin_comprobante')">
-          <span class="material-icons">description</span> Sin comprobante ({{ totalSinComprobante | number }})
-        </button>
       </div>
     </div>
 
@@ -260,6 +256,7 @@
             <th>Cod. Operación</th>
             <th>Nro Op. Banco</th>
             <th>Banco</th>
+            <th>Destinatario</th>
             <th class="th-center">Comprobante</th>
           </tr>
         </thead>
@@ -288,6 +285,7 @@
             <td class="mono">{{ r.cod_operacion || '—' }}</td>
             <td class="mono" [class.nro-ok]="r.nro_operacion_banco">{{ r.nro_operacion_banco || '—' }}</td>
             <td>{{ r.banco_tabla || '—' }}</td>
+            <td>{{ r.destinatario_detectado || '—' }}</td>
             <td class="td-contar">
               <div class="status-actions">
                 <button [class.active-check]="getEstadoIA(r.id_pop) === 'pauser'" (click)="marcarPauser(r.id_pop, true)"

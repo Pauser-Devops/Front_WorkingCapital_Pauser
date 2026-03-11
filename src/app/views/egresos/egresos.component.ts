@@ -52,7 +52,7 @@ export class EgresosComponent implements OnInit {
   // Valores en panel
   valoresPanel: Record<number, number | null> = {};
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   ngOnInit() {
     this.cargarConceptos();
@@ -109,18 +109,16 @@ export class EgresosComponent implements OnInit {
   cerrarPanel() {
     this.mostrarPanel = false;
   }
-
   onFechaChange() {
     if (!this.nuevaFecha) return;
     this.cargandoFecha = true;
     this.fechaExistente = false;
     this.valoresPanel = {};
 
-    // Verificar si ya hay datos para esta fecha
     this.http.get<any>(`${API}/egresos/datos?fecha_corte=${this.nuevaFecha}`).subscribe({
       next: r => {
         this.cargandoFecha = false;
-        if (r.estado === 'OK' && r.datos.length > 0) {
+        if (r.estado === 'OK' && r.fecha_existente) {
           this.fechaExistente = true;
           for (const d of r.datos) {
             this.valoresPanel[d.concepto_id] = d.valor;
@@ -130,7 +128,6 @@ export class EgresosComponent implements OnInit {
       error: () => { this.cargandoFecha = false; }
     });
   }
-
   getValorPanel(concepto_id: number): number | null {
     return this.valoresPanel[concepto_id] ?? null;
   }
@@ -153,7 +150,7 @@ export class EgresosComponent implements OnInit {
       payload.push({ concepto_id: c.id, valor: v });
     }
 
-    this.http.post<any>(`${API}/wk/egresos-guardar`, {
+    this.http.post<any>(`${API}/egresos/guardar`, {
       fecha_corte: this.nuevaFecha,
       datos: payload
     }).subscribe({
@@ -188,10 +185,10 @@ export class EgresosComponent implements OnInit {
     return suma;
   }
 
-  esSeccion(c: Concepto): boolean  { return c.tipo_fila === 'seccion'; }
-  esTotal(c: Concepto): boolean    { return c.tipo_fila === 'total'; }
-  esItem(c: Concepto): boolean     { return c.tipo_fila === 'item'; }
-  esSubitem(c: Concepto): boolean  { return c.tipo_fila === 'subitem'; }
+  esSeccion(c: Concepto): boolean { return c.tipo_fila === 'seccion'; }
+  esTotal(c: Concepto): boolean { return c.tipo_fila === 'total'; }
+  esItem(c: Concepto): boolean { return c.tipo_fila === 'item'; }
+  esSubitem(c: Concepto): boolean { return c.tipo_fila === 'subitem'; }
 
   // ── Edición inline ─────────────────────────────────────
 
@@ -210,7 +207,7 @@ export class EgresosComponent implements OnInit {
     this.datos[concepto_id][fecha] = valor;
     this.editandoCelda = null;
 
-    this.http.post<any>(`${API}/wk/egresos-guardar`, {
+    this.http.post<any>(`${API}/egresos/guardar`, {
       fecha_corte: fecha,
       datos: [{ concepto_id, valor }]
     }).subscribe();
@@ -234,15 +231,15 @@ export class EgresosComponent implements OnInit {
 
   esEditando(concepto_id: number, fecha: string): boolean {
     return this.editandoCelda?.concepto_id === concepto_id &&
-           this.editandoCelda?.fecha === fecha;
+      this.editandoCelda?.fecha === fecha;
   }
 
   // ── Utils ──────────────────────────────────────────────
 
   formatFechaCorta(fecha: string): string {
-    const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
     const d = new Date(fecha + 'T00:00:00');
-    return `${String(d.getDate()).padStart(2,'0')} ${meses[d.getMonth()]}`;
+    return `${String(d.getDate()).padStart(2, '0')} ${meses[d.getMonth()]}`;
   }
 
   fmt(n: number | null): string {

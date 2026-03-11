@@ -9,20 +9,24 @@ const API = environment.apiUrl;
 const IDS_AUTO = new Set([2, 3, 4, 5, 6, 7, 8, 9, 10]);
 
 const BANCO_KEY: Record<number, string> = {
-  2:  'BCP LN',
-  3:  'BCP TRU',
-  4:  'BCP SEDES',
-  5:  'BCP',
-  6:  'INTERBANK',
-  7:  'BBVA',
-  8:  'CAJA AREQUIPA',
-  9:  'PICHINCHA',
+  2: 'BCP LN',
+  3: 'BCP TRU',
+  4: 'BCP SEDES',
+  5: 'BCP',
+  6: 'INTERBANK',
+  7: 'BBVA',
+  8: 'CAJA AREQUIPA',
+  9: 'PICHINCHA',
   10: 'BNACION',
 };
-
+const VALORES_DEFAULT: Record<number, number> = {
+  49: 567027.27, // Valor por defecto para DVM
+  52: 366400.00  // Valor por defecto para BACKUS
+};
 interface Concepto {
   id: number;
   nombre: string;
+  seccion: string;
   tipo_fila: string;
   indent: number;
   orden: number;
@@ -63,10 +67,11 @@ export class IngresosComponent implements OnInit {
   editandoCelda: { concepto_id: number, fecha: string } | null = null;
   valorEditando = '';
 
+
   // Valores manuales del panel
   valoresManualesPanel: Record<number, number | null> = {};
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   ngOnInit() { this.cargarConceptos(); }
 
@@ -130,6 +135,7 @@ export class IngresosComponent implements OnInit {
     this.cargandoFecha = false;
     this.bancosCalculados = {};
     this.valoresManualesPanel = {};
+    this.valoresManualesPanel = { ...VALORES_DEFAULT };
   }
 
   cerrarPanel() {
@@ -142,7 +148,7 @@ export class IngresosComponent implements OnInit {
     this.fechaExistente = false;
     this.bancosCalculados = {};
     this.valoresManualesPanel = {};
-
+    this.valoresManualesPanel = { ...VALORES_DEFAULT };
     // Verificar si ya hay datos para esta fecha
     this.http.get<any>(`${API}/wk/ingresos-datos?fecha_corte=${this.nuevaFecha}`).subscribe({
       next: r => {
@@ -198,7 +204,20 @@ export class IngresosComponent implements OnInit {
   setValorManualPanel(concepto_id: number, val: string) {
     this.valoresManualesPanel[concepto_id] = val === '' ? null : parseFloat(val);
   }
+  get manualesAgrupados() {
+    const grupos: Record<string, Concepto[]> = {};
 
+    this.conceptos.forEach(c => {
+      // Solo tomamos items que NO son automáticos (Bancos)
+      if (this.esItem(c) && !this.esAuto(c)) {
+        if (!grupos[c.seccion]) {
+          grupos[c.seccion] = [];
+        }
+        grupos[c.seccion].push(c);
+      }
+    });
+    return Object.entries(grupos);
+  }
   guardarFecha() {
     if (!this.nuevaFecha) return;
     this.guardandoFecha = true;
@@ -246,9 +265,9 @@ export class IngresosComponent implements OnInit {
   }
 
   esSeccion(c: Concepto): boolean { return c.tipo_fila === 'seccion'; }
-  esTotal(c: Concepto): boolean   { return c.tipo_fila === 'total'; }
-  esItem(c: Concepto): boolean    { return c.tipo_fila === 'item'; }
-  esAuto(c: Concepto): boolean    { return IDS_AUTO.has(c.id); }
+  esTotal(c: Concepto): boolean { return c.tipo_fila === 'total'; }
+  esItem(c: Concepto): boolean { return c.tipo_fila === 'item'; }
+  esAuto(c: Concepto): boolean { return IDS_AUTO.has(c.id); }
 
   // ── Edición inline ─────────────────────────────────────
 
@@ -275,15 +294,15 @@ export class IngresosComponent implements OnInit {
 
   esEditando(concepto_id: number, fecha: string): boolean {
     return this.editandoCelda?.concepto_id === concepto_id &&
-           this.editandoCelda?.fecha === fecha;
+      this.editandoCelda?.fecha === fecha;
   }
 
   // ── Utils ──────────────────────────────────────────────
 
   formatFechaCorta(fecha: string): string {
-    const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
     const d = new Date(fecha + 'T00:00:00');
-    return `${String(d.getDate()).padStart(2,'0')} ${meses[d.getMonth()]}`;
+    return `${String(d.getDate()).padStart(2, '0')} ${meses[d.getMonth()]}`;
   }
 
   fmt(n: number | null): string {
