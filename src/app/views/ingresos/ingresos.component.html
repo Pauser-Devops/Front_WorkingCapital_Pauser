@@ -35,7 +35,7 @@
   <div class="ing-error" *ngIf="error && !cargando">{{ error }}</div>
 
   <!-- TABLA PRINCIPAL -->
-  <div class="ing-tabla-wrap" *ngIf="!cargando && conceptos.length > 0">
+  <div class="ing-tabla-wrap" *ngIf="!cargando && conceptos.length > 0" (click)="onClickTabla($event)">
     <table class="ing-tabla">
       <thead>
         <tr>
@@ -67,14 +67,20 @@
               {{ c.nombre }}
               <span class="ing-badge-auto" *ngIf="esAuto(c)">BD</span>
             </td>
-            <td class="ing-td-val" *ngFor="let col of columnas; trackBy: trackByFecha"
-              (dblclick)="!esAuto(c) && iniciarEdicion(c.id, col.fecha)" [class.editable]="!esAuto(c)"
-              [class.vacio]="getValor(c.id, col.fecha) === null">
+            <td class="ing-td-val"
+              *ngFor="let col of columnas; trackBy: trackByFecha"
+              (dblclick)="!esAuto(c) && iniciarEdicion(c.id, col.fecha)"
+              [class.editable]="!esAuto(c)"
+              [class.vacio]="getValor(c.id, col.fecha) === null"
+              [attr.data-cid]="c.id"
+              [attr.data-fecha]="col.fecha">
 
-              <input *ngIf="esEditando(c.id, col.fecha)" class="ing-input-celda" type="number"
-                [(ngModel)]="valorEditando" (keydown.enter)="confirmarEdicion()" (keydown.escape)="cancelarEdicion()"
-                (blur)="confirmarEdicion()" autofocus />
-
+              <input *ngIf="esEditando(c.id, col.fecha)"
+                class="ing-input-celda" type="number"
+                [value]="valorEditando"
+                (input)="valorEditando = $any($event.target).value"
+                (keydown.enter)="confirmarEdicion()"
+                (keydown.escape)="cancelarEdicion()" />
               <span *ngIf="!esEditando(c.id, col.fecha)">
                 {{ fmt(getValor(c.id, col.fecha)) }}
               </span>
@@ -102,21 +108,21 @@
 </div>
 
 <!-- ═══════════════════════════════════════════
-     PANEL LATERAL
+     MODAL NUEVA FECHA
 ═══════════════════════════════════════════ -->
-<div class="ing-overlay" *ngIf="mostrarPanel" (click)="cerrarPanel()"></div>
+<div class="ing-modal-overlay" *ngIf="mostrarPanel" (click)="cerrarPanel()"></div>
 
-<div class="ing-panel" [class.abierto]="mostrarPanel">
+<div class="ing-modal" *ngIf="mostrarPanel">
 
-  <div class="ing-panel-header">
-    <div class="ing-panel-header-left">
-      <span class="ing-panel-title">
+  <div class="ing-modal-header">
+    <div class="ing-modal-header-left">
+      <span class="ing-modal-title">
         {{ fechaExistente ? 'Editar fecha' : 'Nueva fecha' }}
       </span>
       <span class="ing-badge-existente" *ngIf="fechaExistente">Editando</span>
     </div>
     <button class="ing-panel-close" (click)="cerrarPanel()">
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <line x1="18" y1="6" x2="6" y2="18" />
         <line x1="6" y1="6" x2="18" y2="18" />
@@ -124,41 +130,36 @@
     </button>
   </div>
 
-  <div class="ing-panel-body">
+  <div class="ing-modal-body">
 
-    <!-- Fecha corte -->
-    <div class="ing-field">
-      <label class="ing-label">Fecha de corte</label>
-      <input class="ing-input" type="date" [(ngModel)]="nuevaFecha" (change)="onFechaChange()" />
+    <!-- Fila superior: fecha + aviso -->
+    <div class="ing-modal-top">
+      <div class="ing-field" style="margin-bottom:0">
+        <label class="ing-label">Fecha de corte</label>
+        <input class="ing-input" type="date" [(ngModel)]="nuevaFecha" (change)="onFechaChange()" style="max-width:200px" />
+      </div>
+      <div class="ing-loading-fecha" *ngIf="cargandoFecha">
+        <div class="ing-spinner-sm" style="border-top-color:#2563eb;border-color:#e2e8f0"></div>
+        <span>Verificando...</span>
+      </div>
+      <div class="ing-aviso-existente" *ngIf="fechaExistente && !cargandoFecha" style="margin-bottom:0">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        Esta fecha ya tiene datos. Edita y guarda para actualizar.
+      </div>
     </div>
 
-    <!-- Verificando -->
-    <div class="ing-loading-fecha" *ngIf="cargandoFecha">
-      <div class="ing-spinner-sm"></div>
-      <span>Verificando fecha...</span>
-    </div>
-
-    <!-- Aviso fecha existente -->
-    <div class="ing-aviso-existente" *ngIf="fechaExistente && !cargandoFecha">
-      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10" />
-        <line x1="12" y1="8" x2="12" y2="12" />
-        <line x1="12" y1="16" x2="12.01" y2="16" />
-      </svg>
-      Esta fecha ya tiene datos. Edita y guarda para actualizar.
-    </div>
-
-    <!-- Contenido del panel (solo si hay fecha seleccionada) -->
+    <!-- Contenido: secciones en 1 col, campos en 2 cols -->
     <ng-container *ngIf="nuevaFecha && !cargandoFecha">
 
-      <!-- SECCIÓN BANCOS -->
-      <div class="ing-panel-seccion">SALDOS BANCOS</div>
-
-      <div class="ing-bancos-grid">
-        <div class="ing-banco-row" *ngFor="let c of conceptosBancoAuto">
-          <span class="ing-banco-label">{{ c.nombre }}</span>
-          <div class="ing-banco-val" [class.cargando]="calculandoBancos">
+      <!-- BANCOS -->
+      <div class="ing-panel-seccion">Saldos Bancos</div>
+      <div class="ing-fields-grid">
+        <div class="ing-field-item" *ngFor="let c of conceptosBancoAuto">
+          <label class="ing-manual-label">{{ c.nombre }}</label>
+          <div class="ing-banco-val-box" [class.cargando]="calculandoBancos">
             <div class="ing-spinner-sm" *ngIf="calculandoBancos"></div>
             <span *ngIf="!calculandoBancos">
               {{ valorBancoCalculado(c.id) > 0 ? fmt(valorBancoCalculado(c.id)) : '—' }}
@@ -166,42 +167,35 @@
           </div>
         </div>
       </div>
-
-      <button class="ing-btn-calcular" (click)="calcularBancos()" [disabled]="!nuevaFecha || calculandoBancos">
+      <button class="ing-btn-calcular" style="margin-bottom:24px" (click)="calcularBancos()" [disabled]="!nuevaFecha || calculandoBancos">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="23 4 23 10 17 10" />
-          <polyline points="1 20 1 14 7 14" />
-          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+          <polyline points="23 4 23 10 17 10"/>
+          <polyline points="1 20 1 14 7 14"/>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
         </svg>
         Recalcular desde BD
       </button>
 
+      <!-- MANUALES por sección, campos en 2 cols -->
       <ng-container *ngFor="let grupo of manualesAgrupados">
-
-        <div class="ing-panel-seccion" style="margin-top: 24px">
-          {{ grupo[0] }}
-        </div>
-
-        <div class="ing-manual-grid">
-          <div class="ing-manual-row" *ngFor="let c of grupo[1]">
+        <div class="ing-panel-seccion">{{ grupo[0] }}</div>
+        <div class="ing-fields-grid" style="margin-bottom:24px">
+          <div class="ing-field-item" *ngFor="let c of grupo[1]">
             <label class="ing-manual-label">{{ c.nombre }}</label>
-
-            <div class="ing-input-wrapper">
-              <input class="ing-input-manual" type="number" [value]="getValorManualPanel(c.id) ?? ''"
-                (input)="setValorManualPanel(c.id, $any($event.target).value)" placeholder="0.00" />
-            </div>
+            <input class="ing-input-manual" type="text"
+              [value]="fmtPanel(c.id)"
+              (input)="setValorManualPanel(c.id, $any($event.target).value)"
+              placeholder="0.00" />
           </div>
         </div>
-
       </ng-container>
 
     </ng-container>
 
   </div>
 
-  <!-- Footer -->
-  <div class="ing-panel-footer">
+  <div class="ing-modal-footer">
     <button class="ing-btn-cancelar" (click)="cerrarPanel()">Cancelar</button>
     <button class="ing-btn-guardar" (click)="guardarFecha()" [disabled]="!nuevaFecha || guardandoFecha">
       <div class="ing-spinner-sm" *ngIf="guardandoFecha"></div>

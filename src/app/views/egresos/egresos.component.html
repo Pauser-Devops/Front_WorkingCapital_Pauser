@@ -6,8 +6,8 @@
       <div class="eg-icon">
         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/>
-          <polyline points="17 18 23 18 23 12"/>
+          <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" />
+          <polyline points="17 18 23 18 23 12" />
         </svg>
       </div>
       <div>
@@ -18,7 +18,8 @@
     <button class="eg-btn-nueva" (click)="abrirPanel()">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
       </svg>
       Nueva fecha
     </button>
@@ -65,22 +66,18 @@
             <td class="eg-td-label" [style.paddingLeft.px]="16 + (c.indent || 0) * 12">
               {{ c.nombre }}
             </td>
-            <td class="eg-td-val editable"
-              *ngFor="let col of columnas; trackBy: trackByFecha"
-              (dblclick)="iniciarEdicion(c.id, col.fecha)"
+            <td class="eg-td-val editable" *ngFor="let col of columnas; trackBy: trackByFecha"
+              (dblclick)="iniciarEdicion(c.id, col.fecha)" [attr.data-cid]="c.id" [attr.data-fecha]="col.fecha"
               [class.vacio]="getValor(c.id, col.fecha) === null">
 
-              <input *ngIf="esEditando(c.id, col.fecha)"
-                class="eg-input-celda" type="number"
-                [(ngModel)]="valorEditando"
-                (keydown.enter)="confirmarEdicion()"
-                (keydown.escape)="cancelarEdicion()"
-                (blur)="confirmarEdicion()"
-                autofocus />
-
-              <span *ngIf="!esEditando(c.id, col.fecha)">
-                {{ fmt(getValor(c.id, col.fecha)) }}
-              </span>
+              <ng-container *ngIf="esEditando(c.id, col.fecha); else spanItem">
+                <input class="eg-input-celda" type="number" [value]="valorEditando"
+                  (input)="valorEditando = $any($event.target).value" (keydown.enter)="confirmarEdicion()"
+                  (keydown.escape)="cancelarEdicion()" />
+              </ng-container>
+              <ng-template #spanItem>
+                <span>{{ fmt(getValor(c.id, col.fecha)) }}</span>
+              </ng-template>
             </td>
           </tr>
 
@@ -90,22 +87,18 @@
               <span class="eg-indent-line"></span>
               {{ c.nombre }}
             </td>
-            <td class="eg-td-val editable"
-              *ngFor="let col of columnas; trackBy: trackByFecha"
-              (dblclick)="iniciarEdicion(c.id, col.fecha)"
+            <td class="eg-td-val editable" *ngFor="let col of columnas; trackBy: trackByFecha"
+              (dblclick)="iniciarEdicion(c.id, col.fecha)" [attr.data-cid]="c.id" [attr.data-fecha]="col.fecha"
               [class.vacio]="getValor(c.id, col.fecha) === null">
 
-              <input *ngIf="esEditando(c.id, col.fecha)"
-                class="eg-input-celda" type="number"
-                [(ngModel)]="valorEditando"
-                (keydown.enter)="confirmarEdicion()"
-                (keydown.escape)="cancelarEdicion()"
-                (blur)="confirmarEdicion()"
-                autofocus />
-
-              <span *ngIf="!esEditando(c.id, col.fecha)">
-                {{ fmt(getValor(c.id, col.fecha)) }}
-              </span>
+              <ng-container *ngIf="esEditando(c.id, col.fecha); else spanSub">
+                <input class="eg-input-celda" type="number" [value]="valorEditando"
+                  (input)="valorEditando = $any($event.target).value" (keydown.enter)="confirmarEdicion()"
+                  (keydown.escape)="cancelarEdicion()" />
+              </ng-container>
+              <ng-template #spanSub>
+                <span>{{ fmt(getValor(c.id, col.fecha)) }}</span>
+              </ng-template>
             </td>
           </tr>
 
@@ -116,99 +109,68 @@
 
   <!-- EMPTY -->
   <div class="eg-empty" *ngIf="!cargando && !error && columnas.length === 0">
-    <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none"
-      stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="3" y="3" width="18" height="18" rx="2"/>
-      <line x1="3" y1="9" x2="21" y2="9"/>
-      <line x1="3" y1="15" x2="21" y2="15"/>
-      <line x1="9" y1="3" x2="9" y2="21"/>
+    <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#94a3b8"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <line x1="3" y1="9" x2="21" y2="9" />
+      <line x1="3" y1="15" x2="21" y2="15" />
+      <line x1="9" y1="3" x2="9" y2="21" />
     </svg>
     <p>Sin datos aún · Agrega la primera fecha</p>
     <button class="eg-btn-nueva" (click)="abrirPanel()">+ Nueva fecha</button>
   </div>
 
 </div>
-
-<!-- ═══════════════════════════════════════════
-     PANEL LATERAL
-═══════════════════════════════════════════ -->
-<div class="eg-overlay" *ngIf="mostrarPanel" (click)="cerrarPanel()"></div>
-
-<div class="eg-panel" [class.abierto]="mostrarPanel">
-  <div class="eg-panel-header">
+<!-- MODAL -->
+<div class="eg-modal-overlay" *ngIf="mostrarPanel" (click)="cerrarPanel()"></div>
+<div class="eg-modal" *ngIf="mostrarPanel">
+  <div class="eg-modal-header">
     <div class="eg-panel-header-left">
-      <span class="eg-panel-title">
-        {{ fechaExistente ? 'Editar fecha' : 'Nueva fecha' }}
-      </span>
+      <span class="eg-modal-title">{{ fechaExistente ? 'Editar fecha' : 'Nueva fecha' }}</span>
       <span class="eg-badge-existente" *ngIf="fechaExistente">Editando</span>
     </div>
-    <button class="eg-panel-close" (click)="cerrarPanel()">
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-      </svg>
-    </button>
+    <button class="eg-panel-close" (click)="cerrarPanel()">✕</button>
   </div>
 
-  <div class="eg-panel-body">
-
-    <!-- Fecha -->
+  <div class="eg-modal-body">
     <div class="eg-field">
       <label class="eg-label">Fecha de corte</label>
       <input class="eg-input" type="date" [(ngModel)]="nuevaFecha" (change)="onFechaChange()" />
     </div>
 
-    <!-- Cargando fecha -->
     <div class="eg-loading-fecha" *ngIf="cargandoFecha">
       <div class="eg-spinner-sm"></div>
       <span>Verificando fecha...</span>
     </div>
 
-    <!-- Aviso fecha existente -->
     <div class="eg-aviso-existente" *ngIf="fechaExistente && !cargandoFecha">
-      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
-        <line x1="12" y1="16" x2="12.01" y2="16"/>
-      </svg>
-      Esta fecha ya tiene datos. Edita y guarda para actualizar.
+      ⚠ Esta fecha ya tiene datos. Edita y guarda para actualizar.
     </div>
 
-    <!-- Conceptos por sección -->
     <ng-container *ngIf="nuevaFecha && !cargandoFecha">
-      <ng-container *ngFor="let c of conceptos; trackBy: trackById">
-
-        <!-- Sección como separador -->
-        <div class="eg-panel-seccion" *ngIf="esSeccion(c)">{{ c.nombre }}</div>
-
-        <!-- Items y subitems editables -->
-        <div class="eg-manual-row" *ngIf="esItem(c) || esSubitem(c)"
-          [class.subitem]="esSubitem(c)">
-          <label class="eg-manual-label">
-            <span class="eg-subindent" *ngIf="esSubitem(c)">└</span>
-            {{ c.nombre }}
-          </label>
-          <input class="eg-input-manual" type="number" placeholder="0"
-            [value]="getValorPanel(c.id) ?? ''"
-            (input)="setValorPanel(c.id, $any($event.target).value)" />
-        </div>
-
-        <!-- Total como separador visual -->
-        <div class="eg-panel-total" *ngIf="esTotal(c)">
-          <span>{{ c.nombre }}</span>
-          <strong>{{ fmt(calcularTotalPanel(c)) }}</strong>
-        </div>
-
-      </ng-container>
+      <div class="eg-modal-cols">
+        <ng-container *ngFor="let c of conceptos; trackBy: trackById">
+          <div class="eg-panel-seccion eg-modal-seccion-header" *ngIf="esSeccion(c)">{{ c.nombre }}</div>
+          <div class="eg-manual-row" *ngIf="esItem(c) || esSubitem(c)" [class.subitem]="esSubitem(c)">
+            <label class="eg-manual-label">
+              <span class="eg-subindent" *ngIf="esSubitem(c)">└</span>
+              {{ c.nombre }}
+            </label>
+            <input class="eg-input-manual" type="number" placeholder="0" [value]="getValorPanel(c.id) ?? ''"
+              (input)="setValorPanel(c.id, $any($event.target).value)" />
+          </div>
+          <div class="eg-panel-total" *ngIf="esTotal(c)">
+            <span>{{ c.nombre }}</span>
+            <strong>{{ fmt(getValorPanel(c.id) !== null ? getValorPanel(c.id) : calcularTotalPanel(c)) }}</strong>
+          </div>
+        </ng-container>
+      </div>
     </ng-container>
-
   </div>
 
-  <!-- Footer -->
-  <div class="eg-panel-footer">
+  <div class="eg-modal-footer">
     <button class="eg-btn-cancelar" (click)="cerrarPanel()">Cancelar</button>
-    <button class="eg-btn-guardar" (click)="guardarFecha()"
-      [disabled]="!nuevaFecha || guardandoFecha">
+    <button class="eg-btn-guardar" (click)="guardarFecha()" [disabled]="!nuevaFecha || guardandoFecha">
       <div class="eg-spinner-sm" *ngIf="guardandoFecha"></div>
       {{ guardandoFecha ? 'Guardando...' : (fechaExistente ? 'Actualizar' : 'Guardar fecha') }}
     </button>

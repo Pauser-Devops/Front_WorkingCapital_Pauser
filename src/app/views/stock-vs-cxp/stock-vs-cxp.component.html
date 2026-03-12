@@ -2,151 +2,187 @@
 
   <!-- Header -->
   <div class="page-header">
-    <div class="header-icon">
-      <span class="material-icons">inventory_2</span>
-    </div>
+    <div class="header-icon"><span class="material-icons">inventory_2</span></div>
     <div class="header-info">
       <h1>Stock vs CxP</h1>
       <span class="header-sub">Working Capital · Comparativo por fecha</span>
     </div>
-    <button class="btn-nueva-fecha" (click)="abrirPanel()">+ Nueva fecha</button>
+    <button class="btn-nueva-fecha" (click)="abrirModal()">+ Nueva fecha</button>
   </div>
 
-  <!-- Loading / Error -->
   <div *ngIf="cargando" class="estado-msg">Cargando...</div>
   <div *ngIf="error" class="estado-msg error">{{ error }}</div>
 
-  <!-- Tabla principal -->
-  <div *ngIf="!cargando && !error" class="tabla-scroll">
+  <!-- ── Navegador de fechas ─────────────────────────────────────── -->
+  <div class="nav-fechas" *ngIf="!cargando && !error && columnas.length > 0">
+
+    <button class="btn-nav" (click)="irAnterior()" [disabled]="indiceActivo === 0">‹</button>
+
+    <div class="chips-fechas">
+      <button
+        *ngFor="let col of columnas; let i = index; trackBy: trackByFecha"
+        class="chip-fecha"
+        [class.chip-activo]="i === indiceActivo"
+        (click)="irAFecha(i)"
+      >
+        {{ col.label }}
+      </button>
+    </div>
+
+    <button class="btn-nav" (click)="irSiguiente()" [disabled]="indiceActivo === columnas.length - 1">›</button>
+
+  </div>
+
+  <!-- Tabla — una sola fecha visible -->
+  <div *ngIf="!cargando && !error && columnaActiva" class="tabla-scroll">
+
+    <!-- Cabecera de fecha activa -->
+    <div class="fecha-header-bar">
+      <span class="fecha-titulo">{{ columnaActiva.label }}</span>
+      <button class="btn-cfg-inline" (click)="abrirConfig(columnaActiva.fecha)" title="Editar parámetros">
+        ⚙ Editar parámetros
+      </button>
+    </div>
+
     <table class="tabla-stock">
       <thead>
-        <tr>
-          <th class="col-concepto">Proveedor</th>
-          <ng-container *ngFor="let col of columnas; trackBy: trackByFecha">
-            <th class="col-fecha" colspan="6">
-              {{ col.label }}
-              <button class="btn-config-fecha" (click)="abrirConfig(col.fecha)" title="Editar config">⚙</button>
-            </th>
-          </ng-container>
-        </tr>
         <tr class="subheader">
-          <th></th>
-          <ng-container *ngFor="let col of columnas; trackBy: trackByFecha">
-            <th>Stock</th>
-            <th>Por Pagar</th>
-            <th>Diferencia</th>
-            <th>Días Piso</th>
-            <th>Exceso</th>
-            <th>Lo que deberíamos tener</th>
-          </ng-container>
+          <th class="col-concepto sticky-col">Proveedor</th>
+          <th>Stock</th>
+          <th>Por Pagar</th>
+          <th>Diferencia</th>
+          <th>Días Piso</th>
+          <th>Lo que debe ser</th>
+          <th>Exceso</th>
+          <th>Lo que deberíamos tener</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let prov of proveedores; trackBy: trackByProveedor">
-          <td class="col-concepto">{{ prov }}</td>
-          <ng-container *ngFor="let col of columnas; trackBy: trackByFecha">
-            <ng-container *ngIf="getFila(col.fecha, prov) as fila; else sinDato">
-              <td class="num">{{ fmt(fila.stock) }}</td>
-              <td class="num">{{ fmt(fila.porPagar) }}</td>
-              <td class="num" [ngClass]="colorDif(fila.diferencia)">{{ fmt(fila.diferencia) }}</td>
-              <td class="num">{{ fila.diasPiso | number:'1.2-2' }}</td>
-              <td class="num" [class.text-green]="fila.exceso > 0">
-                {{ fila.exceso > 0 ? fmt(fila.exceso) : '—' }}
-              </td>
-              <td class="num">{{ fila.loQueDeberiamostener > 0 ? fmt(fila.loQueDeberiamostener) : '—' }}</td>
-            </ng-container>
-            <ng-template #sinDato>
-              <td class="num" colspan="6">—</td>
-            </ng-template>
+        <tr *ngFor="let prov of proveedores; trackBy: trackByProv">
+          <td class="col-concepto sticky-col">{{ prov }}</td>
+          <ng-container *ngIf="getFila(columnaActiva.fecha, prov) as f; else sinDato">
+            <td class="num">{{ fmt(f.stock) }}</td>
+            <td class="num">{{ fmt(f.porPagar) }}</td>
+            <td class="num" [ngClass]="colorDif(f.diferencia)">{{ fmt(f.diferencia) }}</td>
+            <td class="num">{{ f.diasPiso | number:'1.2-2' }}</td>
+            <td class="num">{{ f.loQueDebeSer | number:'1.0-0' }}</td>
+            <td class="num" [ngClass]="colorDif(f.exceso)">{{ fmt(f.exceso) }}</td>
+            <td class="num">{{ f.loQueDeberiamostener }}</td>
           </ng-container>
+          <ng-template #sinDato>
+            <td colspan="7" class="num">—</td>
+          </ng-template>
         </tr>
         <!-- Fila totales -->
-        <tr class="fila-total" *ngIf="columnas.length > 0">
-          <td class="col-concepto">TOTALES</td>
-          <ng-container *ngFor="let col of columnas; trackBy: trackByFecha">
-            <td class="num">{{ fmt(getTotal(col.fecha, 'stock')) }}</td>
-            <td class="num">{{ fmt(getTotal(col.fecha, 'porPagar')) }}</td>
-            <td class="num" [ngClass]="colorDif(getTotal(col.fecha, 'diferencia'))">
-              {{ fmt(getTotal(col.fecha, 'diferencia')) }}
-            </td>
-            <td class="num">—</td>
-            <td class="num">{{ fmt(getTotal(col.fecha, 'exceso')) }}</td>
-            <td class="num">—</td>
-          </ng-container>
+        <tr class="fila-total">
+          <td class="col-concepto sticky-col">TOTALES</td>
+          <td class="num">{{ fmt(getTotal(columnaActiva.fecha, 'stock')) }}</td>
+          <td class="num">{{ fmt(getTotal(columnaActiva.fecha, 'porPagar')) }}</td>
+          <td class="num" [ngClass]="colorDif(getTotal(columnaActiva.fecha, 'diferencia'))">{{ fmt(getTotal(columnaActiva.fecha, 'diferencia')) }}</td>
+          <td class="num">—</td>
+          <td class="num">—</td>
+          <td class="num" [ngClass]="colorDif(getTotal(columnaActiva.fecha, 'exceso'))">{{ fmt(getTotal(columnaActiva.fecha, 'exceso')) }}</td>
+          <td class="num">{{ fmt(getTotal(columnaActiva.fecha, 'loQueDeberiamostener')) }}</td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <!-- ── Panel nueva fecha ──────────────────────────────────────────── -->
-  <div class="panel-overlay" *ngIf="mostrarPanel" (click)="cerrarPanel()"></div>
-  <div class="panel-lateral" *ngIf="mostrarPanel">
-    <div class="panel-header">
-      <span>Nueva fecha</span>
-      <button class="btn-cerrar" (click)="cerrarPanel()">✕</button>
+  <!-- ══════════════════════════════════════════════════════════════
+       MODAL: Nueva fecha
+  ══════════════════════════════════════════════════════════════ -->
+  <div class="modal-overlay" *ngIf="mostrarModal" (click)="cerrarModal()"></div>
+  <div class="modal" *ngIf="mostrarModal">
+    <div class="modal-header">
+      <h2>Nueva fecha de corte</h2>
+      <button class="btn-cerrar" (click)="cerrarModal()">✕</button>
     </div>
 
-    <div class="panel-body">
-      <label class="panel-label">Fecha de corte</label>
-      <input type="date" class="panel-input" [(ngModel)]="nuevaFecha" (change)="onFechaChange()" />
+    <div class="modal-body">
+      <div class="modal-fecha-row">
+        <label>Fecha de corte</label>
+        <input type="date" class="input-fecha" [(ngModel)]="nuevaFecha" (change)="onFechaChange()" />
+      </div>
 
-      <div *ngIf="cargandoFecha" class="panel-loading">Calculando...</div>
+      <div *ngIf="cargandoFecha" class="loading-msg">Calculando desde ingresos y egresos...</div>
 
-      <!-- Config editable: ventas mensuales y días objetivo -->
-      <div *ngIf="previewDatos.length > 0 && !cargandoFecha">
-        <div class="config-section-title">Parámetros por proveedor</div>
-        <table class="config-tabla">
-          <thead>
-            <tr>
-              <th>Proveedor</th>
-              <th>Ventas mensuales (L)</th>
-              <th>Días objetivo (G)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let cfg of configFilas">
-              <td>{{ cfg.proveedor }}</td>
-              <td>
-                <input type="number" class="input-config" [(ngModel)]="cfg.ventasMensuales"
-                       (ngModelChange)="recalcularPreview()" min="0" />
-              </td>
-              <td>
-                <input type="number" class="input-config" [(ngModel)]="cfg.diasObjetivo"
-                       (ngModelChange)="recalcularPreview()" min="0" />
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <div *ngIf="previewDatos.length > 0 && !cargandoFecha" class="modal-grid">
+
+        <!-- Parámetros editables -->
+        <div class="modal-seccion">
+          <h3>Parámetros <span class="badge-info">Edita ventas mensuales y días objetivo</span></h3>
+          <table class="tabla-params">
+            <thead>
+              <tr>
+                <th>Proveedor</th>
+                <th>Proyectado Mensual</th>
+                <th>Días objetivo</th>
+                <th>/ Días del Mes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let cfg of configFilas">
+                <td class="prov-name">{{ cfg.proveedor }}</td>
+                <td>
+                  <input
+                    type="text" inputmode="numeric" class="input-num"
+                    [value]="fmtInput(cfg.ventasMensuales)"
+                    (input)="onInputVentas(cfg, $event)"
+                    placeholder="0"
+                  />
+                </td>
+                <td>
+                  <input
+                    type="number" class="input-num small"
+                    [(ngModel)]="cfg.diasObjetivo"
+                    (ngModelChange)="recalcularPreview()"
+                    min="1" placeholder="0"
+                  />
+                </td>
+                <td class="calc-val">
+                  {{ cfg.ventasMensuales > 0 ? fmt(cfg.ventasMensuales / diasDelMes) : '—' }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
         <!-- Preview resultado -->
-        <div class="config-section-title" style="margin-top:16px">Preview</div>
-        <table class="preview-tabla">
-          <thead>
-            <tr>
-              <th>Proveedor</th>
-              <th>Stock</th>
-              <th>Por Pagar</th>
-              <th>Dif.</th>
-              <th>Días Piso</th>
-              <th>Exceso</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let f of previewDatos">
-              <td>{{ f.proveedor }}</td>
-              <td>{{ fmt(f.stock) }}</td>
-              <td>{{ fmt(f.porPagar) }}</td>
-              <td [ngClass]="colorDif(f.diferencia)">{{ fmt(f.diferencia) }}</td>
-              <td>{{ f.diasPiso | number:'1.2-2' }}</td>
-              <td>{{ f.exceso > 0 ? fmt(f.exceso) : '—' }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="modal-seccion">
+          <h3>Preview resultado</h3>
+          <table class="tabla-preview">
+            <thead>
+              <tr>
+                <th>Proveedor</th>
+                <th>Stock</th>
+                <th>Por Pagar</th>
+                <th>Diferencia</th>
+                <th>Días Piso</th>
+                <th>Lo q debe ser</th>
+                <th>Exceso</th>
+                <th>Lo q deberíamos tener</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let f of previewDatos">
+                <td class="prov-name">{{ f.proveedor }}</td>
+                <td class="num">{{ fmt(f.stock) }}</td>
+                <td class="num">{{ fmt(f.porPagar) }}</td>
+                <td class="num" [ngClass]="colorDif(f.diferencia)">{{ fmt(f.diferencia) }}</td>
+                <td class="num">{{ f.diasPiso | number:'1.2-2' }}</td>
+                <td class="num">{{ f.loQueDebeSer }}</td>
+                <td class="num" [ngClass]="colorDif(f.exceso)">{{ fmt(f.exceso) }}</td>
+                <td class="num">{{ f.loQueDeberiamostener > 0 ? fmt(f.loQueDeberiamostener) : '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
       </div>
     </div>
 
-    <div class="panel-footer">
-      <button class="btn-cancelar" (click)="cerrarPanel()">Cancelar</button>
+    <div class="modal-footer">
+      <button class="btn-cancelar" (click)="cerrarModal()">Cancelar</button>
       <button class="btn-guardar"
               [disabled]="!nuevaFecha || cargandoFecha || guardandoFecha || previewDatos.length === 0"
               (click)="guardarFecha()">
@@ -155,39 +191,44 @@
     </div>
   </div>
 
-  <!-- ── Panel editar config de fecha existente ────────────────────── -->
-  <div class="panel-overlay" *ngIf="mostrarPanelConfig" (click)="cerrarConfig()"></div>
-  <div class="panel-lateral" *ngIf="mostrarPanelConfig">
-    <div class="panel-header">
-      <span>Editar parámetros · {{ formatFechaCorta(fechaConfigActiva) }}</span>
+  <!-- ══════════════════════════════════════════════════════════════
+       MODAL: Editar config de fecha existente
+  ══════════════════════════════════════════════════════════════ -->
+  <div class="modal-overlay" *ngIf="mostrarModalConfig" (click)="cerrarConfig()"></div>
+  <div class="modal modal-sm" *ngIf="mostrarModalConfig">
+    <div class="modal-header">
+      <h2>Editar parámetros · {{ formatFecha(fechaConfigActiva) }}</h2>
       <button class="btn-cerrar" (click)="cerrarConfig()">✕</button>
     </div>
-
-    <div class="panel-body">
-      <div class="config-section-title">Ventas mensuales (L) y días objetivo (G)</div>
-      <table class="config-tabla">
+    <div class="modal-body">
+      <p class="modal-hint">Los cambios recalculan días piso, exceso y lo que deberíamos tener.</p>
+      <table class="tabla-params">
         <thead>
           <tr>
             <th>Proveedor</th>
-            <th>Ventas mensuales (L)</th>
-            <th>Días objetivo (G)</th>
+            <th>Proyectado Mensual</th>
+            <th>Días objetivo</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let cfg of configExistente">
-            <td>{{ cfg.proveedor }}</td>
+            <td class="prov-name">{{ cfg.proveedor }}</td>
             <td>
-              <input type="number" class="input-config" [(ngModel)]="cfg.ventasMensuales" min="0" />
+              <input
+                type="text" inputmode="numeric" class="input-num"
+                [value]="fmtInput(cfg.ventasMensuales)"
+                (input)="onInputVentasExistente(cfg, $event)"
+                placeholder="0"
+              />
             </td>
             <td>
-              <input type="number" class="input-config" [(ngModel)]="cfg.diasObjetivo" min="0" />
+              <input type="number" class="input-num small" [(ngModel)]="cfg.diasObjetivo" min="1" />
             </td>
           </tr>
         </tbody>
       </table>
     </div>
-
-    <div class="panel-footer">
+    <div class="modal-footer">
       <button class="btn-cancelar" (click)="cerrarConfig()">Cancelar</button>
       <button class="btn-guardar" [disabled]="guardandoConfig" (click)="guardarConfig()">
         {{ guardandoConfig ? 'Guardando...' : 'Guardar cambios' }}

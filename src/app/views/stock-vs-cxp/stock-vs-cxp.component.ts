@@ -1,8 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { WkRefreshService } from './../../shared/services/wk-refresh.service';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 const API = environment.apiUrl;
 
@@ -12,10 +15,10 @@ interface FilaStock {
   porPagar: number;
   diferencia: number;
   diasPiso: number;
-  loQueDebeSer: number;      // días objetivo (G)
+  loQueDebeSer: number;
   exceso: number;
   loQueDeberiamostener: number;
-  ventasMensuales: number;   // columna L
+  ventasMensuales: number;
 }
 
 interface ConfigFila {
@@ -24,10 +27,7 @@ interface ConfigFila {
   diasObjetivo: number;
 }
 
-interface Columna {
-  fecha: string;
-  label: string;
-}
+interface Columna { fecha: string; label: string; }
 
 @Component({
   selector: 'app-stock-vs-cxp',
@@ -36,32 +36,81 @@ interface Columna {
   templateUrl: './stock-vs-cxp.component.html',
   styleUrls: ['./stock-vs-cxp.component.css'],
 })
-export class StockVsCxpComponent implements OnInit {
+export class StockVsCxpComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
 
   columnas: Columna[] = [];
   datos: Record<string, FilaStock[]> = {};
   cargando = true;
   error = '';
 
-  // Panel nueva fecha
-  mostrarPanel = false;
+  // ── Navegación por fecha (una a la vez) ──────────────────────────
+  indiceActivo = 0;
+
+  get columnaActiva(): Columna | null {
+    return this.columnas[this.indiceActivo] ?? null;
+  }
+
+  irAnterior() {
+    if (this.indiceActivo > 0) this.indiceActivo--;
+  }
+
+  irSiguiente() {
+    if (this.indiceActivo < this.columnas.length - 1) this.indiceActivo++;
+  }
+
+  irAFecha(i: number) {
+    this.indiceActivo = i;
+  }
+
+  // Modal nueva fecha
+  mostrarModal = false;
   nuevaFecha = '';
   cargandoFecha = false;
   guardandoFecha = false;
   previewDatos: FilaStock[] = [];
-
-  // Config editable (L y días objetivo) — se muestra en preview
   configFilas: ConfigFila[] = [];
-  guardandoConfig = false;
 
-  // Panel config (editar fecha existente)
-  mostrarPanelConfig = false;
+  // Valores por defecto editables
+  private VM_DEFAULT: Record<string, number> = {
+    'CBC': 2652546,
+    'SNACKS TRUX': 1124019,
+    'SNACKS CHIMBOTE': 856272,
+    'BACKUS': 7277433,
+    'MONDELEZ': 5164709,
+  };
+
+  // Modal editar config
+  mostrarModalConfig = false;
   fechaConfigActiva = '';
   configExistente: ConfigFila[] = [];
+  guardandoConfig = false;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private wkRefresh: WkRefreshService) { }
 
-  ngOnInit() { this.cargarDatos(); }
+  ngOnInit() {
+    this.wkRefresh.ingresosGuardado$.pipe(takeUntil(this.destroy$)).subscribe(fecha => {
+      this.recargarConFecha(fecha);
+    });
+    this.wkRefresh.egresosGuardado$.pipe(takeUntil(this.destroy$)).subscribe(fecha => {
+      this.recargarConFecha(fecha);
+    });
+    this.cargarDatos();
+  }
+
+  ngOnDestroy() { this.destroy$.next(); this.destroy$.complete(); }
+
+  recargarConFecha(fecha: string) {
+    const existe = this.columnas.find(c => c.fecha === fecha);
+    if (existe) {
+      this.cargarFecha(fecha);
+    } else {
+      const label = this.formatFecha(fecha);
+      this.columnas = [...this.columnas, { fecha, label }]
+        .sort((a, b) => a.fecha.localeCompare(b.fecha));
+      this.cargarFecha(fecha);
+    }
+  }
 
   cargarDatos() {
     this.cargando = true;
@@ -69,123 +118,135 @@ export class StockVsCxpComponent implements OnInit {
       next: r => {
         this.cargando = false;
         if (r.estado === 'OK') {
-          this.columnas = r.fechas.map((f: string) => ({
-            fecha: f,
-            label: this.formatFechaCorta(f),
-          }));
+          const fechasOrdenadas: string[] = [...r.fechas].sort((a: string, b: string) => a.localeCompare(b));
+          this.columnas = fechasOrdenadas.map((f: string) => ({ fecha: f, label: this.formatFecha(f) }));
+          // Mostrar la última fecha por defecto
+          this.indiceActivo = Math.max(0, this.columnas.length - 1);
           for (const col of this.columnas) this.cargarFecha(col.fecha);
         }
       },
-      error: () => { this.cargando = false; this.error = 'Error al cargar fechas'; }
+      error: () => { this.cargando = false; this.error = 'Error al cargar datos'; }
     });
   }
 
+  // recalcular=true: el backend recalcula desde ingresos/egresos SOLO si la fecha ya existe en BD
   cargarFecha(fecha: string) {
-    this.http.get<any>(`${API}/stock-cxp/resumen?fecha_corte=${fecha}`).subscribe({
+    this.http.get<any>(`${API}/stock-cxp/resumen?fecha_corte=${fecha}&recalcular=true`).subscribe({
       next: r => { if (r.estado === 'OK') this.datos[fecha] = r.datos; }
     });
   }
 
   get proveedores(): string[] {
-    const f = this.columnas[0]?.fecha;
-    if (!f || !this.datos[f]) return [];
-    return this.datos[f].map(x => x.proveedor);
+    const f = this.columnaActiva?.fecha;
+    return (f && this.datos[f]) ? this.datos[f].map(x => x.proveedor) : [];
   }
 
-  getFila(fecha: string, proveedor: string): FilaStock | null {
-    return this.datos[fecha]?.find(f => f.proveedor === proveedor) ?? null;
+  getFila(fecha: string, prov: string): FilaStock | null {
+    return this.datos[fecha]?.find(f => f.proveedor === prov) ?? null;
   }
 
-  // ── Totales por fecha ──────────────────────────────────────────────────────
   getTotal(fecha: string, campo: keyof FilaStock): number {
     return (this.datos[fecha] ?? []).reduce((s, f) => s + (f[campo] as number), 0);
   }
 
-  // ── Panel nueva fecha ──────────────────────────────────────────────────────
-  abrirPanel() {
-    this.mostrarPanel = true;
+  // ── Modal nueva fecha ──────────────────────────────────────────────
+  abrirModal() {
+    this.mostrarModal = true;
     this.nuevaFecha = '';
     this.previewDatos = [];
     this.configFilas = [];
   }
 
-  cerrarPanel() { this.mostrarPanel = false; }
+  cerrarModal() { this.mostrarModal = false; }
 
   onFechaChange() {
     if (!this.nuevaFecha) return;
     this.cargandoFecha = true;
     this.previewDatos = [];
-    this.http.get<any>(`${API}/stock-cxp/resumen?fecha_corte=${this.nuevaFecha}`).subscribe({
+    // Usar /preview: calcula desde ingresos/egresos SIN guardar en BD
+    this.http.get<any>(`${API}/stock-cxp/preview?fecha_corte=${this.nuevaFecha}`).subscribe({
       next: r => {
         this.cargandoFecha = false;
         if (r.estado === 'OK') {
           this.previewDatos = r.datos;
-          // Inicializar config editable con valores heredados
           this.configFilas = r.datos.map((f: FilaStock) => ({
             proveedor: f.proveedor,
-            ventasMensuales: f.ventasMensuales,
-            diasObjetivo: f.loQueDebeSer,
+            ventasMensuales: f.ventasMensuales || this.VM_DEFAULT[f.proveedor] || 0,
+            diasObjetivo: f.loQueDebeSer || 0,
           }));
+          this.recalcularPreview();
         }
       },
       error: () => { this.cargandoFecha = false; }
     });
   }
 
-  // Recalcula preview localmente al editar L o días objetivo
   recalcularPreview() {
     this.previewDatos = this.previewDatos.map(fila => {
       const cfg = this.configFilas.find(c => c.proveedor === fila.proveedor);
       if (!cfg) return fila;
-      const vm   = cfg.ventasMensuales || 0;
+      const vm = cfg.ventasMensuales || 0;
       const dias = cfg.diasObjetivo || 0;
-      const vd   = vm / 31;
-      const dp   = vd > 0 ? +(fila.stock / vd).toFixed(2) : 0;
-      const exc  = dp > 0 ? +(fila.stock - (fila.stock / dp) * dias).toFixed(2) : 0;
-      const lqdt = dp > dias ? +(exc / (dp - dias) * dias).toFixed(2) : 0;
+      const diasMes = new Date(new Date(this.nuevaFecha).getFullYear(), new Date(this.nuevaFecha).getMonth() + 1, 0).getDate();
+      const vd = vm / diasMes;
+      const dp = vd > 0 ? +(fila.stock / vd).toFixed(2) : 0;
+      const exc = dp > 0 ? +(fila.stock - (fila.stock / dp) * dias).toFixed(2) : 0;
+      const lqdt = dp !== dias ? +(Math.abs(exc) / Math.abs(dp - dias) * dias).toFixed(2) : 0;
       return { ...fila, ventasMensuales: vm, loQueDebeSer: dias, diasPiso: dp, exceso: exc, loQueDeberiamostener: lqdt };
     });
   }
 
   guardarFecha() {
-    if (!this.nuevaFecha) return;
+    if (!this.nuevaFecha || !this.previewDatos.length) return;
     this.guardandoFecha = true;
     const payload = {
       fecha_corte: this.nuevaFecha,
       datos: this.previewDatos.map(f => ({
-        proveedor: f.proveedor,
-        stock: f.stock,
-        por_pagar: f.porPagar,
-        diferencia: f.diferencia,
-        dias_piso: f.diasPiso,
-        lo_que_debe_ser: f.loQueDebeSer,
-        exceso: f.exceso,
-        lo_que_deberiamos_tener: f.loQueDeberiamostener,
+        proveedor: f.proveedor, stock: f.stock, por_pagar: f.porPagar,
+        diferencia: f.diferencia, dias_piso: f.diasPiso, lo_que_debe_ser: f.loQueDebeSer,
+        exceso: f.exceso, lo_que_deberiamos_tener: f.loQueDeberiamostener,
         ventas_mensuales: f.ventasMensuales,
       }))
     };
     this.http.post<any>(`${API}/stock-cxp/guardar`, payload).subscribe({
       next: r => {
         this.guardandoFecha = false;
-        if (r.estado === 'OK') { this.cerrarPanel(); this.cargarDatos(); }
+        if (r.estado === 'OK') {
+          this.cerrarModal();
+          // Agregar nueva columna y navegar a ella
+          const yaExiste = this.columnas.find(c => c.fecha === this.nuevaFecha);
+          if (!yaExiste) {
+            this.columnas = [...this.columnas, { fecha: this.nuevaFecha, label: this.formatFecha(this.nuevaFecha) }]
+              .sort((a, b) => a.fecha.localeCompare(b.fecha));
+          }
+          this.datos[this.nuevaFecha] = this.previewDatos;
+          this.indiceActivo = this.columnas.findIndex(c => c.fecha === this.nuevaFecha);
+        } else {
+          alert('Error al guardar: ' + r.detalle);
+        }
       },
-      error: () => { this.guardandoFecha = false; }
+      error: () => { this.guardandoFecha = false; alert('Error de conexión'); }
     });
   }
 
-  // ── Panel config (editar fecha existente) ─────────────────────────────────
+  get diasDelMes(): number {
+    if (!this.nuevaFecha) return 31;
+    const d = new Date(this.nuevaFecha + 'T00:00:00');
+    return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  }
+
+  // ── Modal config fecha existente ───────────────────────────────────
   abrirConfig(fecha: string) {
     this.fechaConfigActiva = fecha;
-    const filas = this.datos[fecha] ?? [];
-    this.configExistente = filas.map(f => ({
+    this.configExistente = (this.datos[fecha] ?? []).map(f => ({
       proveedor: f.proveedor,
       ventasMensuales: f.ventasMensuales,
       diasObjetivo: f.loQueDebeSer,
     }));
-    this.mostrarPanelConfig = true;
+    this.mostrarModalConfig = true;
   }
 
-  cerrarConfig() { this.mostrarPanelConfig = false; }
+  cerrarConfig() { this.mostrarModalConfig = false; }
 
   guardarConfig() {
     this.guardandoConfig = true;
@@ -203,15 +264,15 @@ export class StockVsCxpComponent implements OnInit {
     });
   }
 
-  // ── Utils ─────────────────────────────────────────────────────────────────
-  formatFechaCorta(fecha: string): string {
-    const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  // ── Utils ──────────────────────────────────────────────────────────
+  formatFecha(fecha: string): string {
+    const m = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
     const d = new Date(fecha + 'T00:00:00');
-    return `${String(d.getDate()).padStart(2,'0')} ${meses[d.getMonth()]}`;
+    return `${String(d.getDate()).padStart(2, '0')} ${m[d.getMonth()]} ${d.getFullYear()}`;
   }
 
-  fmt(n: number | null): string {
-    if (n === null || n === undefined) return '—';
+  fmt(n: number | null | undefined): string {
+    if (n == null) return '—';
     return n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
@@ -219,6 +280,32 @@ export class StockVsCxpComponent implements OnInit {
     return n > 0 ? 'text-green' : n < 0 ? 'text-red' : '';
   }
 
+  fmtInput(n: number | null | undefined): string {
+    if (n == null || n === 0) return '';
+    return n.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  }
+
+  onInputVentas(cfg: ConfigFila, event: Event) {
+    const input = event.target as HTMLInputElement;
+    const raw = input.value.replace(/\./g, '').replace(',', '.');
+    const num = parseFloat(raw);
+    cfg.ventasMensuales = isNaN(num) ? 0 : num;
+    this.recalcularPreview();
+    setTimeout(() => {
+      input.value = cfg.ventasMensuales > 0 ? this.fmtInput(cfg.ventasMensuales) : '';
+    }, 0);
+  }
+
+  onInputVentasExistente(cfg: ConfigFila, event: Event) {
+    const input = event.target as HTMLInputElement;
+    const raw = input.value.replace(/\./g, '').replace(',', '.');
+    const num = parseFloat(raw);
+    cfg.ventasMensuales = isNaN(num) ? 0 : num;
+    setTimeout(() => {
+      input.value = cfg.ventasMensuales > 0 ? this.fmtInput(cfg.ventasMensuales) : '';
+    }, 0);
+  }
+
   trackByFecha(_: number, col: Columna) { return col.fecha; }
-  trackByProveedor(_: number, p: string) { return p; }
+  trackByProv(_: number, p: string) { return p; }
 }
