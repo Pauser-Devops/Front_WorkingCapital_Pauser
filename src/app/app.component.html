@@ -23,9 +23,9 @@
 
     <main class="wk-main">
 
-      <app-header [tituloModulo]="tituloModulo" [vistaNombre]="vistaNombre" [datosApi]="datosApi"
+     <!-- <app-header [tituloModulo]="tituloModulo" [vistaNombre]="vistaNombre" [datosApi]="datosApi"
         (exportar)="exportar()">
-      </app-header>
+      </app-header>-->
 
       <app-wk-semanal *ngIf="vista === 'semanal'" #wkSemanal></app-wk-semanal>
       <app-wk-mensual *ngIf="vista === 'mensual'" #wkMensual></app-wk-mensual>

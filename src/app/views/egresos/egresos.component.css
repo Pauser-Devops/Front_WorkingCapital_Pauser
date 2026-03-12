@@ -321,3 +321,17 @@
   background: #f8fafc;
   flex-shrink: 0;
 }
+
+.eg-input-readonly {
+  background: #f1f5f9;
+  color: #64748b;
+  cursor: not-allowed;
+  border-color: #e2e8f0;
+}
+
+.eg-badge-calc {
+  font-size: 10px;
+  color: #94a3b8;
+  font-weight: 400;
+  margin-left: 4px;
+}

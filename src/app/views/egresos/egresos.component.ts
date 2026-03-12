@@ -19,10 +19,29 @@ const ID_ITAN = 39;
 const ID_PERCEPCIONES = 40;
 const ID_RTA_2DA = 41;
 const ID_TOTAL_PAGAR = 42;
+const ID_BACKUS = 7;   // item BACKUS
+const ID_FACTURAS = 8;   // subitem Facturas
+const ID_ENVASES = 9;   // subitem Envases
 
 const IDS_CALCULADOS = new Set([
-  ID_IGV_CALC, ID_RENTA_3RA, ID_RENTA_PRELIQ, ID_IGV_PRELIQ, ID_TOTAL_PAGAR
+  ID_IGV_CALC, ID_RENTA_3RA, ID_RENTA_PRELIQ, ID_IGV_PRELIQ, ID_TOTAL_PAGAR,
+  ID_BACKUS
 ]);
+
+const DEFAULTS_FIJOS: Record<number, number> = {
+  15: 66528,      // Corporación San Francisco
+  16: 22176,      // Representaciones San Santiago
+  20: 61000,      // Movilidades
+  21: 205000,     // Provisión CTS
+  22: 148966.67,  // Provisión Gratificación
+  26: 130272.01,    // INTERBANK
+  27: 37903.02,     // PICHINCHA
+  28: 31368.71,     // BCP
+  29: 19928.59,     // CONTRATO MUTUO
+};
+
+const ID_SALARIOS = 19;
+const SALARIO_BASE = 820000;
 
 interface Concepto {
   id: number;
@@ -64,6 +83,24 @@ export class EgresosComponent implements OnInit {
   constructor(private http: HttpClient, private zone: NgZone, private wkRefresh: WkRefreshService) { }
 
   ngOnInit() { this.cargarConceptos(); }
+
+  aplicarDefaults() {
+    if (!this.nuevaFecha) return;
+
+    // Días transcurridos del mes
+    const d = new Date(this.nuevaFecha + 'T00:00:00');
+    const diasMes = d.getDate();
+
+    // Salarios = (820000 / 30) × días
+    this.valoresPanel[ID_SALARIOS] = Math.round((SALARIO_BASE / 30) * diasMes * 100) / 100;
+
+    // Fijos (solo si no hay valor ya cargado)
+    for (const [id, valor] of Object.entries(DEFAULTS_FIJOS)) {
+      if (this.valoresPanel[parseInt(id)] == null) {
+        this.valoresPanel[parseInt(id)] = valor;
+      }
+    }
+  }
 
   cargarConceptos() {
     this.cargando = true;
@@ -117,6 +154,9 @@ export class EgresosComponent implements OnInit {
         if (r.estado === 'OK' && r.fecha_existente) {
           this.fechaExistente = true;
           for (const d of r.datos) this.valoresPanel[d.concepto_id] = d.valor;
+        } else {
+          // Fecha nueva → aplicar defaults
+          this.aplicarDefaults();
         }
       },
       error: () => { this.cargandoFecha = false; }
@@ -125,9 +165,10 @@ export class EgresosComponent implements OnInit {
 
   getValorPanel(concepto_id: number): number | null { return this.valoresPanel[concepto_id] ?? null; }
 
-  setValorPanel(concepto_id: number, val: string) {
-    this.valoresPanel[concepto_id] = val === '' ? null : parseFloat(val);
-    this.recalcularRenta();
+  recalcularBackus() {
+    const facturas = this.valoresPanel[ID_FACTURAS] ?? 0;
+    const envases = this.valoresPanel[ID_ENVASES] ?? 0;
+    this.valoresPanel[ID_BACKUS] = Math.round((facturas + envases) * 100) / 100;
   }
   recalcularRenta() {
     const v = (id: number) => this.valoresPanel[id] || 0;
@@ -163,7 +204,7 @@ export class EgresosComponent implements OnInit {
 
     // Recalcular antes de guardar
     this.recalcularRenta();
-
+    this.recalcularBackus();
     // Guardar todos: manuales + calculados
     const todosLosIds = this.conceptos.filter(c =>
       c.tipo_fila === 'item' || c.tipo_fila === 'subitem' || c.tipo_fila === 'total'
@@ -288,7 +329,62 @@ export class EgresosComponent implements OnInit {
     if (n == null) return '—';
     return n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
+  desformatear(val: string): string {
+    // Quita puntos de miles, convierte coma decimal a punto
+    return val.replace(/\./g, '').replace(',', '.');
+  }
 
+  fmtInput(concepto_id: number): string {
+    const v = this.valoresPanel[concepto_id];
+    if (v === null || v === undefined) return '';
+    if (this.editandoPanelId === concepto_id) return v.toString();
+    return v.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  }
+
+  editandoPanelId: number | null = null;
+
+  setValorPanel(concepto_id: number, val: string) {
+    let clean = val;
+
+    if (val.includes(',')) {
+      clean = val.replace(/\./g, '').replace(',', '.');
+    }
+
+    else if (val.includes('.')) {
+      const dotPos = val.lastIndexOf('.');
+      const afterDot = val.length - dotPos - 1;
+      if (afterDot <= 2) {
+        // Es decimal: 1234.56
+        clean = val;
+      } else {
+        // Es separador de miles: 1.234
+        clean = val.replace(/\./g, '');
+      }
+    }
+    this.valoresPanel[concepto_id] = clean === '' ? null : parseFloat(clean);
+    if (concepto_id === ID_FACTURAS || concepto_id === ID_ENVASES) {
+      this.recalcularBackus();
+    }
+  }
+
+  onInputFocus(e: FocusEvent, concepto_id: number) {
+    this.editandoPanelId = concepto_id;
+    const v = this.valoresPanel[concepto_id];
+    const input = e.target as HTMLInputElement;
+    input.value = v !== null && v !== undefined ? v.toString() : '';
+    setTimeout(() => input.select(), 0);
+  }
+
+  onInputBlur(e: FocusEvent, concepto_id: number) {
+    this.editandoPanelId = null;
+    const v = this.valoresPanel[concepto_id];
+    const input = e.target as HTMLInputElement;
+    input.value = v !== null && v !== undefined
+      ? v.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+      : '';
+  }
   trackById(_: number, c: Concepto) { return c.id; }
   trackByFecha(_: number, col: Columna) { return col.fecha; }
+
+
 }

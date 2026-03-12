@@ -59,7 +59,7 @@ export class AppComponent {
       ? 'Conciliación Bancaria'
       : 'Working Capital';
   }
-  get datosApi(): any { return this.wkSemanalRef?.datosApi ?? null; }
+  //get datosApi(): any { return this.wkSemanalRef?.datosApi ?? null; }
 
   setVista(v: string) {
     this.vista = v;
@@ -67,6 +67,6 @@ export class AppComponent {
   }
 
   onNavegarA(vista: string) { this.setVista(vista); }
-  onFile(event: any) { this.wkSemanalRef?.onFile(event); }
-  exportar() { this.wkSemanalRef?.exportar(); }
+ // onFile(event: any) { this.wkSemanalRef?.onFile(event); }
+  //exportar() { this.wkSemanalRef?.exportar(); }
 }

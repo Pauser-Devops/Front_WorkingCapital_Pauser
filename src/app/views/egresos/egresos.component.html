@@ -155,9 +155,13 @@
             <label class="eg-manual-label">
               <span class="eg-subindent" *ngIf="esSubitem(c)">└</span>
               {{ c.nombre }}
+              <span class="eg-badge-calc" *ngIf="c.id === 7"> = Facturas + Envases</span>
             </label>
-            <input class="eg-input-manual" type="number" placeholder="0" [value]="getValorPanel(c.id) ?? ''"
-              (input)="setValorPanel(c.id, $any($event.target).value)" />
+            <input *ngIf="c.id !== 7" class="eg-input-manual" type="text" [value]="fmtInput(c.id)"
+              (focus)="onInputFocus($event, c.id)" (blur)="onInputBlur($event, c.id)"
+              (input)="setValorPanel(c.id, $any($event.target).value)" placeholder="0.00" />
+            <input *ngIf="c.id === 7" class="eg-input-manual eg-input-readonly" type="text" [value]="fmtInput(c.id)"
+              readonly placeholder="0.00" />
           </div>
           <div class="eg-panel-total" *ngIf="esTotal(c)">
             <span>{{ c.nombre }}</span>

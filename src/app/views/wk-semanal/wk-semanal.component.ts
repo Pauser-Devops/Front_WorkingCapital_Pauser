@@ -1,139 +1,148 @@
-import { Component } from '@angular/core';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FilaDato, KPIs, RespuestaApi } from '../../shared/models/wk.models';
-import { ESTRUCTURA_WK_SEMANAL, FECHAS_DEFAULT } from '../../shared/models/wk-semanal.estructura';
-import { API_BASE_URL } from '../../core/constants/api.constants';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
+import { WkRefreshService } from './../../shared/services/wk-refresh.service';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+
+const API = environment.apiUrl;
+
+interface WkDatos {
+  activo: {
+    bancos: { items: Record<string, number>; total: number };
+    prosegur: number;
+    inventarios: { items: Record<string, number>; total: number };
+    cxc: { items: Record<string, number>; total: number };
+    ventaEnRuta: number;
+    total: number;
+  };
+  pasivo: {
+    ctasPagar: {
+      proveedoresPrincipales: { items: Record<string, number>; total: number };
+      proveedoresSecundarios: number;
+      comodato: number;
+      total: number;
+    };
+    gg: { items: Record<string, number>; total: number };
+    impuestos: { items: Record<string, number>; total: number };
+    detracciones: number;
+    obligacionesFinancieras: { items: Record<string, number>; total: number };
+    total: number;
+  };
+  wk: number;
+}
 
 @Component({
   selector: 'app-wk-semanal',
   standalone: true,
-  imports: [CommonModule, HttpClientModule],
+  imports: [CommonModule],
   templateUrl: './wk-semanal.component.html',
-  styleUrls: ['./wk-semanal.component.css']
+  styleUrls: ['./wk-semanal.component.css'],
 })
-export class WkSemanalComponent {
-  cargando = false;
-  datosApi: RespuestaApi | null = null;
+export class WkSemanalComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+
+  fechas: string[] = [];
+  indiceActivo = 0;
+  datos: Record<string, WkDatos> = {};
+  cargando = true;
   error = '';
-  private _filasOriginal: FilaDato[] = [];
 
-  modoEdicion = false;
-  cambiosPendientes: { concepto: string; fechaIndex: number; monto: number }[] = [];
+  get fechaActiva(): string { return this.fechas[this.indiceActivo] ?? ''; }
+  get datosActivos(): WkDatos | null { return this.datos[this.fechaActiva] ?? null; }
 
+  constructor(private http: HttpClient, private wkRefresh: WkRefreshService) {}
 
-  constructor(private http: HttpClient) { }
-
-  private _filas: FilaDato[] = ESTRUCTURA_WK_SEMANAL.map(f => ({
-    ...f,
-    montos: FECHAS_DEFAULT.map(() => null),
-    variacion: null
-  }));
-
-  get filas(): FilaDato[] {
-    if (this.datosApi?.filas) return this.datosApi.filas;
-    return this._filas;
-  }
-
-  get fechas(): string[] { return this.datosApi?.fechas || FECHAS_DEFAULT; }
-
-  get kpis(): KPIs { return this.datosApi?.kpis || { wk: null, activo: null, pasivo: null }; }
-
-
-  trackFila(index: number, fila: FilaDato): string {
-    return fila.nombre;
-  }
-
-  trackIndice(index: number): number {
-    return index;
-  }
-  onFile(event: any) {
-    const file = event.target.files[0];
-    if (!file) return;
-    this.cargando = true; this.error = ''; this.datosApi = null;
-    const fd = new FormData();
-    fd.append('file', file);
-    this.http.post<RespuestaApi>(`${API_BASE_URL}/wk/procesar-excel`, fd).subscribe({
-      next: (r) => { this.cargando = false; r.estado === 'OK' ? this.datosApi = r : this.error = r.detalle || 'Error'; },
-      error: () => { this.cargando = false; this.error = 'Error al conectar con el servidor'; }
+  ngOnInit() {
+    // Auto-recarga cuando ingresos o egresos cambian
+    this.wkRefresh.ingresosGuardado$.pipe(takeUntil(this.destroy$)).subscribe(fecha => {
+      this.recargar(fecha);
     });
+    this.wkRefresh.egresosGuardado$.pipe(takeUntil(this.destroy$)).subscribe(fecha => {
+      this.recargar(fecha);
+    });
+    this.cargarFechas();
   }
 
-  exportar() { window.open(`${API_BASE_URL}/exportar-excel`, '_blank'); }
+  ngOnDestroy() { this.destroy$.next(); this.destroy$.complete(); }
 
-  fmt(n: number | null): string {
-    if (n === null || n === undefined) return '';
-    if (n === 0) return '-';
-    return n.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-  }
-
-  fmtK(n: number | null): string {
-    if (n === null) return '—';
-    return 'S/ ' + Math.abs(n).toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-  }
-
-
-  get hayCambios(): boolean { return this.cambiosPendientes.length > 0; }
-
-  activarEdicion() {
-    // Guardar copia profunda antes de editar
-    this._filasOriginal = this._filas.map(f => ({
-      ...f,
-      montos: [...f.montos]
-    }));
-    this.modoEdicion = true;
-  }
-
-
-  cancelarEdicion() {
-    // Restaurar valores originales
-    this._filas = this._filasOriginal.map(f => ({
-      ...f,
-      montos: [...f.montos]
-    }));
-    this.modoEdicion = false;
-    this.cambiosPendientes = [];
-  }
-  onCeldaChange(fila: FilaDato, fechaIndex: number, event: Event) {
-    const input = event.target as HTMLInputElement;
-    const nuevoMonto = parseFloat(input.value);
-    if (isNaN(nuevoMonto)) return;
-
-    fila.montos[fechaIndex] = nuevoMonto;
-
-    const existe = this.cambiosPendientes.findIndex(
-      c => c.concepto === fila.nombre && c.fechaIndex === fechaIndex
-    );
-    if (existe >= 0) {
-      this.cambiosPendientes[existe].monto = nuevoMonto;
-    } else {
-      this.cambiosPendientes.push({ concepto: fila.nombre, fechaIndex, monto: nuevoMonto });
-    }
-  }
-
-  guardarCambios() {
-    const payload = this.cambiosPendientes.map(c => ({
-      concepto: c.concepto,
-      fecha_corte: this.fechas[c.fechaIndex],
-      monto: c.monto,
-      periodicidad: 'semanal'
-    }));
-
-    this.http.post(`${API_BASE_URL}/wk/editar`, { cambios: payload }).subscribe({
-      next: () => {
-        this.modoEdicion = false;
-        this.cambiosPendientes = [];
-        // opcional: mostrar toast "Guardado correctamente"
+  cargarFechas() {
+    this.cargando = true;
+    this.http.get<any>(`${API}/wk-semanal/fechas`).subscribe({
+      next: r => {
+        if (r.estado === 'OK') {
+          this.fechas = r.fechas;
+          this.indiceActivo = Math.max(0, this.fechas.length - 1);
+          // carga todos los resúmenes; apaga cargando al terminar el último
+          let pendientes = this.fechas.length;
+          if (pendientes === 0) { this.cargando = false; return; }
+          for (const f of this.fechas) {
+            this.http.get<any>(`${API}/wk-semanal/resumen?fecha_corte=${f}`).subscribe({
+              next: res => {
+                if (res.estado === 'OK') {
+                  this.datos = { ...this.datos, [f]: res.datos };
+                } else {
+                  console.error('WK resumen error:', res);
+                }
+                if (--pendientes === 0) this.cargando = false;
+              },
+              error: e => {
+                console.error('WK resumen HTTP error:', e);
+                if (--pendientes === 0) this.cargando = false;
+              }
+            });
+          }
+        } else {
+          this.cargando = false;
+          this.error = 'Error al cargar fechas';
+        }
       },
-      error: () => { this.error = 'Error al guardar cambios'; }
+      error: () => { this.cargando = false; this.error = 'Error al cargar fechas'; }
     });
   }
-  tieneCambio(nombre: string, fechaIndex: number): boolean {
-    return this.cambiosPendientes.some(
-      c => c.concepto === nombre && c.fechaIndex === fechaIndex
-    );
+
+  cargarResumen(fecha: string) {
+    this.http.get<any>(`${API}/wk-semanal/resumen?fecha_corte=${fecha}`).subscribe({
+      next: r => {
+        if (r.estado === 'OK') {
+          this.datos = { ...this.datos, [fecha]: r.datos };  // spread para trigger change detection
+        } else {
+          console.error('WK resumen error:', r);
+        }
+      },
+      error: e => console.error('WK resumen HTTP error:', e)
+    });
   }
-  onFocusInput(event: FocusEvent) {
-    (event.target as HTMLInputElement).select();
+
+  recargar(fecha: string) {
+    if (!this.fechas.includes(fecha)) {
+      this.fechas = [...this.fechas, fecha].sort();
+    }
+    this.indiceActivo = this.fechas.indexOf(fecha);
+    this.cargarResumen(fecha);
+  }
+
+  irAFecha(i: number) { this.indiceActivo = i; }
+  irAnterior() { if (this.indiceActivo > 0) this.indiceActivo--; }
+  irSiguiente() { if (this.indiceActivo < this.fechas.length - 1) this.indiceActivo++; }
+
+  formatFecha(f: string): string {
+    const m = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const d = new Date(f + 'T00:00:00');
+    return `${String(d.getDate()).padStart(2,'0')} ${m[d.getMonth()]} ${d.getFullYear()}`;
+  }
+
+  fmt(n: number | null | undefined): string {
+    if (n == null) return '—';
+    return n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  colorVal(n: number): string {
+    return n > 0 ? 'pos' : n < 0 ? 'neg' : '';
+  }
+
+  entries(obj: Record<string, number>): [string, number][] {
+    return Object.entries(obj);
   }
 }
