@@ -58,6 +58,7 @@
           },
           "configurations": {
             "production": {
+              "baseHref": "/wk-cb/",  
               "budgets": [
                 {
                   "type": "initial",
