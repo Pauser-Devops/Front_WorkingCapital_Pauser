@@ -8,7 +8,7 @@ RUN npm run build -- --configuration production
 
 # Serve stage
 FROM nginx:alpine
-# ✅ Copiar a subcarpeta /wk-cb/ para que coincida con base-href
+# ✅ Clave: archivos en subcarpeta wk-cb
 COPY --from=build /app/dist/frontend/browser /usr/share/nginx/html/wk-cb
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
