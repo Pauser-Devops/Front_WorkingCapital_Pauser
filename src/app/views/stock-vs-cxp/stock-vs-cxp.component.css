@@ -1,3 +1,9 @@
+:host {
+  display: block;
+  height: 100%;
+  overflow-y: auto;
+}
+
 /* ── Layout ─────────────────────────────────────────────────────── */
 .page-wrapper { padding: 24px; position: relative; }
 

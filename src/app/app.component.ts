@@ -47,6 +47,18 @@ export class AppComponent {
   @ViewChild('wkSemanal') wkSemanalRef?: WkSemanalComponent;
 
   get vistaNombre(): string { return VISTA_NOMBRES[this.vista] || this.vista; }
+  get esFinanzas(): boolean { return this.auth.esFinanzas; }
+  readonly rolesLabel: Record<string, string> = {
+    admin: 'Admin',
+    gerencia: 'Gerencia',
+    finanzas_admin: 'Finanzas',
+    finanzas: 'Finanzas',
+    viewer: 'Viewer'
+  };
+
+  get rolLabel(): string {
+    return this.rolesLabel[this.auth.rolActual] ?? this.auth.rolActual;
+  }
   get tituloModulo(): string {
     const vistasBancarias = [
       'ingresosbancarios',
@@ -67,6 +79,6 @@ export class AppComponent {
   }
 
   onNavegarA(vista: string) { this.setVista(vista); }
- // onFile(event: any) { this.wkSemanalRef?.onFile(event); }
+  // onFile(event: any) { this.wkSemanalRef?.onFile(event); }
   //exportar() { this.wkSemanalRef?.exportar(); }
 }

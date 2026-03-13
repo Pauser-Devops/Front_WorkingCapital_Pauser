@@ -18,7 +18,7 @@ export class AuthService {
 
   usuario$: Observable<Usuario | null> = this._usuario.asObservable();
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   // ── LOGIN ──────────────────────────────────────────────
   login(email: string, password: string): Observable<any> {
@@ -38,7 +38,7 @@ export class AuthService {
   cambiarPassword(actual: string, nuevo: string): Observable<any> {
     return this.http.post<any>(`${API}/auth/cambiar-password`, {
       password_actual: actual,
-      password_nuevo:  nuevo
+      password_nuevo: nuevo
     }).pipe(
       tap(() => {
         const u = this._usuario.value;
@@ -71,10 +71,6 @@ export class AuthService {
     return !!this.token && !!this._usuario.value;
   }
 
-  get esAdmin(): boolean {
-    return this._usuario.value?.rol === 'admin';
-  }
-
   private cargarUsuario(): Usuario | null {
     try {
       const u = localStorage.getItem('usuario');
@@ -82,5 +78,23 @@ export class AuthService {
     } catch {
       return null;
     }
+  }
+
+  get esFinanzas(): boolean {
+    return this._usuario.value?.rol === 'finanzas';
+  }
+
+  get puedeCrearUsuarios(): boolean {
+    const rol = this._usuario.value?.rol;
+    return ['admin', 'gerencia', 'finanzas_admin'].includes(rol ?? '');
+  }
+
+  get rolActual(): string {
+    return this._usuario.value?.rol ?? '';
+  }
+
+  // Actualizar esAdmin para incluir todos los roles con acceso total
+  get esAdmin(): boolean {
+    return ['admin', 'gerencia', 'finanzas_admin'].includes(this._usuario.value?.rol ?? '');
   }
 }

@@ -1,56 +1,198 @@
-<div class="wk-loading" *ngIf="cargando"><div class="wk-loading-bar"></div></div>
-<div class="wk-error" *ngIf="error">{{ error }}</div>
+<div class="page-wrapper">
 
-<div class="wk-content">
-
-  <!-- KPIs -->
-  <div class="wk-kpis">
-    <div class="wk-kpi" [class.wk-kpi-green]="kpis.wk! > 0" [class.wk-kpi-red]="kpis.wk! < 0">
-      <div class="wk-kpi-label">WORKING CAPITAL</div>
-      <div class="wk-kpi-value">{{ fmtK(kpis.wk) }}</div>
-      <div class="wk-kpi-sub" *ngIf="kpis.wk !== null">{{ kpis.wk >= 0 ? 'Superávit' : 'Déficit' }}</div>
-      <div class="wk-kpi-sub wk-kpi-empty" *ngIf="kpis.wk === null">Pendiente conexión</div>
-    </div>
-    <div class="wk-kpi wk-kpi-blue">
-      <div class="wk-kpi-label">TOTAL ACTIVO CORRIENTE</div>
-      <div class="wk-kpi-value">{{ fmtK(kpis.activo) }}</div>
-      <div class="wk-kpi-sub">Último mes</div>
-    </div>
-    <div class="wk-kpi wk-kpi-blue">
-      <div class="wk-kpi-label">TOTAL PASIVO CORRIENTE</div>
-      <div class="wk-kpi-value">{{ fmtK(kpis.pasivo) }}</div>
-      <div class="wk-kpi-sub">Último mes</div>
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-icon"><span class="material-icons">calendar_month</span></div>
+    <div class="header-info">
+      <h1>WK Mensual</h1>
+      <span class="header-sub">Working Capital · Última semana registrada por mes</span>
     </div>
   </div>
 
-  <!-- Tabla -->
-  <div class="wk-table-card">
-    <div class="wk-table-head">
-      <span class="wk-table-title">WK 2026 Mensual</span>
-      <span class="wk-table-sub">Montos en Soles (S/) — {{ fechas.length }} meses</span>
+  <div *ngIf="cargando" class="estado-msg">Cargando...</div>
+  <div *ngIf="error" class="estado-msg error">{{ error }}</div>
+
+  <!-- Navegador de meses -->
+  <div class="nav-fechas" *ngIf="!cargando && meses.length > 0">
+    <button class="btn-nav" (click)="irAnterior()" [disabled]="indiceActivo === 0">‹</button>
+    <div class="chips-fechas">
+      <button
+        *ngFor="let m of meses; let i = index"
+        class="chip-fecha" [class.chip-activo]="i === indiceActivo"
+        (click)="irAMes(i)"
+      >{{ m.label }}</button>
     </div>
-    <div class="wk-table-scroll">
-      <table class="wk-table">
-        <thead>
-          <tr>
-            <th class="wk-th-concepto">CONCEPTO</th>
-            <th class="wk-th-num" *ngFor="let f of fechas">{{ f }}</th>
-            <th class="wk-th-num">VARIACIÓN</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let f of filas" class="wk-row-{{f.tipo}}">
-            <td class="wk-td-concepto" [style.padding-left.px]="14 + f.indent * 16">{{ f.nombre }}</td>
-            <td class="wk-td-num" *ngFor="let m of f.montos"
-                [class.wk-neg]="m! < 0" [class.wk-empty]="m === null">{{ fmt(m) }}</td>
-            <td class="wk-td-num"
-                [class.wk-neg]="f.variacion! < 0"
-                [class.wk-pos]="f.variacion! > 0"
-                [class.wk-empty]="f.variacion === null">{{ fmt(f.variacion) }}</td>
-          </tr>
-        </tbody>
-      </table>
+    <button class="btn-nav" (click)="irSiguiente()" [disabled]="indiceActivo === meses.length - 1">›</button>
+  </div>
+
+  <!-- Subtítulo de fecha exacta usada -->
+  <div class="fecha-ref" *ngIf="!cargando && mesActivo">
+    Datos al {{ mesActivo.fecha | date:'dd MMM yyyy':'':'es' }}
+  </div>
+
+  <ng-container *ngIf="!cargando && datosActivos as d">
+
+    <!-- KPIs -->
+    <div class="kpi-bar">
+      <div class="kpi-card kpi-activo">
+        <span class="kpi-label">Total Activo Corriente</span>
+        <span class="kpi-val">{{ fmt(d.activo.total) }}</span>
+      </div>
+      <div class="kpi-card kpi-pasivo">
+        <span class="kpi-label">Total Pasivo Corriente</span>
+        <span class="kpi-val">{{ fmt(d.pasivo.total) }}</span>
+      </div>
+      <div class="kpi-card" [class]="d.wk >= 0 ? 'kpi-wk-pos' : 'kpi-wk-neg'">
+        <span class="kpi-label">WK</span>
+        <span class="kpi-val">{{ fmt(d.wk) }}</span>
+      </div>
     </div>
+
+    <!-- Dos columnas -->
+    <div class="dos-columnas">
+
+      <!-- ══ ACTIVO ══ -->
+      <div class="bloque">
+        <div class="bloque-titulo activo-titulo">ACTIVO CORRIENTE</div>
+
+        <div class="seccion">
+          <div class="sec-header">
+            <span class="sec-nombre">BANCOS</span>
+            <span class="sec-total">{{ fmt(d.activo.bancos.total) }}</span>
+          </div>
+          <div class="fila-item" *ngFor="let it of entries(d.activo.bancos.items)">
+            <span class="lbl">{{ it[0] }}</span>
+            <span class="val" [class]="colorVal(it[1])">{{ fmt(it[1]) }}</span>
+          </div>
+        </div>
+
+        <div class="seccion">
+          <div class="sec-header">
+            <span class="sec-nombre">PROSEGUR</span>
+            <span class="sec-total">{{ fmt(d.activo.prosegur) }}</span>
+          </div>
+        </div>
+
+        <div class="seccion">
+          <div class="sec-header">
+            <span class="sec-nombre">INVENTARIOS</span>
+            <span class="sec-total">{{ fmt(d.activo.inventarios.total) }}</span>
+          </div>
+          <div class="fila-item" *ngFor="let it of entries(d.activo.inventarios.items)">
+            <span class="lbl">{{ it[0] }}</span>
+            <span class="val">{{ fmt(it[1]) }}</span>
+          </div>
+        </div>
+
+        <div class="seccion">
+          <div class="sec-header">
+            <span class="sec-nombre">CUENTAS POR COBRAR</span>
+            <span class="sec-total">{{ fmt(d.activo.cxc.total) }}</span>
+          </div>
+          <div class="fila-item" *ngFor="let it of entries(d.activo.cxc.items)">
+            <span class="lbl">{{ it[0] }}</span>
+            <span class="val">{{ fmt(it[1]) }}</span>
+          </div>
+        </div>
+
+        <div class="seccion">
+          <div class="sec-header">
+            <span class="sec-nombre">VENTA EN RUTA</span>
+            <span class="sec-total">{{ fmt(d.activo.ventaEnRuta) }}</span>
+          </div>
+        </div>
+
+        <div class="bloque-total activo-total">
+          <span>TOTAL ACTIVO CORRIENTE</span>
+          <span>{{ fmt(d.activo.total) }}</span>
+        </div>
+      </div>
+
+      <!-- ══ PASIVO ══ -->
+      <div class="bloque">
+        <div class="bloque-titulo pasivo-titulo">PASIVO CORRIENTE</div>
+
+        <div class="seccion">
+          <div class="sec-header">
+            <span class="sec-nombre">CTAS POR PAGAR</span>
+            <span class="sec-total">{{ fmt(d.pasivo.ctasPagar.total) }}</span>
+          </div>
+
+          <div class="sub-label">Proveedores Principales</div>
+          <div class="fila-item" *ngFor="let it of entries(d.pasivo.ctasPagar.proveedoresPrincipales.items)">
+            <span class="lbl">{{ it[0] }}</span>
+            <span class="val" [class]="colorVal(it[1])">{{ fmt(it[1]) }}</span>
+          </div>
+          <div class="fila-subtotal">
+            <span>Subtotal</span>
+            <span>{{ fmt(d.pasivo.ctasPagar.proveedoresPrincipales.total) }}</span>
+          </div>
+
+          <div class="sub-label">Proveedores Secundarios</div>
+          <div class="fila-item">
+            <span class="lbl">Total</span>
+            <span class="val">{{ fmt(d.pasivo.ctasPagar.proveedoresSecundarios) }}</span>
+          </div>
+
+          <div class="sub-label">Comodato Envases en Garantía</div>
+          <div class="fila-item">
+            <span class="lbl">Total</span>
+            <span class="val">{{ fmt(d.pasivo.ctasPagar.comodato) }}</span>
+          </div>
+        </div>
+
+        <div class="seccion">
+          <div class="sec-header">
+            <span class="sec-nombre">G&amp;G — Gente y Gestión</span>
+            <span class="sec-total">{{ fmt(d.pasivo.gg.total) }}</span>
+          </div>
+          <div class="fila-item" *ngFor="let it of entries(d.pasivo.gg.items)">
+            <span class="lbl">{{ it[0] }}</span>
+            <span class="val">{{ fmt(it[1]) }}</span>
+          </div>
+        </div>
+
+        <div class="seccion">
+          <div class="sec-header">
+            <span class="sec-nombre">IMPUESTOS</span>
+            <span class="sec-total">{{ fmt(d.pasivo.impuestos.total) }}</span>
+          </div>
+          <div class="fila-item" *ngFor="let it of entries(d.pasivo.impuestos.items)">
+            <span class="lbl">{{ it[0] }}</span>
+            <span class="val">{{ fmt(it[1]) }}</span>
+          </div>
+        </div>
+
+        <div class="seccion">
+          <div class="sec-header">
+            <span class="sec-nombre">DETRACCIONES</span>
+            <span class="sec-total">{{ fmt(d.pasivo.detracciones) }}</span>
+          </div>
+        </div>
+
+        <div class="seccion">
+          <div class="sec-header">
+            <span class="sec-nombre">OBLIGACIONES FINANCIERAS</span>
+            <span class="sec-total">{{ fmt(d.pasivo.obligacionesFinancieras.total) }}</span>
+          </div>
+          <div class="fila-item" *ngFor="let it of entries(d.pasivo.obligacionesFinancieras.items)">
+            <span class="lbl">{{ it[0] }}</span>
+            <span class="val">{{ fmt(it[1]) }}</span>
+          </div>
+        </div>
+
+        <div class="bloque-total pasivo-total">
+          <span>TOTAL PASIVO CORRIENTE</span>
+          <span>{{ fmt(d.pasivo.total) }}</span>
+        </div>
+      </div>
+
+    </div>
+  </ng-container>
+
+  <!-- Sin datos para el mes activo -->
+  <div class="estado-msg" *ngIf="!cargando && mesActivo && !datosActivos">
+    Sin datos para {{ mesActivo.label }}
   </div>
 
 </div>

@@ -14,7 +14,7 @@
           <span class="logout-avatar">{{ auth.usuarioActual?.nombre?.charAt(0) }}</span>
           <div>
             <div class="logout-name">{{ auth.usuarioActual?.nombre }}</div>
-            <div class="logout-rol">{{ auth.usuarioActual?.rol }}</div>
+            <div class="logout-rol">{{ rolLabel }}</div>
           </div>
         </div>
         <button class="logout-btn" (click)="logout()">Cerrar sesión</button>
