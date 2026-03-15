@@ -162,7 +162,7 @@
               [class.chip-banco-pendiente]="b.conciliados === 0">
               {{ b.banco }}
               <span class="chip-banco-count">
-                {{ b.conciliados === b.total ? b.total : (b.total - b.conciliados) + ' pend.' }}
+                {{ b.conciliados === b.total ? b.total : (b.total - b.conciliados) }}
               </span>
             </span>
           </div>
@@ -279,7 +279,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let r of registrosFiltrados" [class.conciliado]="r.conciliado" [class.pendiente]="!r.conciliado"
+          <tr *ngFor="let r of registrosPaginados" [class.conciliado]="r.conciliado" [class.pendiente]="!r.conciliado"
             [class.dif-monto]="r.conciliado && r.dif_monto !== null && r.dif_monto !== 0">
             <td class="td-idpop">
               <div class="idpop-cell">
@@ -339,8 +339,25 @@
           </tr>
         </tbody>
       </table>
+      
     </div>
-
+<div class="rib-paginador" *ngIf="totalPaginas > 1">
+        <button class="pag-btn" [disabled]="paginaActual===1" (click)="irPagina(paginaActual-1)">
+          <span class="material-icons">chevron_left</span>
+        </button>
+        <ng-container *ngFor="let p of paginas">
+          <span class="pag-sep" *ngIf="p===0">...</span>
+          <button class="pag-btn pag-num" *ngIf="p!==0" [class.activo]="paginaActual===p" (click)="irPagina(p)">{{ p
+            }}</button>
+        </ng-container>
+        <button class="pag-btn" [disabled]="paginaActual===totalPaginas" (click)="irPagina(paginaActual+1)">
+          <span class="material-icons">chevron_right</span>
+        </button>
+        <span class="pag-info">
+          {{ (paginaActual-1)*porPagina+1 }}–{{ Math.min(paginaActual*porPagina, registrosFiltrados.length) }}
+          de {{ registrosFiltrados.length | number }}
+        </span>
+      </div>
     <div class="rib-empty-filtro" *ngIf="!cargando && registros.length > 0 && registrosFiltrados.length === 0">
       <span class="material-icons">filter_list_off</span>
       <p>Sin registros con los filtros actuales</p>

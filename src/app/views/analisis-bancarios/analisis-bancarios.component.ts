@@ -73,7 +73,8 @@ export class AnalisisBancariosComponent implements OnInit {
 
     tablaActiva = 'bcp_1';
     tablas = TABLAS;
-
+    ultimaSync = '';
+    usuarioSync = '';
     // Cache por periodo: guarda los datos raw de todas las tablas
     // key: "mes-anio", value: Record<tabla, rows[]>
     private cache: Record<string, Record<string, any[]>> = {};
@@ -161,6 +162,7 @@ export class AnalisisBancariosComponent implements OnInit {
         this.periodoActivo = p;
         this.resetFiltros();
         this.cargarTodasLasTablas();
+        this.cargarSync();
     }
 
     /**
@@ -223,7 +225,27 @@ export class AnalisisBancariosComponent implements OnInit {
             error: () => { this.cargando = false; this.error = 'Error al cargar datos'; }
         });
     }
-
+    cargarSync() {
+        if (!this.periodoActivo) return;
+        const { mes, anio } = this.periodoActivo;
+        this.http.get<any>(
+            `${API}/sync/ultima?modulo=registro_reportes&mes=${mes}&anio=${anio}`
+        ).subscribe({
+            next: r => {
+                if (r.estado === 'OK' && r.ultima_sync) {
+                    const fecha = new Date(r.ultima_sync);
+                    this.ultimaSync = fecha.toLocaleDateString('es-PE', {
+                        day: '2-digit', month: 'short', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit'
+                    });
+                    this.usuarioSync = r.usuario || '';
+                } else {
+                    this.ultimaSync = '';
+                    this.usuarioSync = '';
+                }
+            }
+        });
+    }
     /**
      * Toma los datos de la tabla activa desde el cache y categoriza.
      * No hace ningún request HTTP.
@@ -255,6 +277,7 @@ export class AnalisisBancariosComponent implements OnInit {
                     delete this.cache[cacheKey];
                     this.cargarMeses();
                     this.cargarTodasLasTablas();
+                    this.cargarSync();
                 }
             },
             error: () => { this.cargandoSync = false; this.mensajeSync = 'Error de conexión'; this.errorSync = true; }

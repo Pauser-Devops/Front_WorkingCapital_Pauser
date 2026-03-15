@@ -16,13 +16,15 @@
   <div class="nav-fechas" *ngIf="!cargando && meses.length > 0">
     <button class="btn-nav" (click)="irAnterior()" [disabled]="indiceActivo === 0">‹</button>
     <div class="chips-fechas">
-      <button
-        *ngFor="let m of meses; let i = index"
-        class="chip-fecha" [class.chip-activo]="i === indiceActivo"
-        (click)="irAMes(i)"
-      >{{ m.label }}</button>
+      <button *ngFor="let m of meses; let i = index" class="chip-fecha" [class.chip-activo]="i === indiceActivo"
+        (click)="irAMes(i)">{{ m.label }}</button>
     </div>
     <button class="btn-nav" (click)="irSiguiente()" [disabled]="indiceActivo === meses.length - 1">›</button>
+    <button class="btn-export" (click)="exportar()">
+      <span class="material-icons">download</span>
+      Exportar Excel
+    </button>
+
   </div>
 
   <!-- Subtítulo de fecha exacta usada -->

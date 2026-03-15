@@ -94,7 +94,11 @@
   align-items: center;
   gap: 7px;
 }
-
+.build{
+  font-size: 17px;
+  color: #8A97A8;
+  transition: color 0.12s;
+}
 .wk-grupo-icono {
   font-size: 17px;
   color: #8A97A8;

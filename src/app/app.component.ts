@@ -7,6 +7,7 @@ import { WkMensualComponent } from './views/wk-mensual/wk-mensual.component';
 import { IngresosComponent } from './views/ingresos/ingresos.component';
 import { EgresosComponent } from './views/egresos/egresos.component';
 import { StockVsCxpComponent } from './views/stock-vs-cxp/stock-vs-cxp.component';
+import { RentaProyeccionComponent } from './views/renta-proyeccion/renta-proyeccion.component';
 import { IngresosBancariosComponent } from './views/ingresos-bancarios/ingresos-bancarios.component';
 import { RegistroIngresosBancariosComponent } from './views/registro-ingresos-bancarios/registro-ingresos-bancarios.component';
 import { ReportesBancariosComponent } from './views/reportes-bancarios/reportes-bancarios.component';
@@ -19,6 +20,7 @@ import {DashWkComponent} from './views/dash-wk/dash-wk.component';
 import { MaesComponent } from './views/powerbi/maes.component';
 import { PGAComponent } from './views/powerbi/pga.component';
 import { ComparadorBancarioComponent } from './views/comparador-sede/comparador-bancario.component';
+import { UsuariosComponent } from './views/configuracion/usuarios/usuarios.component';
 
 const VISTA_NOMBRES: Record<string, string> = {
   semanal: 'WK Semanal 2026',
@@ -35,7 +37,8 @@ const VISTA_NOMBRES: Record<string, string> = {
   dashwk: 'Dashboard Working Capital',
   maes: 'MAEs',
   pga: 'PGA Finanzas',
-  compBancario: 'Comparador Bancario por Sede'
+  compBancario: 'Comparador Bancario por Sede',
+  usuarios: 'Usuarios',
 };
 
 @Component({
@@ -52,6 +55,7 @@ const VISTA_NOMBRES: Record<string, string> = {
     IngresosComponent, 
     EgresosComponent, 
     StockVsCxpComponent, 
+    RentaProyeccionComponent,
     IngresosBancariosComponent, 
     RegistroIngresosBancariosComponent, 
     AnalisisBancariosComponent, 
@@ -61,7 +65,7 @@ const VISTA_NOMBRES: Record<string, string> = {
     DashWkComponent,
     MaesComponent,
     PGAComponent,
-    ComparadorBancarioComponent,
+    ComparadorBancarioComponent, UsuariosComponent,
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']

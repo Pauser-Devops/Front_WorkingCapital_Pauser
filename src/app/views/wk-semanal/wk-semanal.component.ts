@@ -52,7 +52,7 @@ export class WkSemanalComponent implements OnInit, OnDestroy {
   get fechaActiva(): string { return this.fechas[this.indiceActivo] ?? ''; }
   get datosActivos(): WkDatos | null { return this.datos[this.fechaActiva] ?? null; }
 
-  constructor(private http: HttpClient, private wkRefresh: WkRefreshService) {}
+  constructor(private http: HttpClient, private wkRefresh: WkRefreshService) { }
 
   ngOnInit() {
     // Auto-recarga cuando ingresos o egresos cambian
@@ -128,9 +128,9 @@ export class WkSemanalComponent implements OnInit, OnDestroy {
   irSiguiente() { if (this.indiceActivo < this.fechas.length - 1) this.indiceActivo++; }
 
   formatFecha(f: string): string {
-    const m = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const m = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
     const d = new Date(f + 'T00:00:00');
-    return `${String(d.getDate()).padStart(2,'0')} ${m[d.getMonth()]} ${d.getFullYear()}`;
+    return `${String(d.getDate()).padStart(2, '0')} ${m[d.getMonth()]} ${d.getFullYear()}`;
   }
 
   fmt(n: number | null | undefined): string {
@@ -144,5 +144,9 @@ export class WkSemanalComponent implements OnInit, OnDestroy {
 
   entries(obj: Record<string, number>): [string, number][] {
     return Object.entries(obj);
+  }
+  exportar() {
+    if (!this.fechaActiva) return;
+    window.open(`${API}/exportar/wk-semanal?fecha_corte=${this.fechaActiva}`, '_blank');
   }
 }

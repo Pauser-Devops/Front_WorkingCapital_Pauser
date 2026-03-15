@@ -10,22 +10,22 @@ const API = environment.apiUrl;
 
 interface WkDatos {
   activo: {
-    bancos:      { items: Record<string, number>; total: number };
-    prosegur:    number;
+    bancos: { items: Record<string, number>; total: number };
+    prosegur: number;
     inventarios: { items: Record<string, number>; total: number };
-    cxc:         { items: Record<string, number>; total: number };
+    cxc: { items: Record<string, number>; total: number };
     ventaEnRuta: number;
-    total:       number;
+    total: number;
   };
   pasivo: {
     ctasPagar: {
       proveedoresPrincipales: { items: Record<string, number>; total: number };
       proveedoresSecundarios: number;
-      comodato:               number;
-      total:                  number;
+      comodato: number;
+      total: number;
     };
-    gg:          { items: Record<string, number>; total: number };
-    impuestos:   { items: Record<string, number>; total: number };
+    gg: { items: Record<string, number>; total: number };
+    impuestos: { items: Record<string, number>; total: number };
     detracciones: number;
     obligacionesFinancieras: { items: Record<string, number>; total: number };
     total: number;
@@ -35,7 +35,7 @@ interface WkDatos {
 
 interface Mes {
   fecha: string;   // fecha real para query ("2026-01-29")
-  ym:    string;   // "2026-01"
+  ym: string;   // "2026-01"
   label: string;   // "Ene 2026"
 }
 
@@ -49,16 +49,16 @@ interface Mes {
 export class WkMensualComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
-  meses:        Mes[]                    = [];
-  indiceActivo  = 0;
-  datos:        Record<string, WkDatos> = {};   // clave: ym "2026-01"
-  cargando      = true;
-  error         = '';
+  meses: Mes[] = [];
+  indiceActivo = 0;
+  datos: Record<string, WkDatos> = {};   // clave: ym "2026-01"
+  cargando = true;
+  error = '';
 
-  get mesActivo(): Mes | null         { return this.meses[this.indiceActivo] ?? null; }
-  get datosActivos(): WkDatos | null  { return this.mesActivo ? (this.datos[this.mesActivo.ym] ?? null) : null; }
+  get mesActivo(): Mes | null { return this.meses[this.indiceActivo] ?? null; }
+  get datosActivos(): WkDatos | null { return this.mesActivo ? (this.datos[this.mesActivo.ym] ?? null) : null; }
 
-  constructor(private http: HttpClient, private wkRefresh: WkRefreshService) {}
+  constructor(private http: HttpClient, private wkRefresh: WkRefreshService) { }
 
   ngOnInit() {
     // Recarga el mes correspondiente cuando se guardan ingresos o egresos
@@ -136,9 +136,9 @@ export class WkMensualComponent implements OnInit, OnDestroy {
     });
   }
 
-  irAMes(i: number)  { this.indiceActivo = i; }
-  irAnterior()       { if (this.indiceActivo > 0) this.indiceActivo--; }
-  irSiguiente()      { if (this.indiceActivo < this.meses.length - 1) this.indiceActivo++; }
+  irAMes(i: number) { this.indiceActivo = i; }
+  irAnterior() { if (this.indiceActivo > 0) this.indiceActivo--; }
+  irSiguiente() { if (this.indiceActivo < this.meses.length - 1) this.indiceActivo++; }
 
   fmt(n: number | null | undefined): string {
     if (n == null) return '—';
@@ -149,5 +149,9 @@ export class WkMensualComponent implements OnInit, OnDestroy {
 
   entries(obj: Record<string, number>): [string, number][] {
     return Object.entries(obj);
+  }
+  exportar() {
+    if (!this.mesActivo) return;
+    window.open(`${API}/exportar/wk-mensual?fecha_corte=${this.mesActivo.fecha}`, '_blank');
   }
 }

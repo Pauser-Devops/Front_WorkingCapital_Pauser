@@ -235,3 +235,15 @@
     .rb-bottom-row { grid-template-columns: 1fr; }
     .rb-filtros-sep{ display: none; }
 }
+.ab-sync-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  padding: 2px 7px;
+  border-radius: 20px;
+  font-size: 10px;
+  color: #64748b;           
+  vertical-align: middle;
+  white-space: nowrap;
+}

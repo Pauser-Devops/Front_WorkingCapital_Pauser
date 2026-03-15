@@ -25,7 +25,14 @@
       </button>
     </div>
   </div>
-
+  <span class="ab-sync-badge" *ngIf="ultimaSync">
+    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
+    Última Sincronización: {{ ultimaSync }}
+  </span>
   <!-- LOADING -->
   <div class="rb-loading" *ngIf="cargando">
     <div class="rb-spinner"></div>

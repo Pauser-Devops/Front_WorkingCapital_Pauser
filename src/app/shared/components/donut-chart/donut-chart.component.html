@@ -1,0 +1,51 @@
+<div class="donut-root">
+
+  <!-- SVG donut -->
+  <div class="donut-svg-wrap">
+    <svg [attr.viewBox]="'0 0 200 200'" class="donut-svg"
+         (mouseleave)="onArcLeave()">
+
+      <g *ngFor="let arc of arcs; let i = index">
+        <path
+          [attr.d]="arc.path"
+          [attr.fill]="arc.slice.color"
+          [attr.opacity]="hoveredIndex === null ? 1 : (hoveredIndex === i ? 1 : 0.35)"
+          class="donut-arc"
+          [class.donut-arc-hovered]="hoveredIndex === i"
+          (mouseenter)="onArcHover(arc, i, $event)"
+          (mouseleave)="onArcLeave()"
+        />
+      </g>
+
+      <!-- Centro: total -->
+      <text x="100" y="96" class="donut-center-val">{{ fmt(totalVisible) }}</text>
+      <text x="100" y="112" class="donut-center-lbl">Total</text>
+
+      <!-- Tooltip SVG flotante -->
+      <g *ngIf="tooltip.visible"
+         [attr.transform]="'translate(' + tooltip.x + ',' + tooltip.y + ')'">
+        <rect x="-70" y="-62" width="140" height="58" rx="7" class="donut-tt-bg"/>
+        <text x="0" y="-42" class="donut-tt-name">{{ tooltip.slice?.name }}</text>
+        <text x="0" y="-24" class="donut-tt-val">{{ fmtFull(tooltip.slice?.value ?? 0) }}</text>
+        <text x="0" y="-8"  class="donut-tt-pct">{{ tooltip.pct }}% del total</text>
+      </g>
+
+    </svg>
+  </div>
+
+  <!-- Leyenda interna — solo si showLegend=true -->
+  <div class="donut-leyenda" *ngIf="showLegend">
+    <div
+      class="donut-ley-row"
+      *ngFor="let s of slices"
+      [class.donut-ley-hidden]="hiddenSlices.has(s.name)"
+      (click)="toggleSlice(s.name)"
+      title="Click para ocultar/mostrar">
+      <span class="donut-ley-dot" [style.background]="s.color"></span>
+      <span class="donut-ley-name">{{ s.name }}</span>
+      <span class="donut-ley-val">{{ fmt(s.value) }}</span>
+      <span class="donut-ley-pct">{{ (s.value / (total || 1) * 100) | number:"1.0-0" }}%</span>
+    </div>
+  </div>
+
+</div>

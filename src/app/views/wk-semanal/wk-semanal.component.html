@@ -20,8 +20,12 @@
         (click)="irAFecha(i)">{{ formatFecha(f) }}</button>
     </div>
     <button class="btn-nav" (click)="irSiguiente()" [disabled]="indiceActivo === fechas.length - 1">›</button>
+   <button class="btn-export" (click)="exportar()">
+    <span class="material-icons">download</span>
+    Exportar Excel
+  </button>
   </div>
-
+ 
   <ng-container *ngIf="!cargando && datosActivos as d">
 
     <!-- KPIs -->

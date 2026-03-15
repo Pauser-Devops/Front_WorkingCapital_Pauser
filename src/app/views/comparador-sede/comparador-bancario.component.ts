@@ -248,7 +248,7 @@ export class ComparadorBancarioComponent implements OnInit {
     if (this.filtroEstado === 'no_encontrado') return 'No encontrados';
     return 'Coincidencia exacta';
   }
-
+ 
   get colorBarra(): string {
     if (this.filtroEstado === 'dif_monto') return '#f59e0b';
     if (this.filtroEstado === 'no_encontrado') return '#dc2626';

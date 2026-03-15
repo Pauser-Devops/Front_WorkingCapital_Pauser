@@ -645,3 +645,143 @@
 .ing-prosegur-box.cargando {
   justify-content: center;
 }
+
+.ing-ibk-info {
+  font-size: 10px;
+  font-weight: 500;
+  color: #0f766e;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  padding: 1px 7px;
+  border-radius: 20px;
+  margin-left: 6px;
+  white-space: nowrap;
+}
+
+.btn-export {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1.5px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+}
+
+.btn-export:hover {
+  background: #15803d;
+  color: #fff;
+  border-color: #15803d;
+}
+
+.btn-export .material-icons {
+  font-size: 16px;
+}
+
+/* ── Nav de fechas ─────────────────────────────────── */
+.ing-nav-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.btn-nav {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1.5px solid #d1d5db;
+  background: #fff;
+  color: #1a2b4a;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all .15s;
+}
+
+.btn-nav:hover:not(:disabled) {
+  background: #1a2b4a;
+  color: #fff;
+  border-color: #1a2b4a;
+}
+
+.btn-nav:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+.ing-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+
+.ing-chip {
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1.5px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+}
+
+.ing-chip:hover {
+  border-color: #1a2b4a;
+  color: #1a2b4a;
+}
+
+.ing-chip-activo {
+  background: #1a2b4a !important;
+  color: #fff !important;
+  border-color: #1a2b4a !important;
+}
+
+.btn-export {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1.5px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.btn-export:hover:not(:disabled) {
+  background: #15803d;
+  color: #fff;
+  border-color: #15803d;
+}
+
+.btn-export:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+.btn-export .material-icons {
+  font-size: 16px;
+}

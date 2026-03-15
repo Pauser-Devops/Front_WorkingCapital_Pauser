@@ -56,6 +56,9 @@ export class RegistroIngresosBancariosComponent {
   totalSinComprobante = 0;
   indiceComprobantes: Record<string, boolean> = {};
 
+  // Paginación
+  paginaActual = 1;
+  porPagina = 100;
   // Sync
   ultimaSync = '';
   usuarioSync = '';
@@ -214,6 +217,7 @@ export class RegistroIngresosBancariosComponent {
     this.registrosFiltrados = data;
     this.calcularKPIs(data);
     this.calcularKPIsIA(data);
+    this.paginaActual=1;
   }
 
   calcularKPIs(data: any[]) {
@@ -386,4 +390,28 @@ export class RegistroIngresosBancariosComponent {
   }
   get totalConciliadosReal() { return this.registros.filter(r => r.conciliado).length; }
   get totalPendientesReal() { return this.registros.filter(r => !r.conciliado).length; }
+  get registrosPaginados(): any[] {
+  const inicio = (this.paginaActual - 1) * this.porPagina;
+  return this.registrosFiltrados.slice(inicio, inicio + this.porPagina);
+}
+
+get totalPaginas(): number {
+  return Math.ceil(this.registrosFiltrados.length / this.porPagina);
+}
+
+get paginas(): number[] {
+  const total = this.totalPaginas;
+  const actual = this.paginaActual;
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  if (actual <= 4) return [1, 2, 3, 4, 5, 0, total];
+  if (actual >= total - 3) return [1, 0, total-4, total-3, total-2, total-1, total];
+  return [1, 0, actual-1, actual, actual+1, 0, total];
+}
+
+irPagina(p: number) {
+  if (p < 1 || p > this.totalPaginas) return;
+  this.paginaActual = p;
+}
+
+Math = Math;
 }

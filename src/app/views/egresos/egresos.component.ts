@@ -5,42 +5,51 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { WkRefreshService } from './../../shared/services/wk-refresh.service';
 
-
 const API = environment.apiUrl;
 
-const ID_VENTAS_GRAV = 32;
-const ID_COMPRAS_GRAV = 33;
-const ID_IGV_CALC = 34;
-const ID_RENTA_3RA = 35;
-const ID_CRED_RTA = 36;
-const ID_RENTA_PRELIQ = 37;
-const ID_IGV_PRELIQ = 38;
-const ID_ITAN = 39;
-const ID_PERCEPCIONES = 40;
-const ID_RTA_2DA = 41;
-const ID_TOTAL_PAGAR = 42;
-const ID_BACKUS = 7;   // item BACKUS
-const ID_FACTURAS = 8;   // subitem Facturas
-const ID_ENVASES = 9;   // subitem Envases
+// ── IDs ───────────────────────────────────────────────
+const ID_BACKUS = 7;
+const ID_FACTURAS = 8;
+const ID_ENVASES = 9;
+const ID_SALARIOS = 19;
+const ID_MOVILIDADES = 20;
 
+const ID_VENTAS_GRAV = 33;
+const ID_VENTAS_NO_GRAV = 34;
+const ID_TOTAL_VENTAS = 35;
+const ID_COMPRAS_18 = 36;
+const ID_COMPRAS_10 = 37;
+const ID_COMPRAS_NO_GRAV = 38;
+const ID_TOTAL_COMPRAS = 39;
+const ID_IGV_CALC = 40;
+const ID_RENTA_3RA = 41;
+const ID_CRED_RTA = 42;
+const ID_RENTA_PRELIQ = 43;
+const ID_IGV_PRELIQ = 44;
+const ID_ITAN = 45;
+const ID_PERCEPCIONES = 46;
+const ID_RTA_2DA = 47;
+const ID_TOTAL_PAGAR = 48;
+
+// IDs que se calculan automáticamente
 const IDS_CALCULADOS = new Set([
-  ID_IGV_CALC, ID_RENTA_3RA, ID_RENTA_PRELIQ, ID_IGV_PRELIQ, ID_TOTAL_PAGAR,
-  ID_BACKUS
+  ID_BACKUS, ID_TOTAL_VENTAS, ID_TOTAL_COMPRAS,
+  ID_IGV_CALC, ID_RENTA_PRELIQ,
+  ID_IGV_PRELIQ, ID_TOTAL_PAGAR
 ]);
 
 const DEFAULTS_FIJOS: Record<number, number> = {
-  15: 66528,      // Corporación San Francisco
-  16: 22176,      // Representaciones San Santiago
-  20: 61000,      // Movilidades
-  21: 205000,     // Provisión CTS
-  22: 148966.67,  // Provisión Gratificación
-  26: 130272.01,    // INTERBANK
-  27: 37903.02,     // PICHINCHA
-  28: 31368.71,     // BCP
-  29: 19928.59,     // CONTRATO MUTUO
+  15: 66528,        // Corporación San Francisco
+  16: 22176,        // Representaciones San Santiago
+  21: 205000,       // Provisión CTS
+  22: 148966.67,    // Provisión Gratificación
+  27: 130272.01,    // INTERBANK
+  28: 37903.02,     // PICHINCHA
+  29: 31368.71,     // BCP
+  30: 19928.59,     // CONTRATO MUTUO
 };
 
-const ID_SALARIOS = 19;
+const MOVILIDADES_DEFAULT = 61000;
 const SALARIO_BASE = 820000;
 
 interface Concepto {
@@ -79,28 +88,101 @@ export class EgresosComponent implements OnInit {
   valorEditando = '';
 
   valoresPanel: Record<number, number | null> = {};
+  editandoPanelId: number | null = null;
 
-  constructor(private http: HttpClient, private zone: NgZone, private wkRefresh: WkRefreshService) { }
+  readonly IDS_CALCULADOS = IDS_CALCULADOS;
+
+  constructor(
+    private http: HttpClient,
+    private zone: NgZone,
+    private wkRefresh: WkRefreshService
+  ) { }
 
   ngOnInit() { this.cargarConceptos(); }
+  // Después de:  columnas: Columna[] = [];
+  indiceActivo = 0;
 
+  get colActiva(): Columna | null {
+    return this.columnas[this.indiceActivo] ?? null;
+  }
+  // ── Defaults ──────────────────────────────────────────
+  exportar() {
+    if (!this.colActiva) return;
+    window.open(`${API}/exportar/egresos?fecha_corte=${this.colActiva.fecha}`, '_blank');
+  }
   aplicarDefaults() {
     if (!this.nuevaFecha) return;
-
-    // Días transcurridos del mes
     const d = new Date(this.nuevaFecha + 'T00:00:00');
-    const diasMes = d.getDate();
+    const dia = d.getDate();
+    const diasMes = dia;
 
-    // Salarios = (820000 / 30) × días
+    // Salarios proporcional
     this.valoresPanel[ID_SALARIOS] = Math.round((SALARIO_BASE / 30) * diasMes * 100) / 100;
 
-    // Fijos (solo si no hay valor ya cargado)
+    // Movilidades SOLO si es día 5
+    if (dia === 5) {
+      this.valoresPanel[ID_MOVILIDADES] = MOVILIDADES_DEFAULT;
+    }
+
+    // Fijos
     for (const [id, valor] of Object.entries(DEFAULTS_FIJOS)) {
-      if (this.valoresPanel[parseInt(id)] == null) {
-        this.valoresPanel[parseInt(id)] = valor;
+      const numId = parseInt(id);
+      if (this.valoresPanel[numId] == null) {
+        this.valoresPanel[numId] = valor;
       }
     }
   }
+
+  // ── Cálculos automáticos ──────────────────────────────
+
+  recalcularBackus() {
+    const facturas = this.valoresPanel[ID_FACTURAS] ?? 0;
+    const envases = this.valoresPanel[ID_ENVASES] ?? 0;
+    this.valoresPanel[ID_BACKUS] = Math.round((facturas + envases) * 100) / 100;
+  }
+
+  recalcularRenta() {
+    const v = (id: number) => this.valoresPanel[id] || 0;
+
+    const ventasGrav = v(ID_VENTAS_GRAV);
+    const ventasNoGrav = v(ID_VENTAS_NO_GRAV);
+    const compras18 = v(ID_COMPRAS_18);
+    const compras10 = v(ID_COMPRAS_10);
+    const comprasNoGrav = v(ID_COMPRAS_NO_GRAV);
+    const credRta = v(ID_CRED_RTA);
+    const itan = v(ID_ITAN);
+    const percepciones = v(ID_PERCEPCIONES);
+    const rta2da = v(ID_RTA_2DA);
+
+    // Totales
+    const totalVentas = ventasGrav + ventasNoGrav;
+    const totalCompras = compras18 + compras10 + comprasNoGrav;
+
+    // IGV Calculado = (Ventas Grav × 18%) - (Compras Grav 18% × 18%)
+    const igvCalc = (ventasGrav * 0.18) - (compras18 * 0.18);
+
+    // Renta 3era = solo el factor 1.5% — NO se calcula, se guarda como 0.015
+    const renta3ra = 0.015;
+
+    // Renta Preliq = Total Ventas × 1.5% - Crédito Rta Anual
+    const rentaPreliq = (totalVentas * 0.015) - credRta;
+
+    // IGV Preliq = IGV Calculado
+    const igvPreliq = igvCalc;
+
+    // Total a Pagar
+    const totalPagar = igvPreliq + rentaPreliq + itan + percepciones + rta2da;
+
+    this.valoresPanel[ID_TOTAL_VENTAS] = Math.round(totalVentas * 100) / 100;
+    this.valoresPanel[ID_TOTAL_COMPRAS] = Math.round(totalCompras * 100) / 100;
+    this.valoresPanel[ID_IGV_CALC] = Math.round(igvCalc * 100) / 100;
+    this.valoresPanel[ID_RENTA_3RA] = renta3ra;  // ← solo 0.015
+    this.valoresPanel[ID_RENTA_PRELIQ] = Math.round(rentaPreliq * 100) / 100;
+    this.valoresPanel[ID_IGV_PRELIQ] = Math.round(igvPreliq * 100) / 100;
+    this.valoresPanel[ID_TOTAL_PAGAR] = Math.round(totalPagar * 100) / 100;
+  }
+
+  // ── Carga ─────────────────────────────────────────────
 
   cargarConceptos() {
     this.cargando = true;
@@ -120,7 +202,10 @@ export class EgresosComponent implements OnInit {
         if (r.estado === 'OK') {
           const fechasSet = new Set<string>();
           for (const d of r.datos) fechasSet.add(d.fecha_corte);
-          this.columnas = Array.from(fechasSet).sort().map(f => ({ fecha: f, label: this.formatFechaCorta(f) }));
+          this.columnas = Array.from(fechasSet).sort().map(f => ({
+            fecha: f, label: this.formatFechaCorta(f)
+          }));
+          this.indiceActivo = Math.max(0, this.columnas.length - 1);
           this.datos = {};
           for (const d of r.datos) {
             if (!this.datos[d.concepto_id]) this.datos[d.concepto_id] = {};
@@ -131,7 +216,9 @@ export class EgresosComponent implements OnInit {
       error: () => { this.cargando = false; this.error = 'Error al cargar datos'; }
     });
   }
-
+  irAFecha(i: number) { this.indiceActivo = i; }
+  irAnterior() { if (this.indiceActivo > 0) this.indiceActivo--; }
+  irSiguiente() { if (this.indiceActivo < this.columnas.length - 1) this.indiceActivo++; }
   // ── Panel ──────────────────────────────────────────────
 
   abrirPanel() {
@@ -148,6 +235,7 @@ export class EgresosComponent implements OnInit {
     this.cargandoFecha = true;
     this.fechaExistente = false;
     this.valoresPanel = {};
+
     this.http.get<any>(`${API}/egresos/datos?fecha_corte=${this.nuevaFecha}`).subscribe({
       next: r => {
         this.cargandoFecha = false;
@@ -155,7 +243,6 @@ export class EgresosComponent implements OnInit {
           this.fechaExistente = true;
           for (const d of r.datos) this.valoresPanel[d.concepto_id] = d.valor;
         } else {
-          // Fecha nueva → aplicar defaults
           this.aplicarDefaults();
         }
       },
@@ -163,49 +250,58 @@ export class EgresosComponent implements OnInit {
     });
   }
 
-  getValorPanel(concepto_id: number): number | null { return this.valoresPanel[concepto_id] ?? null; }
+  setValorPanel(concepto_id: number, val: string) {
+    const clean = val.replace(/[^0-9.]/g, '');
+    const num = clean === '' ? null : parseFloat(clean);
+    this.valoresPanel[concepto_id] = num;
 
-  recalcularBackus() {
-    const facturas = this.valoresPanel[ID_FACTURAS] ?? 0;
-    const envases = this.valoresPanel[ID_ENVASES] ?? 0;
-    this.valoresPanel[ID_BACKUS] = Math.round((facturas + envases) * 100) / 100;
+    // Recalcular según qué campo cambió
+    if (concepto_id === ID_FACTURAS || concepto_id === ID_ENVASES) {
+      this.recalcularBackus();
+    }
+    if ([ID_VENTAS_GRAV, ID_VENTAS_NO_GRAV, ID_COMPRAS_18,
+      ID_COMPRAS_10, ID_COMPRAS_NO_GRAV, ID_CRED_RTA,
+      ID_ITAN, ID_PERCEPCIONES, ID_RTA_2DA].includes(concepto_id)) {
+      this.recalcularRenta();
+    }
   }
-  recalcularRenta() {
-    const v = (id: number) => this.valoresPanel[id] || 0;
 
-    const ventasGrav = v(ID_VENTAS_GRAV);
-    const comprasGrav = v(ID_COMPRAS_GRAV);
-    const credRta = v(ID_CRED_RTA);
-    const itan = v(ID_ITAN);
-    const percepciones = v(ID_PERCEPCIONES);
-    const rta2da = v(ID_RTA_2DA);
-
-    const igvCalc = ventasGrav * 0.18 - comprasGrav * 0.18;
-    const renta3ra = ventasGrav * 0.015;
-    const rentaPreliq = renta3ra - credRta;
-    const igvPreliq = igvCalc;  // sin crédito percepciones por ahora
-    const totalPagar = igvPreliq + rentaPreliq + itan + percepciones + rta2da;
-
-    this.valoresPanel[ID_IGV_CALC] = Math.round(igvCalc * 100) / 100;
-    this.valoresPanel[ID_RENTA_3RA] = Math.round(renta3ra * 100) / 100;
-    this.valoresPanel[ID_RENTA_PRELIQ] = Math.round(rentaPreliq * 100) / 100;
-    this.valoresPanel[ID_IGV_PRELIQ] = Math.round(igvPreliq * 100) / 100;
-    this.valoresPanel[ID_TOTAL_PAGAR] = Math.round(totalPagar * 100) / 100;
+  onInputFocus(e: FocusEvent, concepto_id: number) {
+    this.editandoPanelId = concepto_id;
+    const v = this.valoresPanel[concepto_id];
+    const input = e.target as HTMLInputElement;
+    input.value = v !== null && v !== undefined ? v.toString() : '';
+    setTimeout(() => input.select(), 0);
   }
-  get conceptosEditables(): Concepto[] {
-    return this.conceptos.filter(c =>
-      (c.tipo_fila === 'item' || c.tipo_fila === 'subitem' || c.tipo_fila === 'total') &&
-      !IDS_CALCULADOS.has(c.id)  // excluir calculados del payload manual
-    );
+
+  onInputBlur(e: FocusEvent, concepto_id: number) {
+    this.editandoPanelId = null;
+    const v = this.valoresPanel[concepto_id];
+    const input = e.target as HTMLInputElement;
+    input.value = v !== null && v !== undefined && !isNaN(v)
+      ? v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : '';
   }
+
+  fmtInput(concepto_id: number): string {
+    const v = this.valoresPanel[concepto_id];
+    if (v === null || v === undefined || isNaN(v)) return '';
+    if (this.editandoPanelId === concepto_id) return v.toString();
+    return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  getValorPanel(concepto_id: number): number | null {
+    return this.valoresPanel[concepto_id] ?? null;
+  }
+
   guardarFecha() {
     if (!this.nuevaFecha) return;
     this.guardandoFecha = true;
 
-    // Recalcular antes de guardar
+    // Recalcular todo antes de guardar
     this.recalcularRenta();
     this.recalcularBackus();
-    // Guardar todos: manuales + calculados
+
     const todosLosIds = this.conceptos.filter(c =>
       c.tipo_fila === 'item' || c.tipo_fila === 'subitem' || c.tipo_fila === 'total'
     );
@@ -263,8 +359,9 @@ export class EgresosComponent implements OnInit {
   esTotal(c: Concepto) { return c.tipo_fila === 'total'; }
   esItem(c: Concepto) { return c.tipo_fila === 'item'; }
   esSubitem(c: Concepto) { return c.tipo_fila === 'subitem'; }
+  esCalculado(c: Concepto) { return IDS_CALCULADOS.has(c.id); }
 
-  // ── Edición inline con NgZone ──────────────────────────
+  // ── Edición inline ────────────────────────────────────
 
   iniciarEdicion(concepto_id: number, fecha: string) {
     if (this.editandoCelda) this.confirmarEdicion();
@@ -272,7 +369,6 @@ export class EgresosComponent implements OnInit {
     this.editandoCelda = { concepto_id, fecha };
     this.valorEditando = v !== null ? v.toString() : '';
 
-    // Focus al input FUERA de zone para no disparar change detection
     setTimeout(() => {
       const selector = `[data-cid="${concepto_id}"][data-fecha="${fecha}"] input`;
       const input = document.querySelector(selector) as HTMLInputElement;
@@ -314,7 +410,8 @@ export class EgresosComponent implements OnInit {
   cancelarEdicion() { this.editandoCelda = null; }
 
   esEditando(concepto_id: number, fecha: string): boolean {
-    return this.editandoCelda?.concepto_id === concepto_id && this.editandoCelda?.fecha === fecha;
+    return this.editandoCelda?.concepto_id === concepto_id &&
+      this.editandoCelda?.fecha === fecha;
   }
 
   // ── Utils ──────────────────────────────────────────────
@@ -329,62 +426,7 @@ export class EgresosComponent implements OnInit {
     if (n == null) return '—';
     return n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
-  desformatear(val: string): string {
-    // Quita puntos de miles, convierte coma decimal a punto
-    return val.replace(/\./g, '').replace(',', '.');
-  }
 
-  fmtInput(concepto_id: number): string {
-    const v = this.valoresPanel[concepto_id];
-    if (v === null || v === undefined) return '';
-    if (this.editandoPanelId === concepto_id) return v.toString();
-    return v.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-  }
-
-  editandoPanelId: number | null = null;
-
-  setValorPanel(concepto_id: number, val: string) {
-    let clean = val;
-
-    if (val.includes(',')) {
-      clean = val.replace(/\./g, '').replace(',', '.');
-    }
-
-    else if (val.includes('.')) {
-      const dotPos = val.lastIndexOf('.');
-      const afterDot = val.length - dotPos - 1;
-      if (afterDot <= 2) {
-        // Es decimal: 1234.56
-        clean = val;
-      } else {
-        // Es separador de miles: 1.234
-        clean = val.replace(/\./g, '');
-      }
-    }
-    this.valoresPanel[concepto_id] = clean === '' ? null : parseFloat(clean);
-    if (concepto_id === ID_FACTURAS || concepto_id === ID_ENVASES) {
-      this.recalcularBackus();
-    }
-  }
-
-  onInputFocus(e: FocusEvent, concepto_id: number) {
-    this.editandoPanelId = concepto_id;
-    const v = this.valoresPanel[concepto_id];
-    const input = e.target as HTMLInputElement;
-    input.value = v !== null && v !== undefined ? v.toString() : '';
-    setTimeout(() => input.select(), 0);
-  }
-
-  onInputBlur(e: FocusEvent, concepto_id: number) {
-    this.editandoPanelId = null;
-    const v = this.valoresPanel[concepto_id];
-    const input = e.target as HTMLInputElement;
-    input.value = v !== null && v !== undefined
-      ? v.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
-      : '';
-  }
   trackById(_: number, c: Concepto) { return c.id; }
   trackByFecha(_: number, col: Columna) { return col.fecha; }
-
-
 }

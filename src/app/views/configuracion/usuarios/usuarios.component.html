@@ -1,0 +1,165 @@
+<div class="usr-wrap">
+
+  <!-- HEADER -->
+  <div class="usr-header">
+    <div class="usr-title-wrap">
+      <div class="usr-icon">
+        <span class="material-icons">manage_accounts</span>
+      </div>
+      <div>
+        <div class="usr-title">Gestión de Usuarios</div>
+        <div class="usr-sub">Administra accesos y roles del sistema</div>
+      </div>
+    </div>
+    <button class="btn-nuevo" (click)="abrirCrear()">
+      <span class="material-icons">person_add</span>
+      Nuevo usuario
+    </button>
+  </div>
+
+  <!-- ALERTS -->
+  <div class="usr-alert exito" *ngIf="exito">
+    <span class="material-icons">check_circle</span>{{ exito }}
+  </div>
+  <div class="usr-alert error" *ngIf="error && !modalAbierto">
+    <span class="material-icons">error_outline</span>{{ error }}
+  </div>
+
+  <!-- BANNER USUARIO LOGUEADO -->
+  <div class="usr-banner">
+    <div class="usr-banner-avatar">{{ auth.usuarioActual?.nombre?.charAt(0) }}</div>
+    <div class="usr-banner-info">
+      <div class="usr-banner-name">{{ auth.usuarioActual?.nombre }}</div>
+      <div class="usr-banner-meta">{{ auth.usuarioActual?.email }} · Sesión activa</div>
+    </div>
+    <span class="rol-badge" [class]="'rol-' + auth.rolActual">{{ rolLabel(auth.rolActual) }}</span>
+    <div class="usr-banner-sep"></div>
+    <div class="usr-banner-stat">
+      <div class="usr-banner-stat-val">{{ usuarios.length }}</div>
+      <div class="usr-banner-stat-label">Usuarios</div>
+    </div>
+    <div class="usr-banner-sep"></div>
+    <div class="usr-banner-stat">
+      <div class="usr-banner-stat-val">{{ usuarios.length }}</div>
+      <div class="usr-banner-stat-label">Activos</div>
+    </div>
+  </div>
+
+  <!-- TABLA -->
+  <div class="usr-card">
+    <div class="usr-card-title">
+      <span class="material-icons">table_chart</span>
+      Usuarios del sistema
+      <span class="usr-card-count">{{ usuarios.length }} usuarios</span>
+    </div>
+
+    <div class="usr-loading" *ngIf="cargando">
+      <div class="usr-spinner"></div>
+      Cargando usuarios...
+    </div>
+
+    <div class="usr-tabla-wrap" *ngIf="!cargando">
+      <table class="usr-tabla">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Email</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th>Contraseña</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let u of usuarios">
+            <td>
+              <div class="usr-nombre-wrap">
+                <div class="usr-avatar">{{ u.nombre.charAt(0) }}</div>
+                <span class="usr-nombre-text">{{ u.nombre }}</span>
+              </div>
+            </td>
+            <td class="usr-email">{{ u.email }}</td>
+            <td>
+              <span class="rol-badge" [class]="'rol-' + u.rol">{{ rolLabel(u.rol) }}</span>
+            </td>
+            <td>
+              <span class="estado-badge" [class]="u.activo ? 'estado-activo' : 'estado-inactivo'">
+                <span class="material-icons">{{ u.activo ? 'check_circle' : 'cancel' }}</span>
+                {{ u.activo ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+            <td>
+              <span class="pwd-badge" [class]="u.debe_cambiar_password ? 'pwd-pendiente' : 'pwd-ok'">
+                {{ u.debe_cambiar_password ? 'Pendiente' : 'Al día' }}
+              </span>
+            </td>
+            <td>
+              <div class="usr-acciones">
+                <button class="btn-accion btn-editar" (click)="abrirEditar(u)">
+                  <span class="material-icons">edit</span>Editar
+                </button>
+                <button class="btn-accion btn-reset" (click)="resetPassword(u)">
+                  <span class="material-icons">lock_reset</span>Reset
+                </button>
+                <button class="btn-accion btn-desactivar" (click)="desactivar(u)" *ngIf="u.activo">
+                  <span class="material-icons">person_off</span>Desactivar
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- OVERLAY -->
+  <div class="usr-overlay" *ngIf="modalAbierto" (click)="cerrarModal()"></div>
+
+  <!-- MODAL -->
+  <div class="usr-modal" *ngIf="modalAbierto">
+    <div class="modal-head">
+      <h3>{{ modoEdicion ? 'Editar usuario' : 'Nuevo usuario' }}</h3>
+      <button class="btn-cerrar" (click)="cerrarModal()">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="usr-alert error" *ngIf="error">
+        <span class="material-icons">error_outline</span>{{ error }}
+      </div>
+
+      <div class="form-field">
+        <label>Nombre completo</label>
+        <input [(ngModel)]="form.nombre" 
+       (ngModelChange)="generarCredenciales()" 
+       placeholder="Ej: Ana García" />
+      </div>
+
+      <div class="form-field">
+        <label>Email</label>
+        <input [(ngModel)]="form.email" type="email" placeholder="correo@empresa.com" />
+      </div>
+
+      <div class="form-field">
+        <label>Rol</label>
+        <select [(ngModel)]="form.rol">
+          <option *ngFor="let r of roles" [value]="r.value">{{ r.label }}</option>
+        </select>
+      </div>
+
+      <div class="form-field" *ngIf="!modoEdicion">
+        <label>Contraseña inicial</label>
+        <input [(ngModel)]="form.password" type="text" placeholder="Ej: nombre2026!" />
+      </div>
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn-cancelar" (click)="cerrarModal()">Cancelar</button>
+      <button class="btn-guardar" (click)="guardar()">
+        {{ modoEdicion ? 'Guardar cambios' : 'Crear usuario' }}
+      </button>
+    </div>
+  </div>
+
+</div>

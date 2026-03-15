@@ -27,13 +27,13 @@ const TODAS_TABLAS = ['bcp_1', 'bcp_tru_1', 'bcp_ln_1', 'bbva_1', 'bbva_lm_1', '
 const TODAS_TABLAS_COMPLETO = [...TODAS_TABLAS, ...TABLAS_SOLO_MONTO];
 
 const ENTIDADES: Record<string, string[]> = {
-    'BCP':           ['bcp_1', 'bcp_tru_1', 'bcp_ln_1'],
-    'BBVA':          ['bbva_1', 'bbva_lm_1'],
-    'Interbank':     ['ibk_1'],
+    'BCP': ['bcp_1', 'bcp_tru_1', 'bcp_ln_1'],
+    'BBVA': ['bbva_1', 'bbva_lm_1'],
+    'Interbank': ['ibk_1'],
     'Caja Arequipa': ['caja_arequipa_1'],
-    'IBK USD':       ['ibk_usd_1'],
-    'Pichincha':     ['pichincha_1'],
-    'B. Nación':     ['bn_1'],
+    'IBK USD': ['ibk_usd_1'],
+    'Pichincha': ['pichincha_1'],
+    'B. Nación': ['bn_1'],
 };
 
 const TABLAS_LABELS: Record<string, string> = {
@@ -80,13 +80,13 @@ export class ReportesBancariosComponent implements OnInit, OnDestroy, AfterViewI
     periodoActivo: PeriodoItem | null = null;
 
     filtroEntidad = 'todas';
-    filtroBanco   = 'todos';
+    filtroBanco = 'todos';
 
     entidades = Object.keys(ENTIDADES);
-    bancos    = TODAS_TABLAS_COMPLETO;
+    bancos = TODAS_TABLAS_COMPLETO;
 
     cargando = false;
-    error    = '';
+    error = '';
     datosRaw: Record<string, any[]> = {};
 
     filas: FilaNorm[] = [];
@@ -105,23 +105,46 @@ export class ReportesBancariosComponent implements OnInit, OnDestroy, AfterViewI
     private charts: any[] = [];
     private chartsCreados = false;
 
-    @ViewChild('chartCategoria')  chartCategoriaRef!: ElementRef;
+    ultimaSync = '';
+    usuarioSync = '';
+
+    @ViewChild('chartCategoria') chartCategoriaRef!: ElementRef;
     @ViewChild('chartConciliado') chartConciliadoRef!: ElementRef;
-    @ViewChild('chartEvolucion')  chartEvolucionRef!: ElementRef;
-    @ViewChild('chartBancos')     chartBancosRef!: ElementRef;
+    @ViewChild('chartEvolucion') chartEvolucionRef!: ElementRef;
+    @ViewChild('chartBancos') chartBancosRef!: ElementRef;
 
-    constructor(private http: HttpClient) {}
+    constructor(private http: HttpClient) { }
 
-    ngOnInit()        { this.cargarPeriodos(); }
-    ngAfterViewInit() {}
-    ngOnDestroy()     { this.destruirCharts(); }
+    ngOnInit() { this.cargarPeriodos(); }
+    ngAfterViewInit() { }
+    ngOnDestroy() { this.destruirCharts(); }
 
     destruirCharts() {
         this.charts.forEach(c => c.destroy());
         this.charts = [];
         this.chartsCreados = false;
     }
-
+    cargarSync() {
+        if (!this.periodoActivo) return;
+        const { mes, anio } = this.periodoActivo;
+        this.http.get<any>(
+            `${API}/sync/ultima?modulo=registro_reportes&mes=${mes}&anio=${anio}`
+        ).subscribe({
+            next: r => {
+                if (r.estado === 'OK' && r.ultima_sync) {
+                    const fecha = new Date(r.ultima_sync);
+                    this.ultimaSync = fecha.toLocaleDateString('es-PE', {
+                        day: '2-digit', month: 'short', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit'
+                    });
+                    this.usuarioSync = r.usuario || '';
+                } else {
+                    this.ultimaSync = '';
+                    this.usuarioSync = '';
+                }
+            }
+        });
+    }
     cargarPeriodos() {
         this.http.get<any>(`${API}/bancos/meses`).subscribe({
             next: r => {
@@ -140,7 +163,7 @@ export class ReportesBancariosComponent implements OnInit, OnDestroy, AfterViewI
                 }
                 this.periodos = lista.sort((a, b) =>
                     a.anio !== b.anio ? a.anio - b.anio
-                    : (ORDEN_MESES[a.mes.toLowerCase()] || 99) - (ORDEN_MESES[b.mes.toLowerCase()] || 99)
+                        : (ORDEN_MESES[a.mes.toLowerCase()] || 99) - (ORDEN_MESES[b.mes.toLowerCase()] || 99)
                 );
                 if (this.periodos.length) this.seleccionarPeriodo(this.periodos[this.periodos.length - 1]);
             },
@@ -151,15 +174,16 @@ export class ReportesBancariosComponent implements OnInit, OnDestroy, AfterViewI
     seleccionarPeriodo(p: PeriodoItem) {
         this.periodoActivo = p;
         this.filtroEntidad = 'todas';
-        this.filtroBanco   = 'todos';
+        this.filtroBanco = 'todos';
         this.destruirCharts();
         this.cargarTodosLosBancos();
+        this.cargarSync();
     }
 
     cargarTodosLosBancos() {
         if (!this.periodoActivo) return;
         this.cargando = true;
-        this.error    = '';
+        this.error = '';
         this.datosRaw = {};
         const { mes, anio } = this.periodoActivo;
 
@@ -183,26 +207,26 @@ export class ReportesBancariosComponent implements OnInit, OnDestroy, AfterViewI
         for (const tabla of TODAS_TABLAS_COMPLETO) {
             const esSoloMonto = TABLAS_SOLO_MONTO.includes(tabla);
             const entidad = Object.keys(ENTIDADES).find(e => ENTIDADES[e].includes(tabla)) || tabla;
-            const rows    = this.datosRaw[tabla] || [];
-            const esIBK   = tabla === 'ibk_1';
-            const esBBVA  = tabla === 'bbva_1' || tabla === 'bbva_lm_1';
+            const rows = this.datosRaw[tabla] || [];
+            const esIBK = tabla === 'ibk_1';
+            const esBBVA = tabla === 'bbva_1' || tabla === 'bbva_lm_1';
 
             for (const r of rows) {
-                const desc    = (r.descripcion   || '').toUpperCase();
-                const clasi   = (r.clasificacion || '').toLowerCase().trim();
-                const idPop   = (r.id_pop        || '').trim();
-                const sede    = (r.sede          || '').toLowerCase();
+                const desc = (r.descripcion || '').toUpperCase();
+                const clasi = (r.clasificacion || '').toLowerCase().trim();
+                const idPop = (r.id_pop || '').trim();
+                const sede = (r.sede || '').toLowerCase();
                 const ingreso = parseFloat(r.ingreso) || 0;
-                const egreso  = Math.abs(parseFloat(r.egreso) || 0);
+                const egreso = Math.abs(parseFloat(r.egreso) || 0);
                 const fechaStr = r.fecha ? r.fecha.toString().slice(0, 10) : '';
-                const dia      = fechaStr ? new Date(fechaStr).getDate() : 0;
+                const dia = fechaStr ? new Date(fechaStr).getDate() : 0;
 
                 let categoria = 'egreso';
 
                 if (esSoloMonto) {
                     categoria = ingreso > 0 ? 'solo_monto' : 'egreso';
                 } else if (ingreso > 0) {
-                    if ((esIBK  && (desc.includes('ABONO MAQUINA RECAU') || desc.includes('N/A VARIOS'))) ||
+                    if ((esIBK && (desc.includes('ABONO MAQUINA RECAU') || desc.includes('N/A VARIOS'))) ||
                         (esBBVA && desc.includes('PROSEGUR'))) {
                         categoria = 'prosegur';
                     } else if (['ventas al credito', 'ventas al crédito'].includes(clasi) || sede.includes('©')) {
@@ -216,12 +240,12 @@ export class ReportesBancariosComponent implements OnInit, OnDestroy, AfterViewI
 
                 allFilas.push({
                     tabla, entidad, fecha: fechaStr, dia,
-                    descripcion:   r.descripcion   || '',
-                    detalle:       r.detalle        || '',
+                    descripcion: r.descripcion || '',
+                    detalle: r.detalle || '',
                     ingreso, egreso,
-                    id_pop:        esSoloMonto ? '' : idPop,
-                    clasificacion: r.clasificacion  || '',
-                    sede:          r.sede           || '',
+                    id_pop: esSoloMonto ? '' : idPop,
+                    clasificacion: r.clasificacion || '',
+                    sede: r.sede || '',
                     categoria,
                     conciliado: ['ingresos_id', 'prosegur', 'ventas_credito'].includes(categoria),
                 });
@@ -252,12 +276,12 @@ export class ReportesBancariosComponent implements OnInit, OnDestroy, AfterViewI
 
     setFiltroEntidad(e: string) {
         this.filtroEntidad = e;
-        this.filtroBanco   = 'todos';
+        this.filtroBanco = 'todos';
         this.aplicarFiltro();
     }
 
     setFiltroBanco(b: string) {
-        this.filtroBanco   = b;
+        this.filtroBanco = b;
         this.filtroEntidad = b === 'todos' ? 'todas'
             : Object.keys(ENTIDADES).find(e => ENTIDADES[e].includes(b)) || 'todas';
         this.aplicarFiltro();
@@ -267,13 +291,13 @@ export class ReportesBancariosComponent implements OnInit, OnDestroy, AfterViewI
         const d = this.filasFiltradas;
 
         const totalIngresos = d.reduce((s, r) => s + r.ingreso, 0);
-        const totalEgresos  = d.reduce((s, r) => s + r.egreso,  0);
+        const totalEgresos = d.reduce((s, r) => s + r.egreso, 0);
 
         // Conciliación solo sobre bancos que participan
-        const paraConc    = d.filter(r => r.categoria !== 'egreso' && r.categoria !== 'solo_monto');
+        const paraConc = d.filter(r => r.categoria !== 'egreso' && r.categoria !== 'solo_monto');
         const conciliados = paraConc.filter(r => r.conciliado).length;
-        const pendientes  = paraConc.filter(r => r.categoria === 'sin_id').length;
-        const sinId       = d.filter(r => r.categoria === 'sin_id');
+        const pendientes = paraConc.filter(r => r.categoria === 'sin_id').length;
+        const sinId = d.filter(r => r.categoria === 'sin_id');
 
         this.kpis = {
             totalIngresos, totalEgresos,
@@ -281,7 +305,7 @@ export class ReportesBancariosComponent implements OnInit, OnDestroy, AfterViewI
             conciliados, pendientes,
             pctConciliado: (conciliados + pendientes) > 0
                 ? Math.round(conciliados / (conciliados + pendientes) * 100) : 0,
-            sinIdPop:   sinId.length,
+            sinIdPop: sinId.length,
             montoSinId: sinId.reduce((s, r) => s + r.ingreso, 0),
             idPopDuplicados: 0,
         };
@@ -323,7 +347,7 @@ export class ReportesBancariosComponent implements OnInit, OnDestroy, AfterViewI
             if (!r.dia) continue;
             if (!mapa[r.dia]) mapa[r.dia] = { ingresos: 0, egresos: 0 };
             mapa[r.dia].ingresos += r.ingreso;
-            mapa[r.dia].egresos  += r.egreso;
+            mapa[r.dia].egresos += r.egreso;
         }
         this.evolucionDias = Object.entries(mapa)
             .map(([dia, v]) => ({ dia: +dia, ...v }))
@@ -343,8 +367,8 @@ export class ReportesBancariosComponent implements OnInit, OnDestroy, AfterViewI
 
         // 1. Categorías
         if (this.chartCategoriaRef?.nativeElement) {
-            const cats    = ['sin_id', 'ingresos_id', 'prosegur', 'ventas_credito', 'solo_monto'];
-            const labels  = ['Ingresos Pendientes', 'Ingresos Conciliados', 'Prosegur', 'Ventas Crédito', 'Otros Bancos'];
+            const cats = ['sin_id', 'ingresos_id', 'prosegur', 'ventas_credito', 'solo_monto'];
+            const labels = ['Ingresos Pendientes', 'Ingresos Conciliados', 'Prosegur', 'Ventas Crédito', 'Otros Bancos'];
             const colores = ['#dc2626', '#16a34a', '#e6e204', '#0891b2', '#94a3b8'];
             this.charts[0] = new Chart(this.chartCategoriaRef.nativeElement, {
                 type: 'doughnut',
@@ -399,7 +423,7 @@ export class ReportesBancariosComponent implements OnInit, OnDestroy, AfterViewI
                     labels: this.evolucionDias.map(d => `${d.dia}`),
                     datasets: [
                         { label: 'Ingresos', data: this.evolucionDias.map(d => d.ingresos), borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,.1)', fill: true, tension: 0.4, pointRadius: 3 },
-                        { label: 'Egresos',  data: this.evolucionDias.map(d => d.egresos),  borderColor: '#dc2626', backgroundColor: 'rgba(220,38,38,.08)', fill: true, tension: 0.4, pointRadius: 3 }
+                        { label: 'Egresos', data: this.evolucionDias.map(d => d.egresos), borderColor: '#dc2626', backgroundColor: 'rgba(220,38,38,.08)', fill: true, tension: 0.4, pointRadius: 3 }
                     ]
                 },
                 options: {
@@ -418,14 +442,14 @@ export class ReportesBancariosComponent implements OnInit, OnDestroy, AfterViewI
         if (this.chartBancosRef?.nativeElement) {
             const tablasFiltradas = this.filtroBanco !== 'todos' ? [this.filtroBanco]
                 : this.filtroEntidad !== 'todas' ? ENTIDADES[this.filtroEntidad]
-                : TODAS_TABLAS_COMPLETO;
+                    : TODAS_TABLAS_COMPLETO;
             this.charts[3] = new Chart(this.chartBancosRef.nativeElement, {
                 type: 'bar',
                 data: {
                     labels: tablasFiltradas.map(t => TABLAS_LABELS[t] || t),
                     datasets: [
                         { label: 'Ingresos', data: tablasFiltradas.map(t => this.filasFiltradas.filter(r => r.tabla === t).reduce((s, r) => s + r.ingreso, 0)), backgroundColor: tablasFiltradas.map(t => COLORES_BANCO[t] || '#1e3a5f'), borderRadius: 4 },
-                        { label: 'Egresos',  data: tablasFiltradas.map(t => this.filasFiltradas.filter(r => r.tabla === t).reduce((s, r) => s + r.egreso,  0)), backgroundColor: 'rgba(220,38,38,.6)', borderRadius: 4 },
+                        { label: 'Egresos', data: tablasFiltradas.map(t => this.filasFiltradas.filter(r => r.tabla === t).reduce((s, r) => s + r.egreso, 0)), backgroundColor: 'rgba(220,38,38,.6)', borderRadius: 4 },
                     ]
                 },
                 options: {
@@ -468,7 +492,7 @@ export class ReportesBancariosComponent implements OnInit, OnDestroy, AfterViewI
         if (this.charts[3]) {
             const tablasFiltradas = this.filtroBanco !== 'todos' ? [this.filtroBanco]
                 : this.filtroEntidad !== 'todas' ? ENTIDADES[this.filtroEntidad]
-                : TODAS_TABLAS_COMPLETO;
+                    : TODAS_TABLAS_COMPLETO;
             this.charts[3].data.labels = tablasFiltradas.map((t: string) => TABLAS_LABELS[t] || t);
             this.charts[3].data.datasets[0].data = tablasFiltradas.map((t: string) =>
                 this.filasFiltradas.filter(r => r.tabla === t).reduce((s, r) => s + r.ingreso, 0)
@@ -487,16 +511,16 @@ export class ReportesBancariosComponent implements OnInit, OnDestroy, AfterViewI
         return ENTIDADES[this.filtroEntidad] || [];
     }
 
-    labelBanco(tabla: string):  string { return TABLAS_LABELS[tabla]  || tabla; }
-    colorBanco(tabla: string):  string { return COLORES_BANCO[tabla]  || '#1e3a5f'; }
-    colorEntidad(e: string):    string { return COLORES_ENTIDAD[e]    || '#1e3a5f'; }
+    labelBanco(tabla: string): string { return TABLAS_LABELS[tabla] || tabla; }
+    colorBanco(tabla: string): string { return COLORES_BANCO[tabla] || '#1e3a5f'; }
+    colorEntidad(e: string): string { return COLORES_ENTIDAD[e] || '#1e3a5f'; }
 
     fmt(n: number) {
         return 'S/ ' + n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
     fmtK(n: number) {
         if (n >= 1_000_000) return 'S/ ' + (n / 1_000_000).toFixed(1) + 'M';
-        if (n >= 1_000)     return 'S/ ' + (n / 1_000).toFixed(0) + 'K';
+        if (n >= 1_000) return 'S/ ' + (n / 1_000).toFixed(0) + 'K';
         return 'S/ ' + n.toFixed(0);
     }
 }

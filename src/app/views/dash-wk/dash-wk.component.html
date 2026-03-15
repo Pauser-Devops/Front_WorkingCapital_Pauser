@@ -3,9 +3,7 @@
   <!-- ── HEADER ─────────────────────────────────────────────────── -->
   <div class="dash-header">
     <div class="dash-header-left">
-      <div class="dash-icon">
-        <span class="material-icons">dashboard</span>
-      </div>
+      <div class="dash-icon"><span class="material-icons">dashboard</span></div>
       <div>
         <h1>Dashboard WK</h1>
         <span class="dash-sub">Working Capital · Semana al {{ d.kpis.label_actual }}</span>
@@ -18,47 +16,36 @@
 
   <!-- ── KPI CARDS ──────────────────────────────────────────────── -->
   <div class="kpi-grid">
-
     <div class="kpi-card" [class]="d.kpis.wk >= 0 ? 'kpi-wk-pos' : 'kpi-wk-neg'">
       <span class="kpi-lbl">Working Capital</span>
       <span class="kpi-val">S/ {{ fmtM(d.kpis.wk) }}</span>
       <span class="kpi-full">{{ fmt(d.kpis.wk) }}</span>
-      <span class="kpi-var" [class]="clsVar(d.kpis.var_wk)">
-        {{ fmtVar(d.kpis.var_wk) }}
-      </span>
+      <span class="kpi-var" [class]="clsVar(d.kpis.var_wk)">{{ fmtVar(d.kpis.var_wk) }}</span>
     </div>
-
     <div class="kpi-card kpi-activo">
       <span class="kpi-lbl">Activo Corriente</span>
       <span class="kpi-val">S/ {{ fmtM(d.kpis.activo) }}</span>
       <span class="kpi-full">{{ fmt(d.kpis.activo) }}</span>
-      <span class="kpi-var" [class]="clsVar(d.kpis.var_activo)">
-        {{ fmtVar(d.kpis.var_activo) }}
-      </span>
+      <span class="kpi-var" [class]="clsVar(d.kpis.var_activo)">{{ fmtVar(d.kpis.var_activo) }}</span>
     </div>
-
     <div class="kpi-card kpi-pasivo">
       <span class="kpi-lbl">Pasivo Corriente</span>
       <span class="kpi-val">S/ {{ fmtM(d.kpis.pasivo) }}</span>
       <span class="kpi-full">{{ fmt(d.kpis.pasivo) }}</span>
-      <span class="kpi-var" [class]="clsVar(d.kpis.var_pasivo, true)">
-        {{ fmtVar(d.kpis.var_pasivo) }}
+      <span class="kpi-var" [class]="clsVar(d.kpis.var_pasivo, true)">{{ fmtVar(d.kpis.var_pasivo) }}</span>
+    </div>
+    <div class="kpi-card kpi-ratio">
+      <span class="kpi-lbl">Ratio de Liquidez</span>
+      <span class="kpi-val">{{ (d.kpis.activo / (d.kpis.pasivo || 1)).toFixed(2) }}x</span>
+      <span class="kpi-full">Activo ÷ Pasivo</span>
+      <span class="kpi-var" [class]="(d.kpis.activo / (d.kpis.pasivo || 1)) >= 1 ? 'var-pos' : 'var-neg'">
+        {{ (d.kpis.activo / (d.kpis.pasivo || 1)) >= 1 ? 'Activo cubre pasivo' : 'Pasivo supera activo' }}
       </span>
     </div>
-
-    <div class="kpi-card kpi-ratio">
-      <span class="kpi-lbl">Ratio A/P</span>
-      <span class="kpi-val">{{ (d.kpis.activo / (d.kpis.pasivo || 1)).toFixed(2) }}x</span>
-      <span class="kpi-full">Activo / Pasivo</span>
-      <span class="kpi-var var-neutro">Liquidez</span>
-    </div>
-
   </div>
 
-  <!-- ── FILA 2: Gráfico tendencia + Donuts ─────────────────────── -->
-  <div class="row-2">
-
-    <!-- Gráfico de tendencia WK -->
+  <!-- ── GRÁFICO TENDENCIA full-width ──────────────────────────── -->
+  <div class="row-grafico">
     <div class="card card-grafico">
       <div class="card-head">
         <span class="card-title">Evolución Working Capital</span>
@@ -67,37 +54,27 @@
           <button [class.activo]="vistaGrafico === 'mensual'" (click)="vistaGrafico = 'mensual'">Mensual</button>
         </div>
       </div>
-
       <svg viewBox="0 0 700 160" class="chart-svg" *ngIf="serieActiva.length >= 2"
            (mouseleave)="ocultarTooltip()">
-        <!-- Área rellena -->
         <path [attr.d]="areaWK(serieActiva)" class="area-wk" />
-        <!-- Línea -->
         <polyline [attr.points]="lineaWK(serieActiva)" class="linea-wk" />
-        <!-- Dots + labels + zona hover -->
         <g *ngFor="let pt of puntosLinea(serieActiva); let i = index; let last = last">
-          <!-- Zona de hover invisible más grande para facilitar el target -->
           <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="14" class="dot-hover"
                   (mouseenter)="mostrarTooltip(pt, serieActiva)"
                   (mouseleave)="ocultarTooltip()" />
           <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="4" class="dot-wk" />
           <text [attr.x]="pt.x" [attr.y]="pt.y - 8" class="label-dot"
                 *ngIf="serieActiva.length <= 8 || i === 0 || last">{{ fmtM(pt.val) }}</text>
-          <!-- Labels eje X -->
-          <text *ngIf="i === 0 || last || (serieActiva.length <= 8) || (i % 2 === 0)"
-            [attr.x]="pt.x" [attr.y]="155" class="label-eje">{{ pt.label }}</text>
+          <text *ngIf="i === 0 || last || serieActiva.length <= 8 || i % 2 === 0"
+                [attr.x]="pt.x" [attr.y]="155" class="label-eje">{{ pt.label }}</text>
         </g>
-
-        <!-- Tooltip SVG -->
         <g *ngIf="tooltip.visible"
            [attr.transform]="'translate(' + tooltipX(tooltip.x) + ',' + tooltipY(tooltip.y) + ')'">
           <rect x="0" y="0" width="130" height="68" rx="6" class="tooltip-bg" />
           <text x="10" y="16" class="tooltip-fecha">{{ tooltip.label }}</text>
           <line x1="0" y1="22" x2="130" y2="22" class="tooltip-sep" />
           <text x="10" y="36" class="tooltip-lbl">WK</text>
-          <text x="120" y="36" class="tooltip-val" [class]="tooltip.wk >= 0 ? 'tooltip-pos' : 'tooltip-neg'">
-            {{ fmtM(tooltip.wk) }}
-          </text>
+          <text x="120" y="36" class="tooltip-val" [class]="tooltip.wk >= 0 ? 'tooltip-pos' : 'tooltip-neg'">{{ fmtM(tooltip.wk) }}</text>
           <text x="10" y="50" class="tooltip-lbl">Activo</text>
           <text x="120" y="50" class="tooltip-val tooltip-act">{{ fmtM(tooltip.activo) }}</text>
           <text x="10" y="64" class="tooltip-lbl">Pasivo</text>
@@ -106,70 +83,74 @@
       </svg>
       <div class="sin-datos" *ngIf="serieActiva.length < 2">Sin suficientes datos</div>
     </div>
+  </div>
 
-    <!-- Donuts composición con ngx-charts -->
+  <!-- ── DONUTS full-width con leyenda lateral ─────────────────── -->
+  <div class="row-donuts">
     <div class="card card-donuts">
       <div class="card-head">
-        <span class="card-title">Composición</span>
+        <span class="card-title">Composición Activo / Pasivo</span>
+        <span class="card-hint">Pasa el cursor · Clic en leyenda para filtrar</span>
       </div>
-      <div class="donuts-row">
+      <div class="donuts-inner">
 
-        <!-- Donut Activo -->
-        <div class="donut-bloque">
-          <span class="donut-lbl">Activo · {{ fmt(d.kpis.activo) }}</span>
-          <ngx-charts-pie-chart
-            [results]="donutActivo"
-            scheme="cool"
-            [doughnut]="true"
-            [arcWidth]="0.35"
-            [tooltipDisabled]="false"
-            [labels]="false"
-            [legend]="false"
-            [view]="[220, 180]"
-            (select)="onSelectDonut($event)">
-            <!-- Tooltip personalizado -->
-            <ng-template #tooltipTemplate let-model="model">
-              <div class="ngx-tooltip-custom">
-                <span class="ngx-tt-nombre">{{ model.name }}</span>
-                <span class="ngx-tt-val">S/ {{ fmt(model.value) }}</span>
-                <span class="ngx-tt-pct">{{ pct(model.value, d.kpis.activo) }}%</span>
-              </div>
-            </ng-template>
-          </ngx-charts-pie-chart>
+        <!-- ACTIVO -->
+        <div class="donut-panel">
+          <div class="donut-panel-left">
+            <span class="donut-panel-label">Activo · {{ fmt(d.kpis.activo) }}</span>
+            <app-donut-chart
+              [slices]="slicesActivoFiltrados"
+              [total]="d.kpis.activo"
+              [showLegend]="false">
+            </app-donut-chart>
+          </div>
+          <!-- Leyenda lateral controlada por el dashboard -->
+          <div class="donut-leyenda-lateral">
+            <div class="donut-ley-row"
+                 *ngFor="let s of slicesActivo"
+                 [class.donut-ley-hidden]="hiddenActivo.has(s.name)"
+                 (click)="toggleActivo(s.name)">
+              <span class="donut-ley-dot" [style.background]="s.color"></span>
+              <span class="donut-ley-name">{{ s.name }}</span>
+              <span class="donut-ley-val">{{ fmtM(s.value) }}</span>
+              <span class="donut-ley-pct">{{ pct(s.value, d.kpis.activo) }}%</span>
+            </div>
+          </div>
         </div>
 
-        <!-- Donut Pasivo -->
-        <div class="donut-bloque">
-          <span class="donut-lbl">Pasivo · {{ fmt(d.kpis.pasivo) }}</span>
-          <ngx-charts-pie-chart
-            [results]="donutPasivo"
-            scheme="fire"
-            [doughnut]="true"
-            [arcWidth]="0.35"
-            [tooltipDisabled]="false"
-            [labels]="false"
-            [legend]="false"
-            [view]="[220, 180]"
-            (select)="onSelectDonut($event)">
-            <ng-template #tooltipTemplate let-model="model">
-              <div class="ngx-tooltip-custom">
-                <span class="ngx-tt-nombre">{{ model.name }}</span>
-                <span class="ngx-tt-val">S/ {{ fmt(model.value) }}</span>
-                <span class="ngx-tt-pct">{{ pct(model.value, d.kpis.pasivo) }}%</span>
-              </div>
-            </ng-template>
-          </ngx-charts-pie-chart>
+        <div class="donut-divider"></div>
+
+        <!-- PASIVO -->
+        <div class="donut-panel">
+          <div class="donut-panel-left">
+            <span class="donut-panel-label">Pasivo · {{ fmt(d.kpis.pasivo) }}</span>
+            <app-donut-chart
+              [slices]="slicesPasivoFiltrados"
+              [total]="d.kpis.pasivo"
+              [showLegend]="false">
+            </app-donut-chart>
+          </div>
+          <!-- Leyenda lateral controlada por el dashboard -->
+          <div class="donut-leyenda-lateral">
+            <div class="donut-ley-row"
+                 *ngFor="let s of slicesPasivo"
+                 [class.donut-ley-hidden]="hiddenPasivo.has(s.name)"
+                 (click)="togglePasivo(s.name)">
+              <span class="donut-ley-dot" [style.background]="s.color"></span>
+              <span class="donut-ley-name">{{ s.name }}</span>
+              <span class="donut-ley-val">{{ fmtM(s.value) }}</span>
+              <span class="donut-ley-pct">{{ pct(s.value, d.kpis.pasivo) }}%</span>
+            </div>
+          </div>
         </div>
 
       </div>
     </div>
-
   </div>
 
-  <!-- ── FILA 3: Proveedores + Tabla variaciones ────────────────── -->
-  <div class="row-3">
+  <!-- ── FILA BOTTOM: proveedores + variaciones ─────────────────── -->
+  <div class="row-bottom">
 
-    <!-- Barras horizontales proveedores -->
     <div class="card card-proveedores">
       <div class="card-head">
         <span class="card-title">Top Proveedores</span>
@@ -198,7 +179,6 @@
       </div>
     </div>
 
-    <!-- Tabla variaciones -->
     <div class="card card-variaciones">
       <div class="card-head">
         <span class="card-title">Variaciones semana a semana</span>
@@ -206,15 +186,14 @@
       <table class="var-tabla">
         <thead>
           <tr>
-            <th>Concepto</th>
-            <th>Anterior</th>
-            <th>Actual</th>
-            <th>Var %</th>
+            <th>Concepto</th><th>Anterior</th><th>Actual</th><th>Var %</th>
           </tr>
         </thead>
         <tbody>
           <ng-container *ngFor="let row of d.tabla_variaciones">
-            <tr class="var-sep" *ngIf="row.tipo === 'pasivo' && d.tabla_variaciones.indexOf(row) > 0 && d.tabla_variaciones[d.tabla_variaciones.indexOf(row)-1].tipo === 'activo'">
+            <tr class="var-sep"
+                *ngIf="row.tipo === 'pasivo' && d.tabla_variaciones.indexOf(row) > 0
+                       && d.tabla_variaciones[d.tabla_variaciones.indexOf(row)-1].tipo === 'activo'">
               <td colspan="4" class="var-sep-lbl">PASIVO</td>
             </tr>
             <tr class="var-sep" *ngIf="row.tipo === 'activo' && d.tabla_variaciones.indexOf(row) === 0">
@@ -237,14 +216,9 @@
 
 </div>
 
-<!-- Loading -->
 <div class="dash-loading" *ngIf="cargando">
-  <div class="spinner"></div>
-  <span>Cargando dashboard...</span>
+  <div class="spinner"></div><span>Cargando dashboard...</span>
 </div>
-
-<!-- Error -->
 <div class="dash-error" *ngIf="!cargando && error">
-  <span class="material-icons">error_outline</span>
-  {{ error }}
+  <span class="material-icons">error_outline</span>{{ error }}
 </div>

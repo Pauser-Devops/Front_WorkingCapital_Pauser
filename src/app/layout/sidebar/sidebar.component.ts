@@ -34,11 +34,11 @@ export class SidebarComponent {
       icono: 'account_balance',
       abierto: true,
       modulos: [
-        { id: 'ingresosbancarios',  label: 'Ingresos Bancarios' },
-        { id: 'registroIB',         label: 'Registros Ingresos' },
-        { id: 'reportes-bancarios', label: 'Reporte Bancario' },
-        { id: 'analisisBancarios',  label: 'Registros Reportes' },
-         { id: 'compBancario',  label: 'Comparador Bancario por Sede' },
+        { id: 'ingresosbancarios',  label: 'Ingresos Bancarios - POP' },
+        { id: 'registroIB',         label: 'Registros POP' },
+        { id: 'reportes-bancarios', label: 'Dashboard Reportes Bancos' },
+        { id: 'analisisBancarios',  label: 'Registros Reportes Bancos' },
+         { id: 'compBancario',  label: 'Comparador de Conciliación' },
       ]
     },
     {
@@ -64,7 +64,16 @@ export class SidebarComponent {
         { id: 'maes', label: 'MAEs' },
         { id: 'pga',  label: 'PGA'  },
       ]
-    }
+    },
+    {
+      label: 'Configuración ',
+      icono: 'settings',
+      abierto: true,
+      modulos: [
+        { id: 'usuarios', label: 'Usuarios' ,roles: ['admin', 'gerencia']},
+       
+      ]
+    },
   ];
 
   constructor(private auth: AuthService) {

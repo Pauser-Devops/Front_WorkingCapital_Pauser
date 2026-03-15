@@ -12,9 +12,12 @@
           <line x1="2" y1="20" x2="22" y2="20" />
         </svg>
       </div>
+
       <div>
         <div class="ab-title">Registros Reportes Bancarios</div>
-        <div class="ab-subtitle">{{ tablaActivaLabel }} · {{ periodoLabel }}</div>
+        <div class="ab-subtitle">{{ tablaActivaLabel }} · {{ periodoLabel }}
+
+        </div>
       </div>
     </div>
     <div class="ab-header-right">
@@ -29,10 +32,10 @@
         </svg>
         {{ cargandoSync ? 'Sincronizando...' : 'Sincronizar' }}
       </button>
-      <button  class="ab-btn-sync"  (click)="exportarExcel()">
+      <button class="ab-btn-sync" (click)="exportarExcel()">
         Exportar Excel
       </button>
-      <button  class="ab-btn-sync"  (click)="exportarCompleto()">
+      <button class="ab-btn-sync" (click)="exportarCompleto()">
         Exportar Excel del Mes
       </button>
     </div>
@@ -58,7 +61,14 @@
       {{ t.label }}
     </button>
   </div>
-
+  <span class="ab-sync-badge" *ngIf="ultimaSync">
+    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
+    Última Sincronización: {{ ultimaSync }}
+  </span>
   <!-- SPINNER — visible siempre que cargando=true, fuera del bloque de datos -->
   <div class="ab-loading" *ngIf="cargando">
     <div class="ab-spinner"></div>
@@ -82,6 +92,8 @@
           <line x1="3" y1="10" x2="21" y2="10" />
         </svg>
         <span>Filtrar por fecha</span>
+        <!-- después del ab-msg-sync existente -->
+
       </div>
       <div class="ab-fecha-inputs">
         <div class="ab-fecha-group">
@@ -105,6 +117,7 @@
       <div class="ab-fecha-pill" *ngIf="hayFiltroFecha">
         {{ todosFiltradosFecha.length }} de {{ todos.length }} registros
       </div>
+
     </div>
 
     <!-- KPIs GENERALES -->

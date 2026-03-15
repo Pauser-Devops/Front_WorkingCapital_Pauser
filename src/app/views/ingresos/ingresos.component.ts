@@ -18,7 +18,7 @@ const BANCO_KEY: Record<number, string> = {
   2: 'BCP LN', 3: 'BCP TRU', 4: 'BCP SEDES', 5: 'BCP',
   6: 'INTERBANK', 7: 'BBVA', 8: 'CAJA AREQUIPA', 9: 'PICHINCHA', 10: 'BNACION',
 };
-
+const IDS_USD = new Set([54]);
 const VALORES_DEFAULT: Record<number, number> = {
   49: 567027.27,
   52: 366400.00
@@ -78,7 +78,15 @@ export class IngresosComponent implements OnInit {
   valorEditando = '';
 
   valoresManualesPanel: Record<number, number | null> = {};
+  tipoCambio = 0;
+  readonly IDS_USD = IDS_USD;
+  readonly BANCO_KEY = BANCO_KEY;
 
+  // Saldo original en dólares por concepto
+  saldosUsdOriginal: Record<number, number> = {};
+  ibkUsdSoles = 0;
+  ibkUsdOriginal = 0;
+  indiceActivo = 0;
   // Detalle PROSEGUR para mostrar breakdown en el modal
   prosegurDetalle: {
     puno: number | null;
@@ -88,10 +96,16 @@ export class IngresosComponent implements OnInit {
     error?: string;
   } = { puno: null, huaraz: null, trujillo: null, ingresos_dia: null };
 
-  constructor(private http: HttpClient, private wkRefresh: WkRefreshService) {}
+  constructor(private http: HttpClient, private wkRefresh: WkRefreshService) { }
 
   ngOnInit() { this.cargarConceptos(); }
-
+  exportar() {
+    if (!this.colActiva) return;
+    window.open(`${API}/exportar/ingresos?fecha_corte=${this.colActiva.fecha}`, '_blank');
+  }
+  get colActiva(): Columna | null {
+    return this.columnas[this.indiceActivo] ?? null;
+  }
   cargarConceptos() {
     this.cargando = true;
     this.http.get<any>(`${API}/wk/ingresos-conceptos`).subscribe({
@@ -119,6 +133,7 @@ export class IngresosComponent implements OnInit {
           this.columnas = Array.from(fechasSet).sort().map(f => ({
             fecha: f, label: this.formatFechaCorta(f), guardado: true,
           }));
+          this.indiceActivo = Math.max(0, this.columnas.length - 1);
           this.datos = {};
           for (const d of r.datos) {
             if (!this.datos[d.concepto_id]) this.datos[d.concepto_id] = {};
@@ -129,7 +144,9 @@ export class IngresosComponent implements OnInit {
       error: () => { this.cargando = false; this.error = 'Error al cargar datos'; }
     });
   }
-
+  irAFecha(i: number) { this.indiceActivo = i; }
+  irAnterior() { if (this.indiceActivo > 0) this.indiceActivo--; }
+  irSiguiente() { if (this.indiceActivo < this.columnas.length - 1) this.indiceActivo++; }
   get conceptosBancoAuto(): Concepto[] {
     return this.conceptos.filter(c => IDS_AUTO.has(c.id));
   }
@@ -201,15 +218,31 @@ export class IngresosComponent implements OnInit {
     if (!this.nuevaFecha) return;
     this.calculandoBancos = true;
     this.bancosCalculados = {};
+    this.saldosUsdOriginal = {};
+
     this.http.get<any>(`${API}/wk/calcular-bancos?fecha=${this.nuevaFecha}`).subscribe({
       next: r => {
         this.calculandoBancos = false;
-        if (r.estado === 'OK') this.bancosCalculados = r.bancos;
+        if (r.estado === 'OK') {
+          this.tipoCambio = r.tipo_cambio || 0;
+
+          // Guardar todos los saldos incluyendo IBK USD
+          this.bancosCalculados = r.bancos;
+
+          // Saldo original en USD
+          const ibkUsdSoles = r.bancos['INTERBANK USD'] || 0;
+          this.ibkUsdSoles = ibkUsdSoles;
+          this.ibkUsdOriginal = this.tipoCambio > 0
+            ? Math.round((ibkUsdSoles / this.tipoCambio) * 100) / 100
+            : 0;
+
+          // Sumar USD convertido a INTERBANK soles
+          this.bancosCalculados['INTERBANK'] = (r.bancos['INTERBANK'] || 0) + ibkUsdSoles;
+        }
       },
       error: () => { this.calculandoBancos = false; }
     });
   }
-
   calcularProsegur() {
     if (!this.nuevaFecha) return;
     this.calculandoProsegur = true;
@@ -217,20 +250,20 @@ export class IngresosComponent implements OnInit {
 
     // Llama los 4 endpoints en paralelo
     forkJoin({
-      puno:        this.http.get<ProsegurResult>(`${API}/wk/prosegur-puno?fecha=${this.nuevaFecha}`)
-                       .pipe(catchError(() => of({ estado: 'ERROR' } as ProsegurResult))),
-      huaraz:      this.http.get<ProsegurResult>(`${API}/wk/prosegur-huaraz?fecha=${this.nuevaFecha}`)
-                       .pipe(catchError(() => of({ estado: 'ERROR' } as ProsegurResult))),
-      trujillo:    this.http.get<ProsegurResult>(`${API}/wk/prosegur-trujillo?fecha=${this.nuevaFecha}`)
-                       .pipe(catchError(() => of({ estado: 'ERROR' } as ProsegurResult))),
+      puno: this.http.get<ProsegurResult>(`${API}/wk/prosegur-puno?fecha=${this.nuevaFecha}`)
+        .pipe(catchError(() => of({ estado: 'ERROR' } as ProsegurResult))),
+      huaraz: this.http.get<ProsegurResult>(`${API}/wk/prosegur-huaraz?fecha=${this.nuevaFecha}`)
+        .pipe(catchError(() => of({ estado: 'ERROR' } as ProsegurResult))),
+      trujillo: this.http.get<ProsegurResult>(`${API}/wk/prosegur-trujillo?fecha=${this.nuevaFecha}`)
+        .pipe(catchError(() => of({ estado: 'ERROR' } as ProsegurResult))),
       ingresos_dia: this.http.get<ProsegurResult>(`${API}/wk/prosegur-ingresos-dia?fecha=${this.nuevaFecha}`)
-                        .pipe(catchError(() => of({ estado: 'ERROR' } as ProsegurResult))),
+        .pipe(catchError(() => of({ estado: 'ERROR' } as ProsegurResult))),
     }).subscribe(results => {
       this.calculandoProsegur = false;
 
-      const puno        = results.puno.estado        === 'OK' ? (results.puno.total_puno           ?? 0) : null;
-      const huaraz      = results.huaraz.estado       === 'OK' ? (results.huaraz.total_huaraz        ?? 0) : null;
-      const trujillo    = results.trujillo.estado     === 'OK' ? (results.trujillo.total_trujillo    ?? 0) : null;
+      const puno = results.puno.estado === 'OK' ? (results.puno.total_puno ?? 0) : null;
+      const huaraz = results.huaraz.estado === 'OK' ? (results.huaraz.total_huaraz ?? 0) : null;
+      const trujillo = results.trujillo.estado === 'OK' ? (results.trujillo.total_trujillo ?? 0) : null;
       const ingresos_dia = results.ingresos_dia.estado === 'OK' ? (results.ingresos_dia.total_ingresos_dia ?? 0) : null;
 
       this.prosegurDetalle = { puno, huaraz, trujillo, ingresos_dia };
@@ -245,9 +278,9 @@ export class IngresosComponent implements OnInit {
 
   // Setea el detalle cuando se carga fecha existente
   private _setProsegurById(id: number, valor: number) {
-    if (id === 13) this.prosegurDetalle.puno        = valor;
-    if (id === 14) this.prosegurDetalle.huaraz      = valor;
-    if (id === 15) this.prosegurDetalle.trujillo    = valor;
+    if (id === 13) this.prosegurDetalle.puno = valor;
+    if (id === 14) this.prosegurDetalle.huaraz = valor;
+    if (id === 15) this.prosegurDetalle.trujillo = valor;
     if (id === 16) this.prosegurDetalle.ingresos_dia = valor;
     this.valoresManualesPanel[id] = valor;
   }
@@ -269,13 +302,13 @@ export class IngresosComponent implements OnInit {
 
   fmtPanel(concepto_id: number): string {
     const v = this.valoresManualesPanel[concepto_id];
-    if (v === null || v === undefined) return '';
+    if (v === null || v === undefined || isNaN(v)) return '';
     if (this.editandoManualId === concepto_id) return v.toString();
-    return v.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
-
   setValorManualPanel(concepto_id: number, val: string) {
-    const clean = val.replace(/\./g, '').replace(',', '.');
+    // Acepta punto como decimal, elimina todo lo que no sea número o punto
+    const clean = val.replace(/[^0-9.]/g, '');
     this.valoresManualesPanel[concepto_id] = clean === '' ? null : parseFloat(clean);
   }
 
@@ -283,6 +316,7 @@ export class IngresosComponent implements OnInit {
     this.editandoManualId = concepto_id;
     const v = this.valoresManualesPanel[concepto_id];
     const input = event.target as HTMLInputElement;
+    // Al enfocar muestra el número crudo con punto decimal
     input.value = v !== null && v !== undefined ? v.toString() : '';
     setTimeout(() => input.select(), 0);
   }
@@ -291,8 +325,9 @@ export class IngresosComponent implements OnInit {
     this.editandoManualId = null;
     const input = event.target as HTMLInputElement;
     const v = this.valoresManualesPanel[concepto_id];
-    input.value = v !== null && v !== undefined
-      ? v.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+    // Al salir formatea: miles con coma, decimales con punto
+    input.value = v !== null && v !== undefined && !isNaN(v)
+      ? v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
       : '';
   }
 
@@ -314,9 +349,9 @@ export class IngresosComponent implements OnInit {
     this.guardandoFecha = true;
     const payload: { concepto_id: number; valor: number | null }[] = [];
 
-    // Bancos automáticos
-    for (const c of this.conceptosBancoAuto)
+    for (const c of this.conceptosBancoAuto) {
       payload.push({ concepto_id: c.id, valor: this.valorBancoCalculado(c.id) });
+    }
 
     // PROSEGUR automáticos (editables en el panel por si necesitan corrección)
     for (const c of this.conceptosProsegurAuto)
@@ -360,9 +395,9 @@ export class IngresosComponent implements OnInit {
   }
 
   esSeccion(c: Concepto) { return c.tipo_fila === 'seccion'; }
-  esTotal(c: Concepto)   { return c.tipo_fila === 'total'; }
-  esItem(c: Concepto)    { return c.tipo_fila === 'item'; }
-  esAuto(c: Concepto)    { return IDS_AUTO.has(c.id); }
+  esTotal(c: Concepto) { return c.tipo_fila === 'total'; }
+  esItem(c: Concepto) { return c.tipo_fila === 'item'; }
+  esAuto(c: Concepto) { return IDS_AUTO.has(c.id); }
   esProsegurAuto(c: Concepto) { return IDS_PROSEGUR_AUTO.has(c.id); }
 
   iniciarEdicion(concepto_id: number, fecha: string) {
@@ -394,13 +429,13 @@ export class IngresosComponent implements OnInit {
 
   esEditando(concepto_id: number, fecha: string): boolean {
     return this.editandoCelda?.concepto_id === concepto_id &&
-           this.editandoCelda?.fecha === fecha;
+      this.editandoCelda?.fecha === fecha;
   }
 
   formatFechaCorta(fecha: string): string {
-    const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
     const d = new Date(fecha + 'T00:00:00');
-    return `${String(d.getDate()).padStart(2,'0')} ${meses[d.getMonth()]}`;
+    return `${String(d.getDate()).padStart(2, '0')} ${meses[d.getMonth()]}`;
   }
 
   fmt(n: number | null): string {
