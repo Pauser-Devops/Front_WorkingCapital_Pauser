@@ -5,7 +5,14 @@ import { AuthService } from '../../auth.service';
 interface Modulo {
   id: string;
   label: string;
-  roles?: string[]; // undefined = todos pueden ver
+  roles?: string[];
+}
+
+interface Grupo {
+  label: string;
+  icono: string;
+  modulos: Modulo[];
+  abierto: boolean;
 }
 
 @Component({
@@ -16,30 +23,73 @@ interface Modulo {
   styleUrls: ['./sidebar.component.css']
 })
 export class SidebarComponent {
-  @Input() vistaActiva = 'semanal';
+  @Input() vistaActiva = 'ingresosbancarios';
   @Output() vistaChange = new EventEmitter<string>();
 
-  private readonly todosModulos: Modulo[] = [
-    { id: 'ingresosbancarios',  label: 'Ingresos Bancarios' },
-    { id: 'registroIB',         label: 'Registros Ingresos Bancarios' },
-    { id: 'reportes-bancarios', label: 'Reporte Bancario' },
-    { id: 'analisisBancarios',  label: 'Registros Reportes Bancarios' },
-    // Solo roles con acceso total
-    { id: 'semanal',  label: 'WK Semanal',         roles: ['admin', 'gerencia', 'finanzas_admin'] },
-    { id: 'mensual',  label: 'WK Mensual',          roles: ['admin', 'gerencia', 'finanzas_admin'] },
-    { id: 'ingresos', label: 'Ingresos',            roles: ['admin', 'gerencia', 'finanzas_admin'] },
-    { id: 'egresos',  label: 'Egresos',             roles: ['admin', 'gerencia', 'finanzas_admin'] },
-    { id: 'stock',    label: 'Stock vs CxP',        roles: ['admin', 'gerencia', 'finanzas_admin'] },
-    { id: 'renta',    label: 'Renta y Proyección',  roles: ['admin', 'gerencia', 'finanzas_admin'] },
-    { id: 'flujo',    label: 'Flujo de Caja',       roles: ['admin', 'gerencia', 'finanzas_admin'] },
+  gruposFiltrados: Grupo[] = [];
+
+  private readonly todosGrupos: Grupo[] = [
+    {
+      label: 'Conciliación Bancaria',
+      icono: 'account_balance',
+      abierto: true,
+      modulos: [
+        { id: 'ingresosbancarios',  label: 'Ingresos Bancarios' },
+        { id: 'registroIB',         label: 'Registros Ingresos' },
+        { id: 'reportes-bancarios', label: 'Reporte Bancario' },
+        { id: 'analisisBancarios',  label: 'Registros Reportes' },
+         { id: 'compBancario',  label: 'Comparador Bancario por Sede' },
+      ]
+    },
+    {
+      label: 'Working Capital',
+      icono: 'trending_up',
+      abierto: true,
+      modulos: [
+        { id: 'dashwk',   label: 'Dashboard',          roles: ['admin', 'gerencia', 'finanzas_admin'] },
+        { id: 'semanal',  label: 'WK Semanal',         roles: ['admin', 'gerencia', 'finanzas_admin'] },
+        { id: 'mensual',  label: 'WK Mensual',         roles: ['admin', 'gerencia', 'finanzas_admin'] },
+        { id: 'ingresos', label: 'Ingresos',           roles: ['admin', 'gerencia', 'finanzas_admin'] },
+        { id: 'egresos',  label: 'Egresos',            roles: ['admin', 'gerencia', 'finanzas_admin'] },
+        { id: 'stock',    label: 'Stock vs CxP',       roles: ['admin', 'gerencia', 'finanzas_admin'] },
+        { id: 'renta',    label: 'Renta y Proyección', roles: ['admin', 'gerencia', 'finanzas_admin'] },
+        { id: 'flujo',    label: 'Flujo de Caja',      roles: ['admin', 'gerencia', 'finanzas_admin'] },
+      ]
+    },
+    {
+      label: 'Power BI',
+      icono: 'bar_chart',
+      abierto: true,
+      modulos: [
+        { id: 'maes', label: 'MAEs' },
+        { id: 'pga',  label: 'PGA'  },
+      ]
+    }
   ];
 
-  constructor(private auth: AuthService) {}
-
-  get modulos(): Modulo[] {
-    const rol = this.auth.rolActual;
-    return this.todosModulos.filter(m => !m.roles || m.roles.includes(rol));
+  constructor(private auth: AuthService) {
+    this.calcularGrupos();
   }
 
-  setVista(id: string) { this.vistaChange.emit(id); }
+  calcularGrupos() {
+    const rol = this.auth.rolActual;
+    this.gruposFiltrados = this.todosGrupos
+      .map(g => ({
+        ...g,
+        modulos: g.modulos.filter(m => !m.roles || m.roles.includes(rol))
+      }))
+      .filter(g => g.modulos.length > 0);
+  }
+
+  toggleGrupo(grupo: Grupo) {
+    grupo.abierto = !grupo.abierto;
+  }
+
+  setVista(id: string) {
+    this.vistaChange.emit(id);
+  }
+
+  grupoActivo(grupo: Grupo): boolean {
+    return grupo.modulos.some(m => m.id === this.vistaActiva);
+  }
 }

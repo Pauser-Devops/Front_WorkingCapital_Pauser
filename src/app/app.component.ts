@@ -15,6 +15,10 @@ import { AuthService } from './auth.service';
 import { LoginComponent } from './views/login/login.component';
 import { CambiarPasswordComponent } from './views/cambiar-password/cambiar-password.component';
 import { ComparadorIngresosComponent } from './views/comparador-ingresos/comparador-ingresos.component';
+import {DashWkComponent} from './views/dash-wk/dash-wk.component';
+import { MaesComponent } from './views/powerbi/maes.component';
+import { PGAComponent } from './views/powerbi/pga.component';
+import { ComparadorBancarioComponent } from './views/comparador-sede/comparador-bancario.component';
 
 const VISTA_NOMBRES: Record<string, string> = {
   semanal: 'WK Semanal 2026',
@@ -28,13 +32,37 @@ const VISTA_NOMBRES: Record<string, string> = {
   registroIB: 'Registros Ingresos Bancarios',
   analisisBancarios: 'Registros Reportes Bancarios',
   comparadorIngresos: 'Comparar Ingresos Bancarios',
+  dashwk: 'Dashboard Working Capital',
+  maes: 'MAEs',
+  pga: 'PGA Finanzas',
+  compBancario: 'Comparador Bancario por Sede'
 };
 
 @Component({
   selector: 'app-root',
   standalone: true,
   encapsulation: ViewEncapsulation.None,
-  imports: [CommonModule, SidebarComponent, HeaderComponent, WkSemanalComponent, WkMensualComponent, ReportesBancariosComponent, IngresosComponent, EgresosComponent, StockVsCxpComponent, IngresosBancariosComponent, RegistroIngresosBancariosComponent, AnalisisBancariosComponent, LoginComponent, CambiarPasswordComponent, ComparadorIngresosComponent,],
+  imports: [
+    CommonModule, 
+    SidebarComponent, 
+    HeaderComponent, 
+    WkSemanalComponent, 
+    WkMensualComponent, 
+    ReportesBancariosComponent, 
+    IngresosComponent, 
+    EgresosComponent, 
+    StockVsCxpComponent, 
+    IngresosBancariosComponent, 
+    RegistroIngresosBancariosComponent, 
+    AnalisisBancariosComponent, 
+    LoginComponent, 
+    CambiarPasswordComponent, 
+    ComparadorIngresosComponent, 
+    DashWkComponent,
+    MaesComponent,
+    PGAComponent,
+    ComparadorBancarioComponent,
+  ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })

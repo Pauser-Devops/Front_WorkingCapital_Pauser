@@ -1222,3 +1222,217 @@
 .status-actions button:hover {
   color: #adb5bd;
 }
+
+/* ── Chips de banco mejorados ── */
+.entidad-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1.5px solid #dde3eb;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.chip-bancos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.chip-banco-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #e2e8f0;
+  color: #475569;
+  font-weight: 500;
+}
+
+.chip-banco-count {
+  font-weight: 700;
+  color: #1e3a5f;
+}
+
+.chip-banco-ok {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.chip-banco-ok .chip-banco-count {
+  color: #15803d;
+}
+
+.chip-banco-parcial {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.chip-banco-parcial .chip-banco-count {
+  color: #854d0e;
+}
+
+.chip-banco-pendiente {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.chip-banco-pendiente .chip-banco-count {
+  color: #991b1b;
+}
+
+.entidad-chip.activo .chip-banco-item {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.entidad-chip.activo .chip-banco-count {
+  color: #fff;
+}
+
+.entidad-chip.activo .chip-entidad-nombre {
+  color: #fff;
+}
+
+/* ── Sync badge ── */
+.sync-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: #6B7280;
+  background: #f0f5fb;
+  border: 1px solid #dde3eb;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-family: 'DM Sans', sans-serif;
+  margin-top: 4px;
+}
+
+.sync-badge .material-icons {
+  font-size: 14px;
+  color: #0070C0;
+}
+
+.sync-badge-empty .material-icons {
+  color: #fb923c;
+}
+
+.sync-badge-empty {
+  color: #fb923c;
+  border-color: #fed7aa;
+  background: #fff7ed;
+}
+
+/* ── Sync texto inline ── */
+.acciones-title-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.sync-texto {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  color: #6B7280;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.sync-texto .material-icons {
+  font-size: 14px;
+  color: #0070C0;
+}
+
+.sync-vacio {
+  color: #fb923c;
+}
+
+.sync-vacio .material-icons {
+  color: #fb923c;
+}
+
+/* ── Filtros en grid 2 columnas ── */
+.filtros-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 24px;
+}
+
+.filtros-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Dif monto ── */
+.monto-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.dif-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  color: #92400e;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  border-radius: 4px;
+  padding: 1px 5px;
+  cursor: help;
+}
+
+.dif-badge .material-icons {
+  font-size: 11px;
+  color: #d97706;
+}
+
+tr.dif-monto {
+  border-left: 3px solid #f59e0b !important;
+}
+
+.badge-warn .material-icons {
+  color: #d97706;
+}
+
+/* ── Filtro amarillo ── */
+.filtro-estado.amarillo:hover {
+  border-color: #d97706;
+  color: #92400e;
+  background: #fffbeb;
+}
+
+.filtro-estado.amarillo.activo {
+  background: #f59e0b;
+  border-color: #f59e0b;
+  color: #fff;
+}
+
+.fpill.amarillo.activo {
+  background: #f59e0b;
+  border-color: #f59e0b;
+  color: #fff;
+}
+
+@media (max-width: 768px) {
+  .filtros-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .acciones-title-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

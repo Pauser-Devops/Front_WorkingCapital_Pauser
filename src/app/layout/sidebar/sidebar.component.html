@@ -1,16 +1,39 @@
 <aside class="wk-sidebar">
   <div class="wk-brand">
     <img src="pauserdistribuciones_logo.png" alt="Pauser" class="wk-brand-img" />
-    <div class="wk-brand-sub">Conciliación Bancaria y Working Capital</div>
-</div>
+    <div class="wk-brand-sub"></div>
+  </div>
 
-  <div class="wk-nav-label">MÓDULOS </div>
+  <div class="wk-nav-label">MÓDULOS</div>
 
   <nav class="wk-nav">
-    <a class="wk-nav-item"
-       *ngFor="let m of modulos"
-       [class.wk-active]="vistaActiva === m.id"
-       (click)="setVista(m.id)">{{ m.label }}</a>
+    <div class="wk-grupo" *ngFor="let grupo of gruposFiltrados">
+
+      <!-- Header del grupo -->
+      <div class="wk-grupo-header" 
+           [class.wk-grupo-activo]="grupoActivo(grupo)"
+           (click)="toggleGrupo(grupo)">
+        <div class="wk-grupo-left">
+          <span class="material-icons wk-grupo-icono">{{ grupo.icono }}</span>
+          <span class="wk-grupo-label">{{ grupo.label }}</span>
+        </div>
+        <span class="material-icons wk-grupo-arrow" [class.abierto]="grupo.abierto">
+          expand_more
+        </span>
+      </div>
+
+      <!-- Items del grupo -->
+      <div class="wk-grupo-items" [class.expandido]="grupo.abierto">
+        <a class="wk-nav-item"
+           *ngFor="let m of grupo.modulos"
+           [class.wk-active]="vistaActiva === m.id"
+           (click)="setVista(m.id)">
+          <span class="wk-nav-dot"></span>
+          {{ m.label }}
+        </a>
+      </div>
+
+    </div>
   </nav>
 
   <div class="wk-sidebar-foot">

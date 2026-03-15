@@ -1,0 +1,295 @@
+<div class="cb-wrap">
+
+  <!-- HEADER -->
+  <div class="cb-header">
+    <div class="cb-title-wrap">
+      <div class="cb-icon"><span class="material-icons">compare_arrows</span></div>
+      <div>
+        <div class="cb-title">Comparador Bancario</div>
+        <div class="cb-sub">Contraste ID POP — Ingresos Bancarios vs Reportes Bancarios</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MESES -->
+  <div class="cb-meses">
+    <button *ngFor="let m of meses" class="cb-mes-btn" [class.activo]="mesActivo === m" (click)="seleccionarMes(m)">
+      {{ m | titlecase }}
+    </button>
+  </div>
+
+  <!-- LOADING -->
+  <div class="cb-loading" *ngIf="cargando">
+    <div class="cb-spinner"></div>
+    <span>Cruzando registros...</span>
+  </div>
+  <div class="cb-error" *ngIf="error && !cargando">{{ error }}</div>
+
+  <ng-container *ngIf="!cargando && totales">
+
+    <!-- KPIs -->
+    <div class="cb-kpis" *ngIf="totalesFiltrados">
+      <div class="cb-kpi">
+        <div class="cb-kpi-icon"><span class="material-icons">receipt_long</span></div>
+        <div class="cb-kpi-val blue">{{ totalesFiltrados.total | number }}</div>
+        <div class="cb-kpi-label">IDs conciliados POP</div>
+      </div>
+      <div class="cb-kpi cb-kpi-click" (click)="setFiltroEstado('ok')">
+        <div class="cb-kpi-icon ok"><span class="material-icons">check_circle</span></div>
+        <div class="cb-kpi-val green">{{ totalesFiltrados.ok | number }}</div>
+        <div class="cb-kpi-label">Coinciden exacto</div>
+        <div class="cb-kpi-pct green">{{ pctOkFiltrado }}%</div>
+      </div>
+      <div class="cb-kpi cb-kpi-click" (click)="setFiltroEstado('dif_monto')">
+        <div class="cb-kpi-icon warn"><span class="material-icons">warning</span></div>
+        <div class="cb-kpi-val orange">{{ totalesFiltrados.dif_monto | number }}</div>
+        <div class="cb-kpi-label">Diferencia de monto</div>
+      </div>
+      <div class="cb-kpi cb-kpi-click" (click)="setFiltroEstado('no_encontrado')">
+        <div class="cb-kpi-icon error"><span class="material-icons">search_off</span></div>
+        <div class="cb-kpi-val red">{{ totalesFiltrados.no_encontrado | number }}</div>
+        <div class="cb-kpi-label">No en reportes</div>
+      </div>
+      <div class="cb-kpi">
+        <div class="cb-kpi-icon"><span class="material-icons">payments</span></div>
+        <div class="cb-kpi-val blue">{{ fmtK(totalesFiltrados.monto_ib) }}</div>
+        <div class="cb-kpi-label">Monto POP</div>
+        <div class="cb-kpi-exact">{{ fmt(totalesFiltrados.monto_ib) }}</div>
+      </div>
+      <div class="cb-kpi">
+        <div class="cb-kpi-icon"><span class="material-icons">account_balance</span></div>
+        <div class="cb-kpi-val teal">{{ fmtK(totalesFiltrados.monto_rb) }}</div>
+        <div class="cb-kpi-label">Monto Reportes</div>
+        <div class="cb-kpi-exact">{{ fmt(totalesFiltrados.monto_rb) }}</div>
+      </div>
+      <div class="cb-kpi" [class.cb-kpi-alerta]="totalesFiltrados.dif_total !== 0">
+        <div class="cb-kpi-icon" [class.error]="totalesFiltrados.dif_total !== 0">
+          <span class="material-icons">
+            {{ totalesFiltrados.dif_total === 0 ? 'done_all' : 'error_outline' }}
+          </span>
+        </div>
+        <div class="cb-kpi-val" [class.green]="totalesFiltrados.dif_total===0"
+          [class.red]="totalesFiltrados.dif_total!==0">
+          {{ fmtK(totalesFiltrados.dif_total) }}
+        </div>
+        <div class="cb-kpi-label">Diferencia total</div>
+        <div class="cb-kpi-exact" *ngIf="totalesFiltrados.dif_total !== 0">
+          {{ fmt(totalesFiltrados.dif_total) }}
+        </div>
+      </div>
+    </div>
+
+    <!-- BARRA PROGRESO -->
+    <div class="cb-progreso-wrap" *ngIf="totalesFiltrados">
+      <div class="cb-progreso-top">
+        <span>{{ labelBarra }}</span>
+        <span class="cb-progreso-pct" [style.color]="colorBarra">
+          {{ pctBarraProgreso }}%
+        </span>
+      </div>
+      <div class="cb-progreso-track">
+        <div class="cb-progreso-fill" [style.width.%]="pctOkFiltrado"></div>
+      </div>
+      <div class="cb-progreso-btns">
+        <button class="cb-estado-btn todos" [class.activo]="filtroEstado==='todos'" (click)="setFiltroEstado('todos')">
+          <span class="material-icons">list</span> Todos ({{ totalesFiltrados.total | number }})
+        </button>
+        <button class="cb-estado-btn ok" [class.activo]="filtroEstado==='ok'" (click)="setFiltroEstado('ok')">
+          <span class="material-icons">check_circle</span> Exactos ({{ totalesFiltrados.ok | number }})
+        </button>
+        <button class="cb-estado-btn warn" [class.activo]="filtroEstado==='dif_monto'"
+          (click)="setFiltroEstado('dif_monto')">
+          <span class="material-icons">warning</span> Dif. Monto ({{ totalesFiltrados.dif_monto | number }})
+        </button>
+        <button class="cb-estado-btn error" [class.activo]="filtroEstado==='no_encontrado'"
+          (click)="setFiltroEstado('no_encontrado')">
+          <span class="material-icons">search_off</span> No encontrado ({{ totalesFiltrados.no_encontrado | number }})
+        </button>
+      </div>
+    </div>
+
+    <!-- GRÁFICA -->
+   <div class="cb-card" *ngIf="chartFiltrado.length">
+  <div class="cb-card-title">
+    <span class="material-icons">bar_chart</span>
+    Monto por día — {{ mesActivo | titlecase }}
+    <div class="cb-leyenda">
+      <span class="cb-ley-dot blue"></span> POP
+      <span class="cb-ley-dot teal"></span> Reportes
+    </div>
+  </div>
+  <div class="cb-chart">
+    <div class="cb-chart-col" *ngFor="let d of chartFiltrado"
+      (mouseenter)="onBarEnter(d, $event)"
+      (mousemove)="onBarMove($event)"
+      (mouseleave)="tooltipDia=null">
+      <div class="cb-chart-bars">
+        <div class="cb-bar blue-bar" [style.height.%]="barH(d.monto_ib)"></div>
+        <div class="cb-bar teal-bar" [style.height.%]="barH(d.monto_rb)"></div>
+      </div>
+      <div class="cb-chart-indicators">
+        <span class="dot-ok"    *ngIf="d.ok > 0"></span>
+        <span class="dot-warn"  *ngIf="d.dif > 0"></span>
+        <span class="dot-error" *ngIf="d.no_enc > 0"></span>
+      </div>
+      <div class="cb-chart-label">{{ d.fecha.slice(8) }}/{{ d.fecha.slice(5,7) }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Tooltip global fuera del card -->
+<div class="cb-tooltip-global" *ngIf="tooltipDia"
+  [style.left.px]="tooltipX + 12"
+  [style.top.px]="tooltipY - 10">
+  <div class="cb-tooltip-fecha">{{ tooltipDia.fecha.slice(8) }}/{{ tooltipDia.fecha.slice(5,7) }}</div>
+  <div class="cb-tooltip-row blue">
+    <span class="material-icons">payments</span> POP: {{ fmt(tooltipDia.monto_ib) }}
+  </div>
+  <div class="cb-tooltip-row teal">
+    <span class="material-icons">account_balance</span> Reportes: {{ fmt(tooltipDia.monto_rb) }}
+  </div>
+  <div class="cb-tooltip-row ok" *ngIf="tooltipDia.ok > 0">
+    <span class="material-icons">check_circle</span> {{ tooltipDia.ok }} exactos
+  </div>
+  <div class="cb-tooltip-row warn" *ngIf="tooltipDia.dif > 0">
+    <span class="material-icons">warning</span> {{ tooltipDia.dif }} con dif
+  </div>
+  <div class="cb-tooltip-row err" *ngIf="tooltipDia.no_enc > 0">
+    <span class="material-icons">search_off</span> {{ tooltipDia.no_enc }} no enc.
+  </div>
+</div>
+
+    <!-- FILTROS -->
+    <div class="cb-filtros">
+      <div class="search-wrap">
+        <span class="material-icons search-icon">search</span>
+        <input class="search-input" type="text" placeholder="Buscar por ID POP, sucursal, banco..."
+          [(ngModel)]="busqueda" (ngModelChange)="aplicarFiltros()" />
+        <button class="search-clear" *ngIf="busqueda" (click)="busqueda=''; aplicarFiltros()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="cb-filtros-grid">
+        <div class="cb-filtro-group">
+          <label>Sucursal</label>
+          <div class="cb-pills">
+            <button class="cb-pill" [class.activo]="filtroSucursal==='TODAS'"
+              (click)="filtroSucursal='TODAS'; aplicarFiltros()">Todas</button>
+            <button class="cb-pill" *ngFor="let s of sucursales" [class.activo]="filtroSucursal===s"
+              (click)="filtroSucursal=s; aplicarFiltros()">{{ s }}</button>
+          </div>
+        </div>
+        <div class="cb-filtro-group">
+          <label>Entidad</label>
+          <div class="cb-pills">
+            <button class="cb-pill" [class.activo]="filtroEntidad==='TODAS'"
+              (click)="filtroEntidad='TODAS'; aplicarFiltros()">Todas</button>
+            <button class="cb-pill" *ngFor="let e of entidades" [class.activo]="filtroEntidad===e"
+              (click)="filtroEntidad=e; aplicarFiltros()">{{ e }}</button>
+          </div>
+        </div>
+        <div class="cb-filtro-group">
+          <label>Banco IB</label>
+          <div class="cb-pills">
+            <button class="cb-pill" [class.activo]="filtroBanco==='TODOS'"
+              (click)="filtroBanco='TODOS'; aplicarFiltros()">Todos</button>
+            <button class="cb-pill" *ngFor="let b of bancos" [class.activo]="filtroBanco===b"
+              (click)="filtroBanco=b; aplicarFiltros()">{{ b }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLA -->
+    <div class="cb-card">
+      <div class="cb-card-title">
+        <span class="material-icons">table_chart</span>
+        Detalle por ID POP
+        <span class="cb-count">{{ filasFiltradas.length | number }} registros</span>
+      </div>
+      <div class="cb-tabla-wrap">
+        <table class="cb-tabla">
+          <thead>
+            <tr>
+              <th>Estado</th>
+              <th>ID POP</th>
+              <th>Fecha IB</th>
+              <th>Sucursal</th>
+              <th>Entidad</th>
+              <th>Banco IB</th>
+              <th class="num">Monto IB</th>
+              <th>Banco Reporte</th>
+              <th>Mes Reporte</th>
+              <th class="num">Monto Reporte</th>
+              <th class="num">Diferencia</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let f of filasPaginadas" [class.fila-ok]="f.estado==='ok'"
+              [class.fila-warn]="f.estado==='dif_monto'" [class.fila-error]="f.estado==='no_encontrado'">
+              <td class="td-estado">
+                <span class="estado-chip ok" *ngIf="f.estado==='ok'">
+                  <span class="material-icons">check_circle</span> OK
+                </span>
+                <span class="estado-chip warn" *ngIf="f.estado==='dif_monto'">
+                  <span class="material-icons">warning</span> Dif.
+                </span>
+                <span class="estado-chip error" *ngIf="f.estado==='no_encontrado'">
+                  <span class="material-icons">search_off</span> No enc.
+                </span>
+              </td>
+              <td class="td-idpop">{{ f.id_pop }}</td>
+              <td>{{ fmtFecha(f.fecha_ib) }}</td>
+              <td class="td-suc">{{ f.sucursal }}</td>
+              <td><span class="ent-tag">{{ f.entidad || '—' }}</span></td>
+              <td><span class="banco-tag">{{ f.banco_ib || '—' }}</span></td>
+              <td class="num">{{ fmt(f.monto_ib) }}</td>
+              <td>
+                <span class="banco-tag" *ngIf="f.banco_rb">{{ f.banco_rb }}</span>
+                <span class="no-data" *ngIf="!f.banco_rb">—</span>
+              </td>
+              <td>
+                <span class="mes-tag" *ngIf="f.mes_rb">{{ f.mes_rb | titlecase }}</span>
+                <span class="no-data" *ngIf="!f.mes_rb">—</span>
+              </td>
+              <td class="num">{{ f.monto_rb > 0 ? fmt(f.monto_rb) : '—' }}</td>
+              <td class="num">
+                <span *ngIf="f.estado==='ok'" class="dif-cero">—</span>
+                <span *ngIf="f.estado!=='ok'" [class.dif-pos]="f.diferencia > 0" [class.dif-neg]="f.diferencia < 0"
+                  [class.dif-noenc]="f.estado==='no_encontrado'">
+                  {{ fmt(f.diferencia) }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- PAGINADOR dentro del card -->
+      <div class="cb-paginador" *ngIf="totalPaginas > 1">
+        <button class="pag-btn" [disabled]="paginaActual===1" (click)="irPagina(paginaActual-1)">
+          <span class="material-icons">chevron_left</span>
+        </button>
+        <ng-container *ngFor="let p of paginas">
+          <span class="pag-sep" *ngIf="p===0">...</span>
+          <button class="pag-btn pag-num" *ngIf="p!==0" [class.activo]="paginaActual===p" (click)="irPagina(p)">{{ p
+            }}</button>
+        </ng-container>
+        <button class="pag-btn" [disabled]="paginaActual===totalPaginas" (click)="irPagina(paginaActual+1)">
+          <span class="material-icons">chevron_right</span>
+        </button>
+        <span class="pag-info">
+          {{ (paginaActual-1)*porPagina+1 }}–{{ Math.min(paginaActual*porPagina, filasFiltradas.length) }}
+          de {{ filasFiltradas.length | number }}
+        </span>
+      </div>
+    </div>
+
+  </ng-container>
+
+  <div class="cb-empty" *ngIf="!cargando && !totales && !error">
+    <span class="material-icons">inbox</span>
+    <p>Sin datos para {{ mesActivo | titlecase }}</p>
+  </div>
+
+</div>

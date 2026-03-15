@@ -10,8 +10,8 @@
       </div>
     </div>
     <div class="ib-meses">
-      <button class="ib-mes-btn" *ngFor="let m of meses"
-        [class.activo]="mesActivo === m" (click)="seleccionarMes(m)">{{ m }}</button>
+      <button class="ib-mes-btn" *ngFor="let m of meses" [class.activo]="mesActivo === m" (click)="seleccionarMes(m)">{{
+        m }}</button>
     </div>
   </div>
 
@@ -26,6 +26,18 @@
 
     <!-- FILTROS -->
     <div class="ib-filtros">
+      <div class="acciones-title-row">
+        <h2>{{ mesActivo }} {{ anioActual }}</h2>
+        <span class="sync-texto" *ngIf="ultimaSync">
+          <span class="material-icons">sync</span>
+          Última sincronización: {{ ultimaSync }}
+          <span *ngIf="usuarioSync"> · {{ usuarioSync }}</span>
+        </span>
+        <span class="sync-texto sync-vacio" *ngIf="!ultimaSync">
+          <span class="material-icons">sync_problem</span>
+          Sin sincronización registrada
+        </span>
+      </div>
       <div class="ib-filtros-header">
         <span class="ib-filtros-titulo">
           <span class="material-icons">tune</span> Filtros
@@ -43,14 +55,12 @@
         <div class="ib-filtro-fechas">
           <div class="fecha-input-wrap">
             <label>Desde</label>
-            <input type="date" class="fecha-input"
-              [value]="fechaDesde"
+            <input type="date" class="fecha-input" [value]="fechaDesde"
               (change)="setFechaDesde($any($event.target).value)" />
           </div>
           <div class="fecha-input-wrap">
             <label>Hasta</label>
-            <input type="date" class="fecha-input"
-              [value]="fechaHasta"
+            <input type="date" class="fecha-input" [value]="fechaHasta"
               (change)="setFechaHasta($any($event.target).value)" />
           </div>
         </div>
@@ -64,14 +74,12 @@
         <div class="ib-filtro-fechas">
           <div class="fecha-input-wrap">
             <label>Desde</label>
-            <input type="number" class="fecha-input" placeholder="ej. 235000"
-              [(ngModel)]="idPopDesde"
+            <input type="number" class="fecha-input" placeholder="ej. 235000" [(ngModel)]="idPopDesde"
               (ngModelChange)="onIdPopChange()" />
           </div>
           <div class="fecha-input-wrap">
             <label>Hasta</label>
-            <input type="number" class="fecha-input" placeholder="ej. 235999"
-              [(ngModel)]="idPopHasta"
+            <input type="number" class="fecha-input" placeholder="ej. 235999" [(ngModel)]="idPopHasta"
               (ngModelChange)="onIdPopChange()" />
           </div>
         </div>
@@ -93,10 +101,10 @@
       <div class="ib-filtro-group">
         <div class="ib-filtro-label"><span class="material-icons">account_balance</span> Banco</div>
         <div class="ib-filtro-pills">
-          <button class="ib-pill" [class.activo]="filtroBanco==='TODOS'" (click)="setFiltroBanco('TODOS')">Todos</button>
-          <button class="ib-pill banco-pill" *ngFor="let b of bancos"
-            [class.activo]="filtroBanco===b" [style.--bc]="getBancoColor(b)"
-            (click)="setFiltroBanco(b)">{{ b }}</button>
+          <button class="ib-pill" [class.activo]="filtroBanco==='TODOS'"
+            (click)="setFiltroBanco('TODOS')">Todos</button>
+          <button class="ib-pill banco-pill" *ngFor="let b of bancos" [class.activo]="filtroBanco===b"
+            [style.--bc]="getBancoColor(b)" (click)="setFiltroBanco(b)">{{ b }}</button>
         </div>
       </div>
 
@@ -104,9 +112,10 @@
       <div class="ib-filtro-group">
         <div class="ib-filtro-label"><span class="material-icons">store</span> Sucursal</div>
         <div class="ib-filtro-pills">
-          <button class="ib-pill" [class.activo]="filtroSucursal==='TODAS'" (click)="setFiltroSucursal('TODAS')">Todas</button>
-          <button class="ib-pill" *ngFor="let s of sucursales"
-            [class.activo]="filtroSucursal===s" (click)="setFiltroSucursal(s)">{{ s }}</button>
+          <button class="ib-pill" [class.activo]="filtroSucursal==='TODAS'"
+            (click)="setFiltroSucursal('TODAS')">Todas</button>
+          <button class="ib-pill" *ngFor="let s of sucursales" [class.activo]="filtroSucursal===s"
+            (click)="setFiltroSucursal(s)">{{ s }}</button>
         </div>
       </div>
 
@@ -114,9 +123,10 @@
       <div class="ib-filtro-group">
         <div class="ib-filtro-label"><span class="material-icons">corporate_fare</span> Entidad</div>
         <div class="ib-filtro-pills">
-          <button class="ib-pill" [class.activo]="filtroEntidad==='TODAS'" (click)="setFiltroEntidad('TODAS')">Todas</button>
-          <button class="ib-pill" *ngFor="let e of entidades"
-            [class.activo]="filtroEntidad===e" (click)="setFiltroEntidad(e)">{{ e }}</button>
+          <button class="ib-pill" [class.activo]="filtroEntidad==='TODAS'"
+            (click)="setFiltroEntidad('TODAS')">Todas</button>
+          <button class="ib-pill" *ngFor="let e of entidades" [class.activo]="filtroEntidad===e"
+            (click)="setFiltroEntidad(e)">{{ e }}</button>
         </div>
       </div>
     </div>
@@ -159,12 +169,9 @@
         <div class="ib-pct-ring">
           <svg viewBox="0 0 36 36">
             <circle cx="18" cy="18" r="15" fill="none" stroke="#e2e8f0" stroke-width="3" />
-            <circle cx="18" cy="18" r="15" fill="none"
-              [attr.stroke]="pctConc === 0 ? '#e2e8f0' : '#16a34a'"
-              stroke-width="3"
-              [attr.stroke-dasharray]="(pctConc * 0.9425) + ' ' + (94.25 - pctConc * 0.9425)"
-              stroke-dashoffset="23.55"
-              stroke-linecap="round" />
+            <circle cx="18" cy="18" r="15" fill="none" [attr.stroke]="pctConc === 0 ? '#e2e8f0' : '#16a34a'"
+              stroke-width="3" [attr.stroke-dasharray]="(pctConc * 0.9425) + ' ' + (94.25 - pctConc * 0.9425)"
+              stroke-dashoffset="23.55" stroke-linecap="round" />
           </svg>
           <div class="ib-pct-val" [style.color]="pctConc === 0 ? '#94a3b8' : '#16a34a'">
             {{ pctConc }}%
@@ -240,8 +247,7 @@
         Evolución Diaria — {{ mesLabel }}
       </div>
       <div class="ib-timeline" *ngIf="porDia.length > 0">
-        <div class="ib-tbar-col" *ngFor="let d of porDia"
-          (mouseenter)="showTooltip(d, $event)"
+        <div class="ib-tbar-col" *ngFor="let d of porDia" (mouseenter)="showTooltip(d, $event)"
           (mouseleave)="hideTooltip()">
           <div class="ib-tbar-wrap">
             <div class="ib-tbar" [style.height.%]="d.alto"></div>

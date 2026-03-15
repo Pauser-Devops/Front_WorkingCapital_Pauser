@@ -1,0 +1,250 @@
+<div class="dash-wrap" *ngIf="!cargando && datos as d">
+
+  <!-- ── HEADER ─────────────────────────────────────────────────── -->
+  <div class="dash-header">
+    <div class="dash-header-left">
+      <div class="dash-icon">
+        <span class="material-icons">dashboard</span>
+      </div>
+      <div>
+        <h1>Dashboard WK</h1>
+        <span class="dash-sub">Working Capital · Semana al {{ d.kpis.label_actual }}</span>
+      </div>
+    </div>
+    <button class="btn-refresh" (click)="cargar()" title="Actualizar">
+      <span class="material-icons">refresh</span>
+    </button>
+  </div>
+
+  <!-- ── KPI CARDS ──────────────────────────────────────────────── -->
+  <div class="kpi-grid">
+
+    <div class="kpi-card" [class]="d.kpis.wk >= 0 ? 'kpi-wk-pos' : 'kpi-wk-neg'">
+      <span class="kpi-lbl">Working Capital</span>
+      <span class="kpi-val">S/ {{ fmtM(d.kpis.wk) }}</span>
+      <span class="kpi-full">{{ fmt(d.kpis.wk) }}</span>
+      <span class="kpi-var" [class]="clsVar(d.kpis.var_wk)">
+        {{ fmtVar(d.kpis.var_wk) }}
+      </span>
+    </div>
+
+    <div class="kpi-card kpi-activo">
+      <span class="kpi-lbl">Activo Corriente</span>
+      <span class="kpi-val">S/ {{ fmtM(d.kpis.activo) }}</span>
+      <span class="kpi-full">{{ fmt(d.kpis.activo) }}</span>
+      <span class="kpi-var" [class]="clsVar(d.kpis.var_activo)">
+        {{ fmtVar(d.kpis.var_activo) }}
+      </span>
+    </div>
+
+    <div class="kpi-card kpi-pasivo">
+      <span class="kpi-lbl">Pasivo Corriente</span>
+      <span class="kpi-val">S/ {{ fmtM(d.kpis.pasivo) }}</span>
+      <span class="kpi-full">{{ fmt(d.kpis.pasivo) }}</span>
+      <span class="kpi-var" [class]="clsVar(d.kpis.var_pasivo, true)">
+        {{ fmtVar(d.kpis.var_pasivo) }}
+      </span>
+    </div>
+
+    <div class="kpi-card kpi-ratio">
+      <span class="kpi-lbl">Ratio A/P</span>
+      <span class="kpi-val">{{ (d.kpis.activo / (d.kpis.pasivo || 1)).toFixed(2) }}x</span>
+      <span class="kpi-full">Activo / Pasivo</span>
+      <span class="kpi-var var-neutro">Liquidez</span>
+    </div>
+
+  </div>
+
+  <!-- ── FILA 2: Gráfico tendencia + Donuts ─────────────────────── -->
+  <div class="row-2">
+
+    <!-- Gráfico de tendencia WK -->
+    <div class="card card-grafico">
+      <div class="card-head">
+        <span class="card-title">Evolución Working Capital</span>
+        <div class="toggle-vista">
+          <button [class.activo]="vistaGrafico === 'semanal'" (click)="vistaGrafico = 'semanal'">Semanal</button>
+          <button [class.activo]="vistaGrafico === 'mensual'" (click)="vistaGrafico = 'mensual'">Mensual</button>
+        </div>
+      </div>
+
+      <svg viewBox="0 0 700 160" class="chart-svg" *ngIf="serieActiva.length >= 2"
+           (mouseleave)="ocultarTooltip()">
+        <!-- Área rellena -->
+        <path [attr.d]="areaWK(serieActiva)" class="area-wk" />
+        <!-- Línea -->
+        <polyline [attr.points]="lineaWK(serieActiva)" class="linea-wk" />
+        <!-- Dots + labels + zona hover -->
+        <g *ngFor="let pt of puntosLinea(serieActiva); let i = index; let last = last">
+          <!-- Zona de hover invisible más grande para facilitar el target -->
+          <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="14" class="dot-hover"
+                  (mouseenter)="mostrarTooltip(pt, serieActiva)"
+                  (mouseleave)="ocultarTooltip()" />
+          <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="4" class="dot-wk" />
+          <text [attr.x]="pt.x" [attr.y]="pt.y - 8" class="label-dot"
+                *ngIf="serieActiva.length <= 8 || i === 0 || last">{{ fmtM(pt.val) }}</text>
+          <!-- Labels eje X -->
+          <text *ngIf="i === 0 || last || (serieActiva.length <= 8) || (i % 2 === 0)"
+            [attr.x]="pt.x" [attr.y]="155" class="label-eje">{{ pt.label }}</text>
+        </g>
+
+        <!-- Tooltip SVG -->
+        <g *ngIf="tooltip.visible"
+           [attr.transform]="'translate(' + tooltipX(tooltip.x) + ',' + tooltipY(tooltip.y) + ')'">
+          <rect x="0" y="0" width="130" height="68" rx="6" class="tooltip-bg" />
+          <text x="10" y="16" class="tooltip-fecha">{{ tooltip.label }}</text>
+          <line x1="0" y1="22" x2="130" y2="22" class="tooltip-sep" />
+          <text x="10" y="36" class="tooltip-lbl">WK</text>
+          <text x="120" y="36" class="tooltip-val" [class]="tooltip.wk >= 0 ? 'tooltip-pos' : 'tooltip-neg'">
+            {{ fmtM(tooltip.wk) }}
+          </text>
+          <text x="10" y="50" class="tooltip-lbl">Activo</text>
+          <text x="120" y="50" class="tooltip-val tooltip-act">{{ fmtM(tooltip.activo) }}</text>
+          <text x="10" y="64" class="tooltip-lbl">Pasivo</text>
+          <text x="120" y="64" class="tooltip-val tooltip-pas">{{ fmtM(tooltip.pasivo) }}</text>
+        </g>
+      </svg>
+      <div class="sin-datos" *ngIf="serieActiva.length < 2">Sin suficientes datos</div>
+    </div>
+
+    <!-- Donuts composición con ngx-charts -->
+    <div class="card card-donuts">
+      <div class="card-head">
+        <span class="card-title">Composición</span>
+      </div>
+      <div class="donuts-row">
+
+        <!-- Donut Activo -->
+        <div class="donut-bloque">
+          <span class="donut-lbl">Activo · {{ fmt(d.kpis.activo) }}</span>
+          <ngx-charts-pie-chart
+            [results]="donutActivo"
+            scheme="cool"
+            [doughnut]="true"
+            [arcWidth]="0.35"
+            [tooltipDisabled]="false"
+            [labels]="false"
+            [legend]="false"
+            [view]="[220, 180]"
+            (select)="onSelectDonut($event)">
+            <!-- Tooltip personalizado -->
+            <ng-template #tooltipTemplate let-model="model">
+              <div class="ngx-tooltip-custom">
+                <span class="ngx-tt-nombre">{{ model.name }}</span>
+                <span class="ngx-tt-val">S/ {{ fmt(model.value) }}</span>
+                <span class="ngx-tt-pct">{{ pct(model.value, d.kpis.activo) }}%</span>
+              </div>
+            </ng-template>
+          </ngx-charts-pie-chart>
+        </div>
+
+        <!-- Donut Pasivo -->
+        <div class="donut-bloque">
+          <span class="donut-lbl">Pasivo · {{ fmt(d.kpis.pasivo) }}</span>
+          <ngx-charts-pie-chart
+            [results]="donutPasivo"
+            scheme="fire"
+            [doughnut]="true"
+            [arcWidth]="0.35"
+            [tooltipDisabled]="false"
+            [labels]="false"
+            [legend]="false"
+            [view]="[220, 180]"
+            (select)="onSelectDonut($event)">
+            <ng-template #tooltipTemplate let-model="model">
+              <div class="ngx-tooltip-custom">
+                <span class="ngx-tt-nombre">{{ model.name }}</span>
+                <span class="ngx-tt-val">S/ {{ fmt(model.value) }}</span>
+                <span class="ngx-tt-pct">{{ pct(model.value, d.kpis.pasivo) }}%</span>
+              </div>
+            </ng-template>
+          </ngx-charts-pie-chart>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── FILA 3: Proveedores + Tabla variaciones ────────────────── -->
+  <div class="row-3">
+
+    <!-- Barras horizontales proveedores -->
+    <div class="card card-proveedores">
+      <div class="card-head">
+        <span class="card-title">Top Proveedores</span>
+        <div class="leyenda-prov">
+          <span class="dot-act"></span><span>Actual</span>
+          <span class="dot-ant"></span><span>Anterior</span>
+        </div>
+      </div>
+      <div class="prov-lista">
+        <div class="prov-row" *ngFor="let p of barrasProveedores(d.proveedores, d.proveedores_ant)">
+          <span class="prov-nombre">{{ p.nombre }}</span>
+          <div class="prov-barras">
+            <div class="barra-wrap">
+              <div class="barra-act" [style.width.px]="p.wAct">
+                <span class="barra-tooltip">{{ fmt(p.actual) }}</span>
+              </div>
+            </div>
+            <div class="barra-wrap">
+              <div class="barra-ant" [style.width.px]="p.wAnt">
+                <span class="barra-tooltip barra-tooltip-ant">{{ fmt(p.anterior) }}</span>
+              </div>
+            </div>
+          </div>
+          <span class="prov-val">{{ fmtM(p.actual) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla variaciones -->
+    <div class="card card-variaciones">
+      <div class="card-head">
+        <span class="card-title">Variaciones semana a semana</span>
+      </div>
+      <table class="var-tabla">
+        <thead>
+          <tr>
+            <th>Concepto</th>
+            <th>Anterior</th>
+            <th>Actual</th>
+            <th>Var %</th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container *ngFor="let row of d.tabla_variaciones">
+            <tr class="var-sep" *ngIf="row.tipo === 'pasivo' && d.tabla_variaciones.indexOf(row) > 0 && d.tabla_variaciones[d.tabla_variaciones.indexOf(row)-1].tipo === 'activo'">
+              <td colspan="4" class="var-sep-lbl">PASIVO</td>
+            </tr>
+            <tr class="var-sep" *ngIf="row.tipo === 'activo' && d.tabla_variaciones.indexOf(row) === 0">
+              <td colspan="4" class="var-sep-lbl">ACTIVO</td>
+            </tr>
+            <tr>
+              <td class="var-concepto">{{ row.concepto }}</td>
+              <td class="var-num">{{ fmtM(row.anterior) }}</td>
+              <td class="var-num">{{ fmtM(row.actual) }}</td>
+              <td class="var-pct" [class]="clsVar(row.variacion, row.tipo === 'pasivo')">
+                {{ fmtVar(row.variacion) }}
+              </td>
+            </tr>
+          </ng-container>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Loading -->
+<div class="dash-loading" *ngIf="cargando">
+  <div class="spinner"></div>
+  <span>Cargando dashboard...</span>
+</div>
+
+<!-- Error -->
+<div class="dash-error" *ngIf="!cargando && error">
+  <span class="material-icons">error_outline</span>
+  {{ error }}
+</div>

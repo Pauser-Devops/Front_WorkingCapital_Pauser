@@ -276,3 +276,62 @@
 @media (max-width: 700px) {
   .ib-kpis { grid-template-columns: repeat(2,1fr); }
 }
+/* ── Sync badge ── */
+.sync-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: #6B7280;
+  background: #f0f5fb;
+  border: 1px solid #dde3eb;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-family: 'DM Sans', sans-serif;
+  margin-top: 4px;
+}
+
+.sync-badge .material-icons {
+  font-size: 14px;
+  color: #0070C0;
+}
+
+.sync-badge-empty .material-icons {
+  color: #fb923c;
+}
+
+.sync-badge-empty {
+  color: #fb923c;
+  border-color: #fed7aa;
+  background: #fff7ed;
+}
+
+/* ── Sync texto inline ── */
+.acciones-title-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.sync-texto {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  color: #6B7280;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.sync-texto .material-icons {
+  font-size: 14px;
+  color: #0070C0;
+}
+
+.sync-vacio {
+  color: #fb923c;
+}
+
+.sync-vacio .material-icons {
+  color: #fb923c;
+}

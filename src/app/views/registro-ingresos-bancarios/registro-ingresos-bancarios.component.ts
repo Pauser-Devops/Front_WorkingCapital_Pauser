@@ -10,14 +10,6 @@ const API = environment.apiUrl;
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-// Colores por estado IA (para colorear filas en el Excel)
-const COLOR_PAUSER = 'C6EFCE';   // verde claro
-const COLOR_NO_PAUSER = 'FFCCCC';   // rojo claro
-const COLOR_SIN_COMP = 'FFF3CD';   // amarillo claro
-const COLOR_CONCILIADO = 'E8F5E9';
-const COLOR_HEADER_BG = '1E3A5F';
-const COLOR_TITLE_BG = '2D5A8E';
-
 @Component({
   selector: 'app-registro-ingresos-bancarios',
   standalone: true,
@@ -31,12 +23,12 @@ export class RegistroIngresosBancariosComponent {
 
   mesSeleccionado: string | null = null;
   mesesConData: string[] = [];
-
+  totalDifMonto = 0;
   registros: any[] = [];
   registrosFiltrados: any[] = [];
 
   // Filtros
-  filtroEstado: 'todos' | 'conciliado' | 'pendiente' = 'todos';
+  filtroEstado: 'todos' | 'conciliado' | 'pendiente' | 'dif_monto' = 'todos';
   filtroComprobante: 'todos' | 'pauser' | 'no_pauser' | 'sin_comprobante' = 'todos';
   filtroEntidad = 'todas';
   filtroBanco = 'todos';
@@ -64,6 +56,10 @@ export class RegistroIngresosBancariosComponent {
   totalSinComprobante = 0;
   indiceComprobantes: Record<string, boolean> = {};
 
+  // Sync
+  ultimaSync = '';
+  usuarioSync = '';
+
   // Flags
   cargando = false;
   cargandoSync = false;
@@ -80,7 +76,36 @@ export class RegistroIngresosBancariosComponent {
   modalCargando = false;
   @Output() navegarA = new EventEmitter<string>();
 
-  constructor(private http: HttpClient) { this.cargarMeses(); }
+  constructor(private http: HttpClient) {
+    this.cargarMeses();
+    this.cargarSync();
+  }
+
+  // ── Sync ─────────────────────────────────────────────
+
+  cargarSync() {
+    if (!this.mesSeleccionado) return;
+    const anio = new Date().getFullYear();
+    this.http.get<any>(
+      `${API}/sync/ultima?modulo=registro_ingresos&mes=${this.mesSeleccionado}&anio=${anio}`
+    ).subscribe({
+      next: r => {
+        if (r.estado === 'OK' && r.ultima_sync) {
+          const fecha = new Date(r.ultima_sync);
+          this.ultimaSync = fecha.toLocaleDateString('es-PE', {
+            day: '2-digit', month: 'short', year: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+          });
+          this.usuarioSync = r.usuario || '';
+        } else {
+          this.ultimaSync = '';  // limpia si no hay sync para ese mes
+          this.usuarioSync = '';
+        }
+      }
+    });
+  }
+
+  // ── Meses ─────────────────────────────────────────────
 
   cargarMeses() {
     this.http.get<any>(`${API}/ingresos/bancarios/meses`).subscribe({
@@ -96,6 +121,7 @@ export class RegistroIngresosBancariosComponent {
     this.mesSeleccionado = mes;
     this.resetFiltros();
     this.cargarDatos();
+    this.cargarSync();
   }
 
   resetFiltros() {
@@ -183,20 +209,29 @@ export class RegistroIngresosBancariosComponent {
         )
       );
     }
-
+    if (this.filtroEstado === 'dif_monto')
+      data = data.filter(r => r.conciliado && r.dif_monto !== null && r.dif_monto !== 0);
     this.registrosFiltrados = data;
     this.calcularKPIs(data);
     this.calcularKPIsIA(data);
   }
 
   calcularKPIs(data: any[]) {
+    // KPIs sobre lo filtrado
     this.totalRegistros = data.length;
     this.conciliados = data.filter(r => r.conciliado).length;
-    this.sinConciliar = this.totalRegistros - this.conciliados;
-    this.pct = this.totalRegistros ? Math.round(this.conciliados / this.totalRegistros * 100) : 0;
+    this.sinConciliar = data.filter(r => !r.conciliado).length;
     this.montoTotal = data.reduce((s, r) => s + (r.monto || 0), 0);
     this.montoConciliado = data.filter(r => r.conciliado).reduce((s, r) => s + (r.monto || 0), 0);
     this.montoPendiente = this.montoTotal - this.montoConciliado;
+
+    // % siempre sobre el total real sin filtro
+    const totalReal = this.registros.length || 1;
+    const conciliadosReal = this.registros.filter(r => r.conciliado).length;
+    this.pct = Math.floor((conciliadosReal / totalReal) * 1000) / 10;
+    this.totalDifMonto = this.registros.filter(r =>
+      r.conciliado && r.dif_monto !== null && r.dif_monto !== 0
+    ).length;
   }
 
   calcularKPIsIA(data: any[]) {
@@ -204,7 +239,7 @@ export class RegistroIngresosBancariosComponent {
     for (const r of data) {
       const id = String(r.id_pop);
       if (this.indiceComprobantes[id] === true) this.totalPauser++;
-      else this.totalNoPauser++;  // los no encontrados van a No Pauser
+      else this.totalNoPauser++;
     }
   }
 
@@ -215,6 +250,7 @@ export class RegistroIngresosBancariosComponent {
       || this.filtroBanco !== 'todos'
       || !!this.filtroIdPopMin || !!this.filtroIdPopMax
       || !!this.filtroFechaDesde || !!this.filtroFechaHasta
+
       || !!this.busqueda.trim();
   }
 
@@ -239,7 +275,11 @@ export class RegistroIngresosBancariosComponent {
         this.cargandoSync = false;
         this.mensajeAccion = r.mensaje || r.detalle;
         this.errorAccion = r.estado !== 'OK';
-        if (r.estado === 'OK') { this.cargarMeses(); this.cargarDatos(); }
+        if (r.estado === 'OK') {
+          this.cargarMeses();
+          this.cargarDatos();
+          this.cargarSync(); // ← refresca el badge de sync
+        }
       },
       error: () => { this.cargandoSync = false; this.mensajeAccion = 'Error de conexión'; this.errorAccion = true; }
     });
@@ -259,7 +299,6 @@ export class RegistroIngresosBancariosComponent {
     });
   }
 
-  // ── Excel con formato ─────────────────────────────────
   exportarExcel() {
     if (!this.mesSeleccionado) return;
     let url = `${API}/ingresos/bancarios/exportar-excel?mes=${this.mesSeleccionado}`;
@@ -270,12 +309,6 @@ export class RegistroIngresosBancariosComponent {
     window.open(url, '_blank');
   }
 
-  private _thinBorder() {
-    const s = { style: 'thin', color: { rgb: 'CCCCCC' } };
-    return { top: s, bottom: s, left: s, right: s };
-  }
-
-  // ── Comprobante / Modal ───────────────────────────────
   verComprobante(r: any) {
     if (!r.id_pop) return;
     this.modalIdPop = r.id_pop; this.modalImgUrl = '';
@@ -296,19 +329,14 @@ export class RegistroIngresosBancariosComponent {
 
   getEstadoIA(id_pop: any): 'pauser' | 'no_pauser' | 'sin_comprobante' {
     const id = String(id_pop);
-    if (!(id in this.indiceComprobantes)) return 'no_pauser'; // ← antes era 'sin_comprobante'
+    if (!(id in this.indiceComprobantes)) return 'no_pauser';
     return this.indiceComprobantes[id] ? 'pauser' : 'no_pauser';
-  }
-
-  getEstadoIALabel(id_pop: any): string {
-    const s = this.getEstadoIA(id_pop);
-    return s === 'pauser' ? 'Pauser' : s === 'no_pauser' ? 'No Pauser' : 'Sin comprobante';
   }
 
   bancosPorEntidad(e: string) {
     const mapa: Record<string, { total: number, conciliados: number }> = {};
     for (const r of this.registros.filter(r => r.entidad === e)) {
-      const b = r.banco_tabla || 'Sin banco';
+      const b = r.banco_tabla || 'Pendiente';
       if (!mapa[b]) mapa[b] = { total: 0, conciliados: 0 };
       mapa[b].total++;
       if (r.conciliado) mapa[b].conciliados++;
@@ -333,8 +361,14 @@ export class RegistroIngresosBancariosComponent {
     return isNaN(d.getTime()) ? String(v) : d.toLocaleDateString('es-PE');
   }
 
-  get pctBar() { return Math.min(this.pct, 100); }
-
+  get pctBar() {
+    if (this.filtroEstado === 'pendiente') {
+      const totalReal = this.registros.length || 1;
+      const pendientesReal = this.registros.filter(r => !r.conciliado).length;
+      return Math.floor((pendientesReal / totalReal) * 1000) / 10;
+    }
+    return Math.min(this.pct, 100);
+  }
   abrirComparador() { this.navegarA.emit('comparadorIngresos'); }
 
   marcarPauser(id: number, esPauser: boolean) {
@@ -350,4 +384,6 @@ export class RegistroIngresosBancariosComponent {
       error: err => console.error('Error al marcar comprobante:', err)
     });
   }
+  get totalConciliadosReal() { return this.registros.filter(r => r.conciliado).length; }
+  get totalPendientesReal() { return this.registros.filter(r => !r.conciliado).length; }
 }

@@ -36,12 +36,16 @@
       <app-reportes-bancarios *ngIf="vista === 'reportes-bancarios'"></app-reportes-bancarios>
       <app-registro-ingresos-bancarios *ngIf="vista === 'registroIB'"
         (navegarA)="setVista($event)"></app-registro-ingresos-bancarios>
+      <app-comparador-bancario *ngIf="vista === 'compBancario'"></app-comparador-bancario>
       <app-analisis-bancarios *ngIf="vista === 'analisisBancarios'"></app-analisis-bancarios>
       <app-comparador-ingresos *ngIf="vista === 'comparadorIngresos'" (navegarA)="onNavegarA($event)"></app-comparador-ingresos>
+      <app-dash-wk *ngIf="vista === 'dashwk'"></app-dash-wk>
+      <app-maes *ngIf="vista === 'maes'"></app-maes>
+      <app-pga *ngIf="vista === 'pga'"></app-pga>
       <div class="wk-coming"
         *ngIf="vista !== 'semanal' && vista !== 'mensual' && vista !== 'ingresos' 
              && vista !== 'egresos' && vista !== 'stock' && vista !== 'ingresosbancarios' 
-             && vista !== 'reportes-bancarios' && vista !== 'registroIB' && vista !== 'analisisBancarios' && vista !== 'comparadorIngresos'">
+             && vista !== 'reportes-bancarios' && vista !== 'registroIB' && vista !== 'compBancario' && vista !== 'analisisBancarios' && vista !== 'comparadorIngresos' && vista !== 'dashwk' && vista !== 'maes' && vista !== 'pga'">
         <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
           <circle cx="26" cy="26" r="23" stroke="#0070C0" stroke-width="2" fill="#EBF3FB" />
           <path d="M26 15v11l7 4" stroke="#0070C0" stroke-width="2.5" stroke-linecap="round" />

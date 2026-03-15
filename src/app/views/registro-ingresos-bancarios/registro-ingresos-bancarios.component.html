@@ -11,10 +11,8 @@
         <p>{{ anioActual }} — Conciliación de ingresos por ID POP</p>
       </div>
     </div>
-
-
     <div class="rib-header-actions">
-      <button class="btn-comparador" (click)="abrirComparador()" title="Comparar con snapshot anterior">
+      <button class="btn-comparador" (click)="abrirComparador()">
         <span class="material-icons">compare_arrows</span> Comparar cambios
       </button>
       <br>
@@ -39,21 +37,20 @@
     <!-- Acciones -->
     <div class="rib-actions-bar">
       <div class="rib-acciones-left">
-        <h2>{{ mesSeleccionado }} {{ anioActual }}</h2>
-        <!-- Chips de banco por entidad -->
-        <div class="entidad-chips" *ngIf="entidades.length">
-          <button *ngFor="let e of entidades" class="entidad-chip" [class.activo]="filtroEntidad === e"
-            (click)="setFiltroEntidad(e)">
-            <span class="chip-entidad-nombre">{{ e }}</span>
-            <span class="chip-sep">·</span>
-            <span *ngFor="let b of bancosPorEntidad(e)" class="chip-banco">
-              {{ b.banco }} <em>{{ b.conciliados }}/{{ b.total }}</em>
-            </span>
-          </button>
-          <button class="entidad-chip" [class.activo]="filtroEntidad === 'todas'"
-            (click)="setFiltroEntidad('todas')">Todas</button>
+        <div class="acciones-title-row">
+          <h2>{{ mesSeleccionado }} {{ anioActual }}</h2>
+          <span class="sync-texto" *ngIf="ultimaSync">
+            <span class="material-icons">sync</span>
+            Última sincronización: {{ ultimaSync }}
+            <span *ngIf="usuarioSync"> · {{ usuarioSync }}</span>
+          </span>
+          <span class="sync-texto sync-vacio" *ngIf="!ultimaSync">
+            <span class="material-icons">sync_problem</span>
+            Sin sincronización registrada
+          </span>
         </div>
       </div>
+
       <div class="rib-btns">
         <button class="btn-sync" (click)="sincronizar()" [disabled]="cargandoSync || cargandoConciliar">
           <span class="material-icons">sync</span>
@@ -72,12 +69,13 @@
 
     <!-- ── KPIs ── -->
     <div class="rib-kpis-wrap" *ngIf="!cargando && registros.length > 0">
-
-      <!-- Barra conciliación -->
       <div class="rib-progreso-card">
         <div class="progreso-top">
           <span class="progreso-label">Conciliación</span>
-          <span class="progreso-pct">{{ pct }}%</span>
+          <span class="progreso-pct"
+            [style.color]="filtroEstado === 'pendiente' ? '#dc2626' : (pct === 100 ? '#16a34a' : pct >= 90 ? '#fb923c' : '#dc2626')">
+            {{ filtroEstado === 'pendiente' ? (100 - pct).toFixed(1) + '%' : pct + '%' }}
+          </span>
         </div>
         <div class="progreso-track">
           <div class="progreso-fill" [style.width.%]="pctBar"></div>
@@ -85,16 +83,17 @@
         <div class="progreso-btns">
           <button class="filtro-estado verde" [class.activo]="filtroEstado==='conciliado'"
             (click)="setFiltro('conciliado')">
-            <span class="material-icons">task_alt</span> Conciliados ({{ conciliados | number }})
+            <span class="material-icons">task_alt</span>
+            Conciliados ({{ totalConciliadosReal | number }})
           </button>
           <button class="filtro-estado naranja" [class.activo]="filtroEstado==='pendiente'"
             (click)="setFiltro('pendiente')">
-            <span class="material-icons">pending_actions</span> Pendientes ({{ sinConciliar | number }})
+            <span class="material-icons">pending_actions</span>
+            Pendientes ({{ totalPendientesReal | number }})
           </button>
         </div>
       </div>
 
-      <!-- KPI cards -->
       <div class="rib-kpi-cards">
         <div class="rib-kpi-card">
           <span class="rib-kpi-label">Total Registros</span>
@@ -138,10 +137,8 @@
       </div>
     </div>
 
-    <!-- ── BARRA DE FILTROS Y BÚSQUEDA ── -->
+    <!-- ── FILTROS rediseñados en 2 columnas ── -->
     <div class="rib-filtros-bar" *ngIf="registros.length > 0">
-
-      <!-- Buscador -->
       <div class="search-wrap">
         <span class="material-icons search-icon">search</span>
         <input class="search-input" type="text" placeholder="Buscar en todos los campos..." [(ngModel)]="busqueda"
@@ -150,74 +147,95 @@
           <span class="material-icons">close</span>
         </button>
       </div>
+      <!-- Chips de banco por entidad -->
+      <div class="entidad-chips" *ngIf="entidades.length">
+        <button class="entidad-chip" [class.activo]="filtroEntidad === 'todas'" (click)="setFiltroEntidad('todas')">
+          Todas
+        </button>
+        <button *ngFor="let e of entidades" class="entidad-chip" [class.activo]="filtroEntidad === e"
+          (click)="setFiltroEntidad(e)">
+          <span class="chip-entidad-nombre">{{ e }}</span>
+          <div class="chip-bancos">
+            <span *ngFor="let b of bancosPorEntidad(e)" class="chip-banco-item"
+              [class.chip-banco-ok]="b.conciliados === b.total"
+              [class.chip-banco-parcial]="b.conciliados > 0 && b.conciliados < b.total"
+              [class.chip-banco-pendiente]="b.conciliados === 0">
+              {{ b.banco }}
+              <span class="chip-banco-count">
+                {{ b.conciliados === b.total ? b.total : (b.total - b.conciliados) + ' pend.' }}
+              </span>
+            </span>
+          </div>
+        </button>
+      </div>
+      <div class="filtros-grid">
+        <!-- Columna izquierda -->
+        <div class="filtros-col">
 
-      <!-- Filtros en línea -->
-      <div class="filtros-inline">
-
-        <!-- Estado -->
-        <div class="filtro-group">
-          <label class="filtro-label">
-            <span class="material-icons">check_circle</span> Estado
-          </label>
-          <div class="filtro-pills">
-            <button class="fpill" [class.activo]="filtroEstado==='todos'" (click)="setFiltro('todos')">Todos</button>
-            <button class="fpill verde" [class.activo]="filtroEstado==='conciliado'"
-              (click)="setFiltro('conciliado')">Conciliado</button>
-            <button class="fpill naranja" [class.activo]="filtroEstado==='pendiente'"
-              (click)="setFiltro('pendiente')">Pendiente</button>
+          <div class="filtro-group">
+            <label class="filtro-label">
+              <span class="material-icons">calendar_today</span> Fecha Registro
+            </label>
+            <div class="range-inputs">
+              <input type="date" class="range-input date" [(ngModel)]="filtroFechaDesde"
+                (ngModelChange)="aplicarFiltro()" />
+              <span class="range-sep">—</span>
+              <input type="date" class="range-input date" [(ngModel)]="filtroFechaHasta"
+                (ngModelChange)="aplicarFiltro()" />
+            </div>
+          </div>
+          <div class="filtro-group">
+            <label class="filtro-label">
+              <span class="material-icons">account_balance</span> Banco
+            </label>
+            <div class="filtro-pills">
+              <button class="fpill" [class.activo]="filtroBanco==='todos'"
+                (click)="setFiltroBanco('todos')">Todos</button>
+              <button class="fpill" *ngFor="let b of bancos" [class.activo]="filtroBanco===b"
+                (click)="setFiltroBanco(b)">{{ b }}</button>
+            </div>
           </div>
         </div>
 
-        <!-- Banco -->
-        <div class="filtro-group">
-          <label class="filtro-label">
-            <span class="material-icons">account_balance</span> Banco
-          </label>
-          <div class="filtro-pills">
-            <button class="fpill" [class.activo]="filtroBanco==='todos'"
-              (click)="setFiltroBanco('todos')">Todos</button>
-            <button class="fpill" *ngFor="let b of bancos" [class.activo]="filtroBanco===b"
-              (click)="setFiltroBanco(b)">{{ b }}</button>
+        <!-- Columna derecha -->
+        <div class="filtros-col">
+          <div class="filtro-group">
+            <label class="filtro-label">
+              <span class="material-icons">tag</span> ID POP
+            </label>
+            <div class="range-inputs">
+              <input type="number" class="range-input" placeholder="Desde" [(ngModel)]="filtroIdPopMin"
+                (ngModelChange)="aplicarFiltro()" />
+              <span class="range-sep">—</span>
+              <input type="number" class="range-input" placeholder="Hasta" [(ngModel)]="filtroIdPopMax"
+                (ngModelChange)="aplicarFiltro()" />
+            </div>
+          </div>
+
+          <div class="filtro-group">
+            <label class="filtro-label">
+              <span class="material-icons">check_circle</span> Estado
+            </label>
+            <div class="filtro-pills">
+              <button class="fpill" [class.activo]="filtroEstado==='todos'" (click)="setFiltro('todos')">Todos</button>
+              <button class="fpill verde" [class.activo]="filtroEstado==='conciliado'"
+                (click)="setFiltro('conciliado')">Conciliado</button>
+              <button class="fpill naranja" [class.activo]="filtroEstado==='pendiente'"
+                (click)="setFiltro('pendiente')">Pendiente</button>
+              <button class="fpill amarillo" [class.activo]="filtroEstado==='dif_monto'"
+                (click)="setFiltro('dif_monto')">⚠ Dif. Monto</button>
+            </div>
           </div>
         </div>
-
-        <!-- Rango ID POP -->
-        <div class="filtro-group">
-          <label class="filtro-label">
-            <span class="material-icons">tag</span> ID POP
-          </label>
-          <div class="range-inputs">
-            <input type="number" class="range-input" placeholder="Desde" [(ngModel)]="filtroIdPopMin"
-              (ngModelChange)="aplicarFiltro()" />
-            <span class="range-sep">—</span>
-            <input type="number" class="range-input" placeholder="Hasta" [(ngModel)]="filtroIdPopMax"
-              (ngModelChange)="aplicarFiltro()" />
-          </div>
-        </div>
-
-        <!-- Rango Fecha -->
-        <div class="filtro-group">
-          <label class="filtro-label">
-            <span class="material-icons">calendar_today</span> Fecha Registro
-          </label>
-          <div class="range-inputs">
-            <input type="date" class="range-input date" [(ngModel)]="filtroFechaDesde"
-              (ngModelChange)="aplicarFiltro()" />
-            <span class="range-sep">—</span>
-            <input type="date" class="range-input date" [(ngModel)]="filtroFechaHasta"
-              (ngModelChange)="aplicarFiltro()" />
-          </div>
-        </div>
-
       </div>
 
-      <!-- Botón limpiar filtros -->
       <div class="filtros-footer" *ngIf="tieneFiltrosActivos">
         <button class="btn-limpiar" (click)="limpiarFiltros()">
-          <span class="material-icons">restart_alt</span> Limpiar todos los filtros
+          <span class="material-icons">restart_alt</span> Limpiar filtros
         </button>
-        <span class="filtros-count">{{ registrosFiltrados.length | number }} de {{ registros.length | number }}
-          registros</span>
+        <span class="filtros-count">
+          {{ registrosFiltrados.length | number }} de {{ registros.length | number }} registros
+        </span>
       </div>
     </div>
 
@@ -261,12 +279,18 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let r of registrosFiltrados" [class.conciliado]="r.conciliado" [class.pendiente]="!r.conciliado">
-
+          <tr *ngFor="let r of registrosFiltrados" [class.conciliado]="r.conciliado" [class.pendiente]="!r.conciliado"
+            [class.dif-monto]="r.conciliado && r.dif_monto !== null && r.dif_monto !== 0">
             <td class="td-idpop">
               <div class="idpop-cell">
-                <span class="badge-estado" [class.badge-ok]="r.conciliado" [class.badge-no]="!r.conciliado">
-                  <span class="material-icons">{{ r.conciliado ? 'check_circle' : 'schedule' }}</span>
+                <span class="badge-estado" [class.badge-ok]="r.conciliado && (!r.dif_monto || r.dif_monto === 0)"
+                  [class.badge-warn]="r.conciliado && r.dif_monto !== null && r.dif_monto !== 0"
+                  [class.badge-no]="!r.conciliado">
+                  <span class="material-icons">
+                    {{ r.conciliado && r.dif_monto !== null && r.dif_monto !== 0
+                    ? 'warning'
+                    : r.conciliado ? 'check_circle' : 'schedule' }}
+                  </span>
                 </span>
                 <button class="btn-doc" (click)="verComprobante(r)" title="Ver comprobante">
                   <span class="material-icons">description</span>
@@ -274,30 +298,41 @@
                 <span class="idpop-num">{{ r.id_pop || '—' }}</span>
               </div>
             </td>
-
             <td>{{ formatFecha(r.fecha_registro) }}</td>
             <td>{{ formatFecha(r.fecha_voucher) }}</td>
-            <td class="td-sucursal">{{ r.sucursal || '—' }}</td>
+            <td>{{ r.sucursal || '—' }}</td>
             <td>{{ r.negocio || '—' }}</td>
             <td><span class="entidad-tag">{{ r.entidad || '—' }}</span></td>
             <td>{{ r.transporte || '—' }}</td>
-            <td class="num">S/ {{ formatNum(r.monto) }}</td>
+            <td class="num">
+              <div class="monto-cell">
+                <span>S/ {{ formatNum(r.monto) }}</span>
+                <span class="dif-badge" *ngIf="r.conciliado && r.dif_monto !== null && r.dif_monto !== 0"
+                  [title]="'Dif. con banco: S/ ' + formatNum(r.dif_monto)">
+                  <span class="material-icons">warning</span>
+                  S/ {{ formatNum(r.dif_monto) }}
+                </span>
+              </div>
+            </td>
             <td class="mono">{{ r.cod_operacion || '—' }}</td>
-            <td class="mono" [class.nro-ok]="r.nro_operacion_banco">{{ r.nro_operacion_banco || '—' }}</td>
+            <td class="mono" [class.nro-ok]="r.nro_operacion_banco">
+              {{ r.nro_operacion_banco || '—' }}
+            </td>
             <td>{{ r.banco_tabla || '—' }}</td>
             <td>{{ r.destinatario_detectado || '—' }}</td>
             <td class="td-contar">
               <div class="status-actions">
                 <button [class.active-check]="getEstadoIA(r.id_pop) === 'pauser'" (click)="marcarPauser(r.id_pop, true)"
                   title="Marcar como Pauser">
-                  <span class="material-icons">{{ getEstadoIA(r.id_pop) === 'pauser' ? 'check_circle' :
-                    'check_circle_outline' }}</span>
+                  <span class="material-icons">
+                    {{ getEstadoIA(r.id_pop) === 'pauser' ? 'check_circle' : 'check_circle_outline' }}
+                  </span>
                 </button>
-
                 <button [class.active-error]="getEstadoIA(r.id_pop) === 'no_pauser'"
                   (click)="marcarPauser(r.id_pop, false)" title="Marcar como No Pauser">
-                  <span class="material-icons">{{ getEstadoIA(r.id_pop) === 'no_pauser' ? 'cancel' : 'highlight_off'
-                    }}</span>
+                  <span class="material-icons">
+                    {{ getEstadoIA(r.id_pop) === 'no_pauser' ? 'cancel' : 'highlight_off' }}
+                  </span>
                 </button>
               </div>
             </td>
@@ -306,7 +341,6 @@
       </table>
     </div>
 
-    <!-- Sin resultados del filtro -->
     <div class="rib-empty-filtro" *ngIf="!cargando && registros.length > 0 && registrosFiltrados.length === 0">
       <span class="material-icons">filter_list_off</span>
       <p>Sin registros con los filtros actuales</p>
@@ -314,17 +348,15 @@
         <span class="material-icons">restart_alt</span> Limpiar filtros
       </button>
     </div>
-
   </div>
 
-  <!-- Sin mes seleccionado -->
   <div class="rib-inicio" *ngIf="!mesSeleccionado">
     <span class="material-icons">calendar_month</span>
     <p>Selecciona un mes para ver la conciliación</p>
   </div>
 </div>
 
-<!-- ── MODAL COMPROBANTE ── -->
+<!-- ── MODAL ── -->
 <div class="modal-overlay" *ngIf="modalAbierto" (click)="cerrarModal()">
   <div class="modal-box" (click)="$event.stopPropagation()">
     <div class="modal-header">

@@ -11,12 +11,12 @@ const ORDEN_MESES: Record<string, number> = {
 };
 
 const BANCO_COLORES: Record<string, { color: string, light: string }> = {
-  'BCP':           { color: '#003F8A', light: '#e8f0fa' },
-  'BCP TRU':       { color: '#1565C0', light: '#e3eefa' },
-  'BCP LN':        { color: '#1976D2', light: '#e1eefb' },
-  'BBVA':          { color: '#004B95', light: '#e0ecfa' },
-  'BBVA LM':       { color: '#0057A8', light: '#e0eefb' },
-  'Interbank':     { color: '#007C5E', light: '#e0f5ee' },
+  'BCP': { color: '#003F8A', light: '#e8f0fa' },
+  'BCP TRU': { color: '#1565C0', light: '#e3eefa' },
+  'BCP LN': { color: '#1976D2', light: '#e1eefb' },
+  'BBVA': { color: '#004B95', light: '#e0ecfa' },
+  'BBVA LM': { color: '#0057A8', light: '#e0eefb' },
+  'Interbank': { color: '#007C5E', light: '#e0f5ee' },
   'Caja Arequipa': { color: '#B91C1C', light: '#fde8e8' },
 };
 
@@ -29,21 +29,21 @@ const BANCO_COLORES: Record<string, { color: string, light: string }> = {
 })
 export class IngresosBancariosComponent implements OnInit {
   cargando = false;
-  error    = '';
+  error = '';
 
-  meses:     string[] = [];
-  mesActivo  = '';
+  meses: string[] = [];
+  mesActivo = '';
   anioActual = new Date().getFullYear();
 
-  todos:     any[] = [];
+  todos: any[] = [];
   filtrados: any[] = [];
 
   // Filtros
-  filtroBanco    = 'TODOS';
+  filtroBanco = 'TODOS';
   filtroSucursal = 'TODAS';
-  filtroEntidad  = 'TODAS';
-  fechaDesde     = '';
-  fechaHasta     = '';
+  filtroEntidad = 'TODAS';
+  fechaDesde = '';
+  fechaHasta = '';
 
   // Filtro rango ID POP
   idPopDesde = '';
@@ -51,32 +51,58 @@ export class IngresosBancariosComponent implements OnInit {
 
   // Listas únicas
   sucursales: string[] = [];
-  bancos:     string[] = [];
-  entidades:  string[] = [];
+  bancos: string[] = [];
+  entidades: string[] = [];
 
   // KPIs
-  totalMonto      = 0;
-  totalRegistros  = 0;
-  totalConc       = 0;
-  totalSinConc    = 0;
-  pctConc         = 0;
+  totalMonto = 0;
+  totalRegistros = 0;
+  totalConc = 0;
+  totalSinConc = 0;
+  pctConc = 0;
   montoConciliado = 0;
-  montoSinConc    = 0;
-
+  montoSinConc = 0;
+  ultimaSync = '';
+  usuarioSync = '';
   // Charts
-  porBanco:    { label: string, monto: number, pct: number, color: string }[] = [];
+  porBanco: { label: string, monto: number, pct: number, color: string }[] = [];
   porSucursal: { label: string, monto: number, pct: number }[] = [];
-  porEntidad:  { label: string, monto: number, pct: number }[] = [];
-  porDia:      { fecha: string, fechaFull: string, monto: number, pct: number, alto: number }[] = [];
+  porEntidad: { label: string, monto: number, pct: number }[] = [];
+  porDia: { fecha: string, fechaFull: string, monto: number, pct: number, alto: number }[] = [];
 
   // Tooltip
   tooltipDia: { fecha: string, monto: number } | null = null;
   tooltipX = 0;
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {
+    this.cargarSync();
+   }
 
-  ngOnInit() { this.cargarMeses(); }
+  ngOnInit() {
+    this.cargarMeses();
 
+  }
+  cargarSync() {
+    if (!this.mesActivo) return;
+    const anio = new Date().getFullYear();
+    this.http.get<any>(
+      `${API}/sync/ultima?modulo=registro_ingresos&mes=${this.mesActivo}&anio=${anio}`
+    ).subscribe({
+      next: r => {
+        if (r.estado === 'OK' && r.ultima_sync) {
+          const fecha = new Date(r.ultima_sync);
+          this.ultimaSync = fecha.toLocaleDateString('es-PE', {
+            day: '2-digit', month: 'short', year: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+          });
+          this.usuarioSync = r.usuario || '';
+        } else {
+          this.ultimaSync = '';  // limpia si no hay sync para ese mes
+          this.usuarioSync = '';
+        }
+      }
+    });
+  }
   // ── Meses ─────────────────────────────────────────────
 
   cargarMeses() {
@@ -91,26 +117,28 @@ export class IngresosBancariosComponent implements OnInit {
       },
       error: () => this.error = 'No se pudo conectar a la API'
     });
+
   }
 
   seleccionarMes(mes: string) {
-    this.mesActivo     = mes;
-    this.filtroBanco   = 'TODOS';
+    this.mesActivo = mes;
+    this.filtroBanco = 'TODOS';
     this.filtroSucursal = 'TODAS';
     this.filtroEntidad = 'TODAS';
-    this.fechaDesde    = '';
-    this.fechaHasta    = '';
-    this.idPopDesde    = '';
-    this.idPopHasta    = '';
-    this.tooltipDia    = null;
+    this.fechaDesde = '';
+    this.fechaHasta = '';
+    this.idPopDesde = '';
+    this.idPopHasta = '';
+    this.tooltipDia = null;
     this.cargarDatos();
+    this.cargarSync();
   }
 
   // ── Carga ─────────────────────────────────────────────
 
   cargarDatos() {
     this.cargando = true;
-    this.error    = '';
+    this.error = '';
     let url = `${API}/ingresos/bancarios?mes=${this.mesActivo}`;
     if (this.fechaDesde) url += `&fecha_desde=${this.fechaDesde}`;
     if (this.fechaHasta) url += `&fecha_hasta=${this.fechaHasta}`;
@@ -136,11 +164,11 @@ export class IngresosBancariosComponent implements OnInit {
       const suc = this.getSucursalDisplay(r);
       if (suc) setSuc.add(suc);
       if (r.banco_tabla) setBan.add(r.banco_tabla);
-      if (r.entidad)     setEnt.add(r.entidad);
+      if (r.entidad) setEnt.add(r.entidad);
     }
     this.sucursales = [...setSuc].sort();
-    this.bancos     = [...setBan].sort();
-    this.entidades  = [...setEnt].sort();
+    this.bancos = [...setBan].sort();
+    this.entidades = [...setEnt].sort();
   }
 
   getSucursalDisplay(r: any): string {
@@ -181,23 +209,23 @@ export class IngresosBancariosComponent implements OnInit {
     this.calcularCharts();
   }
 
-  setFiltroBanco(b: string)    { this.filtroBanco    = b; this.aplicarFiltros(); }
+  setFiltroBanco(b: string) { this.filtroBanco = b; this.aplicarFiltros(); }
   setFiltroSucursal(s: string) { this.filtroSucursal = s; this.aplicarFiltros(); }
-  setFiltroEntidad(e: string)  { this.filtroEntidad  = e; this.aplicarFiltros(); }
-  onIdPopChange()              { this.aplicarFiltros(); }   // llamar en (ngModelChange)
+  setFiltroEntidad(e: string) { this.filtroEntidad = e; this.aplicarFiltros(); }
+  onIdPopChange() { this.aplicarFiltros(); }   // llamar en (ngModelChange)
 
   // Fechas libres — recarga backend sin límite de mes
   setFechaDesde(v: string) { this.fechaDesde = v; this.cargarDatos(); }
   setFechaHasta(v: string) { this.fechaHasta = v; this.cargarDatos(); }
 
   limpiarFiltros() {
-    this.filtroBanco    = 'TODOS';
+    this.filtroBanco = 'TODOS';
     this.filtroSucursal = 'TODAS';
-    this.filtroEntidad  = 'TODAS';
-    this.idPopDesde     = '';
-    this.idPopHasta     = '';
-    this.fechaDesde     = '';
-    this.fechaHasta     = '';
+    this.filtroEntidad = 'TODAS';
+    this.idPopDesde = '';
+    this.idPopHasta = '';
+    this.fechaDesde = '';
+    this.fechaHasta = '';
     this.cargarDatos();
   }
 
@@ -205,14 +233,14 @@ export class IngresosBancariosComponent implements OnInit {
 
   calcularKPIs() {
     const d = this.filtrados;
-    this.totalMonto      = d.reduce((s, r) => s + (r.monto || 0), 0);
-    this.totalRegistros  = d.length;
-    this.totalConc       = d.filter(r =>  r.conciliado).length;
-    this.totalSinConc    = d.filter(r => !r.conciliado).length;
-    this.pctConc         = this.totalRegistros
+    this.totalMonto = d.reduce((s, r) => s + (r.monto || 0), 0);
+    this.totalRegistros = d.length;
+    this.totalConc = d.filter(r => r.conciliado).length;
+    this.totalSinConc = d.filter(r => !r.conciliado).length;
+    this.pctConc = this.totalRegistros
       ? Math.round(this.totalConc / this.totalRegistros * 100) : 0;
-    this.montoConciliado = d.filter(r =>  r.conciliado).reduce((s, r) => s + (r.monto || 0), 0);
-    this.montoSinConc    = this.totalMonto - this.montoConciliado;
+    this.montoConciliado = d.filter(r => r.conciliado).reduce((s, r) => s + (r.monto || 0), 0);
+    this.montoSinConc = this.totalMonto - this.montoConciliado;
   }
 
   // ── Charts ────────────────────────────────────────────
@@ -230,7 +258,7 @@ export class IngresosBancariosComponent implements OnInit {
       .sort((a, b) => b[1] - a[1])
       .map(([label, monto]) => ({
         label, monto,
-        pct:   Math.round(monto / totalBan * 100),
+        pct: Math.round(monto / totalBan * 100),
         color: BANCO_COLORES[label]?.color || '#64748b'
       }));
 
@@ -263,17 +291,17 @@ export class IngresosBancariosComponent implements OnInit {
       mapDia[f] = (mapDia[f] || 0) + (r.monto || 0);
     }
     const valores = Object.values(mapDia);
-    const maxVal  = Math.max(...valores, 1);
-    const minVal  = Math.min(...valores, 0);
-    const rango   = maxVal - minVal || 1;
+    const maxVal = Math.max(...valores, 1);
+    const minVal = Math.min(...valores, 0);
+    const rango = maxVal - minVal || 1;
 
     this.porDia = Object.entries(mapDia)
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([fecha, monto]) => ({
         fechaFull: fecha,
-        fecha:     fecha.slice(8) + '/' + fecha.slice(5, 7),
+        fecha: fecha.slice(8) + '/' + fecha.slice(5, 7),
         monto,
-        pct:  Math.round(monto / maxVal * 100),
+        pct: Math.round(monto / maxVal * 100),
         alto: Math.round(15 + ((monto - minVal) / rango) * 75)
       }));
   }
@@ -282,7 +310,7 @@ export class IngresosBancariosComponent implements OnInit {
 
   showTooltip(d: any, event: MouseEvent) {
     this.tooltipDia = { fecha: d.fechaFull, monto: d.monto };
-    this.tooltipX   = (event.target as HTMLElement).getBoundingClientRect().left;
+    this.tooltipX = (event.target as HTMLElement).getBoundingClientRect().left;
   }
   hideTooltip() { this.tooltipDia = null; }
 
@@ -295,19 +323,19 @@ export class IngresosBancariosComponent implements OnInit {
   }
   fmtK(n: number) {
     if (n >= 1_000_000) return 'S/ ' + (n / 1_000_000).toFixed(1) + 'M';
-    if (n >= 1_000)     return 'S/ ' + (n / 1_000).toFixed(0)     + 'K';
+    if (n >= 1_000) return 'S/ ' + (n / 1_000).toFixed(0) + 'K';
     return 'S/ ' + n.toFixed(0);
   }
 
-  get mesLabel()     { return this.mesActivo || '—'; }
-  get pctBar()       { return Math.max(2, this.pctConc); }
+  get mesLabel() { return this.mesActivo || '—'; }
+  get pctBar() { return Math.max(2, this.pctConc); }
   get tieneFiltros() {
-    return this.filtroBanco    !== 'TODOS'
-        || this.filtroSucursal !== 'TODAS'
-        || this.filtroEntidad  !== 'TODAS'
-        || !!this.idPopDesde
-        || !!this.idPopHasta
-        || !!this.fechaDesde
-        || !!this.fechaHasta;
+    return this.filtroBanco !== 'TODOS'
+      || this.filtroSucursal !== 'TODAS'
+      || this.filtroEntidad !== 'TODAS'
+      || !!this.idPopDesde
+      || !!this.idPopHasta
+      || !!this.fechaDesde
+      || !!this.fechaHasta;
   }
 }

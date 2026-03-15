@@ -62,21 +62,18 @@
           </tr>
 
           <!-- ITEM -->
-          <tr *ngIf="esItem(c)" class="ing-row-item" [class.auto]="esAuto(c)">
+          <tr *ngIf="esItem(c)" class="ing-row-item" [class.auto]="esAuto(c) || esProsegurAuto(c)">
             <td class="ing-td-label" [style.paddingLeft.px]="16 + (c.indent || 0) * 10">
               {{ c.nombre }}
-              <span class="ing-badge-auto" *ngIf="esAuto(c)">BD</span>
+              <span class="ing-badge-auto" *ngIf="esAuto(c) || esProsegurAuto(c)">BD</span>
             </td>
             <td class="ing-td-val"
               *ngFor="let col of columnas; trackBy: trackByFecha"
-              (dblclick)="!esAuto(c) && iniciarEdicion(c.id, col.fecha)"
-              [class.editable]="!esAuto(c)"
+              (dblclick)="!esAuto(c) && !esProsegurAuto(c) && iniciarEdicion(c.id, col.fecha)"
+              [class.editable]="!esAuto(c) && !esProsegurAuto(c)"
               [class.vacio]="getValor(c.id, col.fecha) === null"
-              [attr.data-cid]="c.id"
-              [attr.data-fecha]="col.fecha">
-
-              <input *ngIf="esEditando(c.id, col.fecha)"
-                class="ing-input-celda" type="number"
+              [attr.data-cid]="c.id" [attr.data-fecha]="col.fecha">
+              <input *ngIf="esEditando(c.id, col.fecha)" class="ing-input-celda" type="number"
                 [value]="valorEditando"
                 (input)="valorEditando = $any($event.target).value"
                 (keydown.enter)="confirmarEdicion()"
@@ -136,7 +133,8 @@
     <div class="ing-modal-top">
       <div class="ing-field" style="margin-bottom:0">
         <label class="ing-label">Fecha de corte</label>
-        <input class="ing-input" type="date" [(ngModel)]="nuevaFecha" (change)="onFechaChange()" style="max-width:200px" />
+        <input class="ing-input" type="date" [(ngModel)]="nuevaFecha" (change)="onFechaChange()"
+          style="max-width:200px" />
       </div>
       <div class="ing-loading-fecha" *ngIf="cargandoFecha">
         <div class="ing-spinner-sm" style="border-top-color:#2563eb;border-color:#e2e8f0"></div>
@@ -145,16 +143,17 @@
       <div class="ing-aviso-existente" *ngIf="fechaExistente && !cargandoFecha" style="margin-bottom:0">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
         </svg>
         Esta fecha ya tiene datos. Edita y guarda para actualizar.
       </div>
     </div>
 
-    <!-- Contenido: secciones en 1 col, campos en 2 cols -->
     <ng-container *ngIf="nuevaFecha && !cargandoFecha">
 
-      <!-- BANCOS -->
+      <!-- ── SALDOS BANCOS ──────────────────────────────── -->
       <div class="ing-panel-seccion">Saldos Bancos</div>
       <div class="ing-fields-grid">
         <div class="ing-field-item" *ngFor="let c of conceptosBancoAuto">
@@ -167,28 +166,119 @@
           </div>
         </div>
       </div>
-      <button class="ing-btn-calcular" style="margin-bottom:24px" (click)="calcularBancos()" [disabled]="!nuevaFecha || calculandoBancos">
+      <button class="ing-btn-calcular" style="margin-bottom:24px"
+        (click)="calcularBancos()" [disabled]="!nuevaFecha || calculandoBancos">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="23 4 23 10 17 10"/>
-          <polyline points="1 20 1 14 7 14"/>
-          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          <polyline points="23 4 23 10 17 10" />
+          <polyline points="1 20 1 14 7 14" />
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
         </svg>
         Recalcular desde BD
       </button>
 
-      <!-- MANUALES por sección, campos en 2 cols -->
-      <ng-container *ngFor="let grupo of manualesAgrupados">
-        <div class="ing-panel-seccion">{{ grupo[0] }}</div>
-        <div class="ing-fields-grid" style="margin-bottom:24px">
-          <div class="ing-field-item" *ngFor="let c of grupo[1]">
-            <label class="ing-manual-label">{{ c.nombre }}</label>
-            <input class="ing-input-manual" type="text"
-              [value]="fmtPanel(c.id)"
-              (input)="setValorManualPanel(c.id, $any($event.target).value)"
-              placeholder="0.00" />
+      <!-- ── PROSEGUR — calculado automáticamente ──────── -->
+      <div class="ing-panel-seccion">PROSEGUR</div>
+      <div class="ing-fields-grid" style="margin-bottom:8px">
+
+        <div class="ing-field-item">
+          <label class="ing-manual-label">
+            PUNO <span class="ing-badge-auto" style="margin-left:6px">BD</span>
+          </label>
+          <div class="ing-prosegur-box" [class.cargando]="calculandoProsegur">
+            <div class="ing-spinner-sm" *ngIf="calculandoProsegur"></div>
+            <input *ngIf="!calculandoProsegur" class="ing-input-manual" type="text"
+              [value]="fmtPanel(13)"
+              (input)="setValorManualPanel(13, $any($event.target).value)"
+              (focus)="onFocusManualPanel(13, $event)"
+              (blur)="onBlurManualPanel(13, $event)"
+              placeholder="—" />
           </div>
         </div>
+
+        <div class="ing-field-item">
+          <label class="ing-manual-label">
+            HUARAZ <span class="ing-badge-auto" style="margin-left:6px">BD</span>
+          </label>
+          <div class="ing-prosegur-box" [class.cargando]="calculandoProsegur">
+            <div class="ing-spinner-sm" *ngIf="calculandoProsegur"></div>
+            <input *ngIf="!calculandoProsegur" class="ing-input-manual" type="text"
+              [value]="fmtPanel(14)"
+              (input)="setValorManualPanel(14, $any($event.target).value)"
+              (focus)="onFocusManualPanel(14, $event)"
+              (blur)="onBlurManualPanel(14, $event)"
+              placeholder="—" />
+          </div>
+        </div>
+
+        <div class="ing-field-item">
+          <label class="ing-manual-label">
+            TRUJILLO <span class="ing-badge-auto" style="margin-left:6px">BD</span>
+          </label>
+          <div class="ing-prosegur-box" [class.cargando]="calculandoProsegur">
+            <div class="ing-spinner-sm" *ngIf="calculandoProsegur"></div>
+            <input *ngIf="!calculandoProsegur" class="ing-input-manual" type="text"
+              [value]="fmtPanel(15)"
+              (input)="setValorManualPanel(15, $any($event.target).value)"
+              (focus)="onFocusManualPanel(15, $event)"
+              (blur)="onBlurManualPanel(15, $event)"
+              placeholder="—" />
+          </div>
+        </div>
+
+        <div class="ing-field-item">
+          <label class="ing-manual-label">
+            INGRESOS EN EL DÍA <span class="ing-badge-auto" style="margin-left:6px">BD</span>
+          </label>
+          <div class="ing-prosegur-box" [class.cargando]="calculandoProsegur">
+            <div class="ing-spinner-sm" *ngIf="calculandoProsegur"></div>
+            <input *ngIf="!calculandoProsegur" class="ing-input-manual" type="text"
+              [value]="fmtPanel(16)"
+              (input)="setValorManualPanel(16, $any($event.target).value)"
+              (focus)="onFocusManualPanel(16, $event)"
+              (blur)="onBlurManualPanel(16, $event)"
+              placeholder="—" />
+          </div>
+          <!-- Breakdown sedes -->
+          <div class="ing-prosegur-breakdown"
+            *ngIf="!calculandoProsegur && prosegurDetalle.ingresos_dia !== null">
+            <span>Puno M: {{ fmt(prosegurDetalle.puno) }}</span>
+            <span>·</span>
+            <span>Lima: {{ fmt(prosegurDetalle.huaraz) }}</span>
+            <span>·</span>
+            <span>Chimbote: {{ fmt(prosegurDetalle.trujillo) }}</span>
+          </div>
+        </div>
+
+      </div>
+      <button class="ing-btn-calcular" style="margin-bottom:24px"
+        (click)="calcularProsegur()" [disabled]="!nuevaFecha || calculandoProsegur">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10" />
+          <polyline points="1 20 1 14 7 14" />
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+        </svg>
+        Recalcular PROSEGUR
+      </button>
+
+      <!-- ── RESTO DE SECCIONES MANUALES ───────────────── -->
+      <!-- Excluye PROSEGUR porque ya está arriba -->
+      <ng-container *ngFor="let grupo of manualesAgrupados">
+        <ng-container *ngIf="grupo[0] !== 'PROSEGUR'">
+          <div class="ing-panel-seccion">{{ grupo[0] }}</div>
+          <div class="ing-fields-grid" style="margin-bottom:24px">
+            <div class="ing-field-item" *ngFor="let c of grupo[1]">
+              <label class="ing-manual-label">{{ c.nombre }}</label>
+              <input class="ing-input-manual" type="text"
+                [value]="fmtPanel(c.id)"
+                (input)="setValorManualPanel(c.id, $any($event.target).value)"
+                (focus)="onFocusManualPanel(c.id, $event)"
+                (blur)="onBlurManualPanel(c.id, $event)"
+                placeholder="0.00" />
+            </div>
+          </div>
+        </ng-container>
       </ng-container>
 
     </ng-container>
