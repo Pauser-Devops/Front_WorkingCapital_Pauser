@@ -66,10 +66,16 @@
           <!-- Mes -->
           <td class="rp-td-mes">{{ nombreMes(f.mes) }}</td>
 
-          <!-- Ventas - editable -->
+          <!-- Ventas - editable con formato miles/decimales -->
           <td class="rp-td rp-td-editable">
-            <input class="rp-input" type="number" placeholder="—" [value]="f.ventas ?? ''"
-              (change)="onVentasChange(f, $any($event.target).value)" (focus)="$any($event.target).select()" />
+            <input
+              class="rp-input"
+              type="text"
+              inputmode="decimal"
+              placeholder="—"
+              [value]="fmtInput(f.ventas)"
+              (focus)="onVentasFocus($event)"
+              (blur)="onVentasBlur(f, $event)" />
           </td>
 
           <!-- % fijo -->
@@ -80,10 +86,16 @@
             <span [class.rp-vacio]="f.renta == null">{{ fmt(f.renta) }}</span>
           </td>
 
-          <!-- Créd Anual - editable solo primer mes con crédito, resto encadenado -->
+          <!-- Créd Anual - editable con formato miles/decimales -->
           <td class="rp-td" [class.rp-td-editable]="f.cred_anual != null || f.mes === 1">
-            <input class="rp-input rp-input-cred" type="number" placeholder="—" [value]="f.cred_anual ?? ''"
-              (change)="onCredChange(f, $any($event.target).value)" (focus)="$any($event.target).select()" />
+            <input
+              class="rp-input rp-input-cred"
+              type="text"
+              inputmode="decimal"
+              placeholder="—"
+              [value]="fmtInput(f.cred_anual)"
+              (focus)="onCredFocus($event)"
+              (blur)="onCredBlur(f, $event)" />
           </td>
 
           <!-- Saldo - calculado -->

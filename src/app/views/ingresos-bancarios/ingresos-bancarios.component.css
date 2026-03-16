@@ -124,7 +124,7 @@
 .ib-kpi-icon { font-size: 20px; margin-bottom: 2px; color: #94a3b8; }
 .ib-kpi-icon .material-icons { font-size: 22px; }
 .ib-kpi-label { font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: .4px; }
-.ib-kpi-val   { font-size: 18px; font-weight: 700; }
+.ib-kpi-val   { font-size: 15px; font-weight: 700; }
 .ib-kpi-val.green  { color: #16a34a; }
 .ib-kpi-val.blue   { color: #1e3a5f; }
 .ib-kpi-val.teal   { color: #0f766e; }

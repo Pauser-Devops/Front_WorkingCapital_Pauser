@@ -15,16 +15,30 @@
         <div class="ing-subtitle">Working Capital · Vista por fecha</div>
       </div>
     </div>
-    <button class="ing-btn-nueva" (click)="abrirPanel()">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="12" y1="5" x2="12" y2="19" />
-        <line x1="5" y1="12" x2="19" y2="12" />
-      </svg>
-      Nueva fecha
-    </button>
-  </div>
 
+    <div class="ing-header-actions">
+      <span class="ing-sync-msg" *ngIf="syncMensaje" [class.ok]="syncTipo === 'ok'">
+        {{ syncMensaje }}
+      </span>
+      <button class="ing-btn-calcular" (click)="sincronizarProsegur()" [disabled]="sincronizando">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10" />
+          <polyline points="1 20 1 14 7 14" />
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+        </svg>
+        {{ sincronizando ? 'Sincronizando...' : 'PROSEGUR' }}
+      </button>
+      <button class="ing-btn-nueva" (click)="abrirPanel()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        Nueva fecha
+      </button>
+    </div>
+  </div>
   <!-- LOADING -->
   <div class="ing-loading" *ngIf="cargando">
     <div class="ing-spinner"></div>
@@ -38,9 +52,7 @@
   <div class="ing-nav-bar" *ngIf="!cargando && columnas.length > 0">
     <button class="btn-nav" (click)="irAnterior()" [disabled]="indiceActivo === 0">‹</button>
     <div class="ing-chips">
-      <button
-        *ngFor="let col of columnas; let i = index"
-        class="ing-chip" [class.ing-chip-activo]="i === indiceActivo"
+      <button *ngFor="let col of columnas; let i = index" class="ing-chip" [class.ing-chip-activo]="i === indiceActivo"
         (click)="irAFecha(i)">
         {{ col.label }}
       </button>
@@ -86,13 +98,11 @@
             <td class="ing-td-val"
               (dblclick)="!esAuto(c) && !esProsegurAuto(c) && iniciarEdicion(c.id, colActiva.fecha)"
               [class.editable]="!esAuto(c) && !esProsegurAuto(c)"
-              [class.vacio]="getValor(c.id, colActiva.fecha) === null"
-              [attr.data-cid]="c.id" [attr.data-fecha]="colActiva.fecha">
+              [class.vacio]="getValor(c.id, colActiva.fecha) === null" [attr.data-cid]="c.id"
+              [attr.data-fecha]="colActiva.fecha">
               <input *ngIf="esEditando(c.id, colActiva.fecha)" class="ing-input-celda" type="number"
-                [value]="valorEditando"
-                (input)="valorEditando = $any($event.target).value"
-                (keydown.enter)="confirmarEdicion()"
-                (keydown.escape)="cancelarEdicion()" />
+                [value]="valorEditando" (input)="valorEditando = $any($event.target).value"
+                (keydown.enter)="confirmarEdicion()" (keydown.escape)="cancelarEdicion()" />
               <span *ngIf="!esEditando(c.id, colActiva.fecha)">
                 {{ fmt(getValor(c.id, colActiva.fecha)) }}
               </span>
@@ -212,8 +222,8 @@
           <div class="ing-prosegur-box" [class.cargando]="calculandoProsegur">
             <div class="ing-spinner-sm" *ngIf="calculandoProsegur"></div>
             <input *ngIf="!calculandoProsegur" class="ing-input-manual" type="text" [value]="fmtPanel(13)"
-              (input)="setValorManualPanel(13, $any($event.target).value)"
-              (focus)="onFocusManualPanel(13, $event)" (blur)="onBlurManualPanel(13, $event)" placeholder="—" />
+              (input)="setValorManualPanel(13, $any($event.target).value)" (focus)="onFocusManualPanel(13, $event)"
+              (blur)="onBlurManualPanel(13, $event)" placeholder="—" />
           </div>
         </div>
 
@@ -224,8 +234,8 @@
           <div class="ing-prosegur-box" [class.cargando]="calculandoProsegur">
             <div class="ing-spinner-sm" *ngIf="calculandoProsegur"></div>
             <input *ngIf="!calculandoProsegur" class="ing-input-manual" type="text" [value]="fmtPanel(14)"
-              (input)="setValorManualPanel(14, $any($event.target).value)"
-              (focus)="onFocusManualPanel(14, $event)" (blur)="onBlurManualPanel(14, $event)" placeholder="—" />
+              (input)="setValorManualPanel(14, $any($event.target).value)" (focus)="onFocusManualPanel(14, $event)"
+              (blur)="onBlurManualPanel(14, $event)" placeholder="—" />
           </div>
         </div>
 
@@ -236,8 +246,8 @@
           <div class="ing-prosegur-box" [class.cargando]="calculandoProsegur">
             <div class="ing-spinner-sm" *ngIf="calculandoProsegur"></div>
             <input *ngIf="!calculandoProsegur" class="ing-input-manual" type="text" [value]="fmtPanel(15)"
-              (input)="setValorManualPanel(15, $any($event.target).value)"
-              (focus)="onFocusManualPanel(15, $event)" (blur)="onBlurManualPanel(15, $event)" placeholder="—" />
+              (input)="setValorManualPanel(15, $any($event.target).value)" (focus)="onFocusManualPanel(15, $event)"
+              (blur)="onBlurManualPanel(15, $event)" placeholder="—" />
           </div>
         </div>
 
@@ -248,8 +258,8 @@
           <div class="ing-prosegur-box" [class.cargando]="calculandoProsegur">
             <div class="ing-spinner-sm" *ngIf="calculandoProsegur"></div>
             <input *ngIf="!calculandoProsegur" class="ing-input-manual" type="text" [value]="fmtPanel(16)"
-              (input)="setValorManualPanel(16, $any($event.target).value)"
-              (focus)="onFocusManualPanel(16, $event)" (blur)="onBlurManualPanel(16, $event)" placeholder="—" />
+              (input)="setValorManualPanel(16, $any($event.target).value)" (focus)="onFocusManualPanel(16, $event)"
+              (blur)="onBlurManualPanel(16, $event)" placeholder="—" />
           </div>
           <div class="ing-prosegur-breakdown" *ngIf="!calculandoProsegur && prosegurDetalle.ingresos_dia !== null">
             <span>Puno M: {{ fmt(prosegurDetalle.puno) }}</span>

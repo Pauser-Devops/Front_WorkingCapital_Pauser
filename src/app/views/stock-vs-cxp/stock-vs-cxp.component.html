@@ -19,18 +19,18 @@
     <button class="btn-nav" (click)="irAnterior()" [disabled]="indiceActivo === 0">‹</button>
 
     <div class="chips-fechas">
-      <button
-        *ngFor="let col of columnas; let i = index; trackBy: trackByFecha"
-        class="chip-fecha"
-        [class.chip-activo]="i === indiceActivo"
-        (click)="irAFecha(i)"
-      >
+      <button *ngFor="let col of columnas; let i = index; trackBy: trackByFecha" class="chip-fecha"
+        [class.chip-activo]="i === indiceActivo" (click)="irAFecha(i)">
         {{ col.label }}
       </button>
+
     </div>
 
     <button class="btn-nav" (click)="irSiguiente()" [disabled]="indiceActivo === columnas.length - 1">›</button>
-
+    <button class="btn-export" (click)="exportar()" [disabled]="!columnaActiva">
+      <span class="material-icons">download</span>
+      Exportar
+    </button>
   </div>
 
   <!-- Tabla — una sola fecha visible -->
@@ -78,10 +78,12 @@
           <td class="col-concepto sticky-col">TOTALES</td>
           <td class="num">{{ fmt(getTotal(columnaActiva.fecha, 'stock')) }}</td>
           <td class="num">{{ fmt(getTotal(columnaActiva.fecha, 'porPagar')) }}</td>
-          <td class="num" [ngClass]="colorDif(getTotal(columnaActiva.fecha, 'diferencia'))">{{ fmt(getTotal(columnaActiva.fecha, 'diferencia')) }}</td>
+          <td class="num" [ngClass]="colorDif(getTotal(columnaActiva.fecha, 'diferencia'))">{{
+            fmt(getTotal(columnaActiva.fecha, 'diferencia')) }}</td>
           <td class="num">—</td>
           <td class="num">—</td>
-          <td class="num" [ngClass]="colorDif(getTotal(columnaActiva.fecha, 'exceso'))">{{ fmt(getTotal(columnaActiva.fecha, 'exceso')) }}</td>
+          <td class="num" [ngClass]="colorDif(getTotal(columnaActiva.fecha, 'exceso'))">{{
+            fmt(getTotal(columnaActiva.fecha, 'exceso')) }}</td>
           <td class="num">{{ fmt(getTotal(columnaActiva.fecha, 'loQueDeberiamostener')) }}</td>
         </tr>
       </tbody>
@@ -124,20 +126,12 @@
               <tr *ngFor="let cfg of configFilas">
                 <td class="prov-name">{{ cfg.proveedor }}</td>
                 <td>
-                  <input
-                    type="text" inputmode="numeric" class="input-num"
-                    [value]="fmtInput(cfg.ventasMensuales)"
-                    (input)="onInputVentas(cfg, $event)"
-                    placeholder="0"
-                  />
+                  <input type="text" inputmode="numeric" class="input-num" [value]="fmtInput(cfg.ventasMensuales)"
+                    (input)="onInputVentas(cfg, $event)" placeholder="0" />
                 </td>
                 <td>
-                  <input
-                    type="number" class="input-num small"
-                    [(ngModel)]="cfg.diasObjetivo"
-                    (ngModelChange)="recalcularPreview()"
-                    min="1" placeholder="0"
-                  />
+                  <input type="number" class="input-num small" [(ngModel)]="cfg.diasObjetivo"
+                    (ngModelChange)="recalcularPreview()" min="1" placeholder="0" />
                 </td>
                 <td class="calc-val">
                   {{ cfg.ventasMensuales > 0 ? fmt(cfg.ventasMensuales / diasDelMes) : '—' }}
@@ -184,8 +178,8 @@
     <div class="modal-footer">
       <button class="btn-cancelar" (click)="cerrarModal()">Cancelar</button>
       <button class="btn-guardar"
-              [disabled]="!nuevaFecha || cargandoFecha || guardandoFecha || previewDatos.length === 0"
-              (click)="guardarFecha()">
+        [disabled]="!nuevaFecha || cargandoFecha || guardandoFecha || previewDatos.length === 0"
+        (click)="guardarFecha()">
         {{ guardandoFecha ? 'Guardando...' : 'Guardar fecha' }}
       </button>
     </div>
@@ -214,12 +208,8 @@
           <tr *ngFor="let cfg of configExistente">
             <td class="prov-name">{{ cfg.proveedor }}</td>
             <td>
-              <input
-                type="text" inputmode="numeric" class="input-num"
-                [value]="fmtInput(cfg.ventasMensuales)"
-                (input)="onInputVentasExistente(cfg, $event)"
-                placeholder="0"
-              />
+              <input type="text" inputmode="numeric" class="input-num" [value]="fmtInput(cfg.ventasMensuales)"
+                (input)="onInputVentasExistente(cfg, $event)" placeholder="0" />
             </td>
             <td>
               <input type="number" class="input-num small" [(ngModel)]="cfg.diasObjetivo" min="1" />

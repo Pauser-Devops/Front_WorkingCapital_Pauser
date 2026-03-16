@@ -66,6 +66,15 @@ export class SidebarComponent {
       ]
     },
     {
+      label: 'Revenue',
+      icono: 'settings',
+      abierto: true,
+      modulos: [
+        { id: 'simuladorTS', label: 'Simulador' ,roles: ['admin', 'gerencia']},
+       
+      ]
+    },
+    {
       label: 'Configuración ',
       icono: 'settings',
       abierto: true,

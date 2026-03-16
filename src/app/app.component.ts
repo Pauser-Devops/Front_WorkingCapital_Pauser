@@ -21,6 +21,7 @@ import { MaesComponent } from './views/powerbi/maes.component';
 import { PGAComponent } from './views/powerbi/pga.component';
 import { ComparadorBancarioComponent } from './views/comparador-sede/comparador-bancario.component';
 import { UsuariosComponent } from './views/configuracion/usuarios/usuarios.component';
+import { SimuladorTradeSpendComponent } from './views/trade-spend/simulador-trade-spend/simulador-trade-spend.component';
 
 const VISTA_NOMBRES: Record<string, string> = {
   semanal: 'WK Semanal 2026',
@@ -39,6 +40,7 @@ const VISTA_NOMBRES: Record<string, string> = {
   pga: 'PGA Finanzas',
   compBancario: 'Comparador Bancario por Sede',
   usuarios: 'Usuarios',
+  simuladorTS: 'Simulador Trade Spend'
 };
 
 @Component({
@@ -66,6 +68,7 @@ const VISTA_NOMBRES: Record<string, string> = {
     MaesComponent,
     PGAComponent,
     ComparadorBancarioComponent, UsuariosComponent,
+    SimuladorTradeSpendComponent
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']

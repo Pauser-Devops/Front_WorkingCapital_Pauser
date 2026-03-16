@@ -116,6 +116,7 @@ export class ComparadorBancarioComponent implements OnInit {
 
     if (this.filtroSucursal !== 'TODAS')
       data = data.filter(f => f.sucursal === this.filtroSucursal);
+
     if (this.filtroEntidad !== 'TODAS')
       data = data.filter(f => f.entidad === this.filtroEntidad);
     if (this.filtroBanco !== 'TODOS')
@@ -123,10 +124,12 @@ export class ComparadorBancarioComponent implements OnInit {
     if (this.filtroEstado !== 'todos')
       data = data.filter(f => f.estado === this.filtroEstado);
     if (this.busqueda.trim()) {
-      const q = this.busqueda.toLowerCase();
-      data = data.filter(f =>
-        f.id_pop.includes(q) || f.sucursal.toLowerCase().includes(q) ||
-        f.entidad.toLowerCase().includes(q) || f.banco_ib.toLowerCase().includes(q)
+      const q = this.busqueda.replace(/\s+/g, '').toLowerCase();
+      data = data.filter(r =>
+        Object.values(r).some(v =>
+          v !== null && v !== undefined &&
+          String(v).replace(/\s+/g, '').toLowerCase().includes(q)
+        )
       );
     }
 
@@ -248,7 +251,7 @@ export class ComparadorBancarioComponent implements OnInit {
     if (this.filtroEstado === 'no_encontrado') return 'No encontrados';
     return 'Coincidencia exacta';
   }
- 
+
   get colorBarra(): string {
     if (this.filtroEstado === 'dif_monto') return '#f59e0b';
     if (this.filtroEstado === 'no_encontrado') return '#dc2626';

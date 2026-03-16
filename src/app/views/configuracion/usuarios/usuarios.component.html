@@ -3,17 +3,14 @@
   <!-- HEADER -->
   <div class="usr-header">
     <div class="usr-title-wrap">
-      <div class="usr-icon">
-        <span class="material-icons">manage_accounts</span>
-      </div>
+      <div class="usr-icon"><span class="material-icons">manage_accounts</span></div>
       <div>
         <div class="usr-title">Gestión de Usuarios</div>
         <div class="usr-sub">Administra accesos y roles del sistema</div>
       </div>
     </div>
     <button class="btn-nuevo" (click)="abrirCrear()">
-      <span class="material-icons">person_add</span>
-      Nuevo usuario
+      <span class="material-icons">person_add</span>Nuevo usuario
     </button>
   </div>
 
@@ -21,11 +18,11 @@
   <div class="usr-alert exito" *ngIf="exito">
     <span class="material-icons">check_circle</span>{{ exito }}
   </div>
-  <div class="usr-alert error" *ngIf="error && !modalAbierto">
+  <div class="usr-alert error" *ngIf="error && !modalAbierto && !confirmVisible">
     <span class="material-icons">error_outline</span>{{ error }}
   </div>
 
-  <!-- BANNER USUARIO LOGUEADO -->
+  <!-- BANNER -->
   <div class="usr-banner">
     <div class="usr-banner-avatar">{{ auth.usuarioActual?.nombre?.charAt(0) }}</div>
     <div class="usr-banner-info">
@@ -35,12 +32,12 @@
     <span class="rol-badge" [class]="'rol-' + auth.rolActual">{{ rolLabel(auth.rolActual) }}</span>
     <div class="usr-banner-sep"></div>
     <div class="usr-banner-stat">
-      <div class="usr-banner-stat-val">{{ usuarios.length }}</div>
+      <div class="usr-banner-stat-val">{{ totalUsuarios }}</div>
       <div class="usr-banner-stat-label">Usuarios</div>
     </div>
     <div class="usr-banner-sep"></div>
     <div class="usr-banner-stat">
-      <div class="usr-banner-stat-val">{{ usuarios.length }}</div>
+      <div class="usr-banner-stat-val">{{ totalActivos }}</div>
       <div class="usr-banner-stat-label">Activos</div>
     </div>
   </div>
@@ -50,12 +47,11 @@
     <div class="usr-card-title">
       <span class="material-icons">table_chart</span>
       Usuarios del sistema
-      <span class="usr-card-count">{{ usuarios.length }} usuarios</span>
+      <span class="usr-card-count">{{ totalUsuarios }} usuarios</span>
     </div>
 
     <div class="usr-loading" *ngIf="cargando">
-      <div class="usr-spinner"></div>
-      Cargando usuarios...
+      <div class="usr-spinner"></div>Cargando usuarios...
     </div>
 
     <div class="usr-tabla-wrap" *ngIf="!cargando">
@@ -71,17 +67,15 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let u of usuarios">
+          <tr *ngFor="let u of usuarios" [class.usr-row-inactivo]="!u.activo">
             <td>
               <div class="usr-nombre-wrap">
-                <div class="usr-avatar">{{ u.nombre.charAt(0) }}</div>
+                <div class="usr-avatar" [class.usr-avatar-inactivo]="!u.activo">{{ u.nombre.charAt(0) }}</div>
                 <span class="usr-nombre-text">{{ u.nombre }}</span>
               </div>
             </td>
             <td class="usr-email">{{ u.email }}</td>
-            <td>
-              <span class="rol-badge" [class]="'rol-' + u.rol">{{ rolLabel(u.rol) }}</span>
-            </td>
+            <td><span class="rol-badge" [class]="'rol-' + u.rol">{{ rolLabel(u.rol) }}</span></td>
             <td>
               <span class="estado-badge" [class]="u.activo ? 'estado-activo' : 'estado-inactivo'">
                 <span class="material-icons">{{ u.activo ? 'check_circle' : 'cancel' }}</span>
@@ -95,15 +89,25 @@
             </td>
             <td>
               <div class="usr-acciones">
-                <button class="btn-accion btn-editar" (click)="abrirEditar(u)">
-                  <span class="material-icons">edit</span>Editar
-                </button>
-                <button class="btn-accion btn-reset" (click)="resetPassword(u)">
-                  <span class="material-icons">lock_reset</span>Reset
-                </button>
-                <button class="btn-accion btn-desactivar" (click)="desactivar(u)" *ngIf="u.activo">
-                  <span class="material-icons">person_off</span>Desactivar
-                </button>
+                <!-- Activo: editar + reset + desactivar -->
+                <ng-container *ngIf="u.activo">
+                  <button class="btn-accion btn-editar" (click)="abrirEditar(u)">
+                    <span class="material-icons">edit</span>Editar
+                  </button>
+                  <button class="btn-accion btn-reset" (click)="resetPassword(u)">
+                    <span class="material-icons">lock_reset</span>Reset
+                  </button>
+                  <button class="btn-accion btn-desactivar" (click)="desactivar(u)">
+                    <span class="material-icons">person_off</span>Desactivar
+                  </button>
+                </ng-container>
+                <!-- Inactivo: solo reactivar -->
+                <ng-container *ngIf="!u.activo">
+                  <span class="usr-inactivo-label">Sin acceso</span>
+                  <button class="btn-accion btn-reactivar" (click)="reactivar(u)">
+                    <span class="material-icons">person_add</span>Reactivar
+                  </button>
+                </ng-container>
               </div>
             </td>
           </tr>
@@ -113,9 +117,12 @@
   </div>
 
   <!-- OVERLAY -->
-  <div class="usr-overlay" *ngIf="modalAbierto" (click)="cerrarModal()"></div>
+  <div class="usr-overlay"
+       *ngIf="modalAbierto || confirmVisible"
+       (click)="modalAbierto ? cerrarModal() : cerrarConfirm()">
+  </div>
 
-  <!-- MODAL -->
+  <!-- MODAL CREAR/EDITAR -->
   <div class="usr-modal" *ngIf="modalAbierto">
     <div class="modal-head">
       <h3>{{ modoEdicion ? 'Editar usuario' : 'Nuevo usuario' }}</h3>
@@ -123,41 +130,52 @@
         <span class="material-icons">close</span>
       </button>
     </div>
-
     <div class="modal-body">
       <div class="usr-alert error" *ngIf="error">
         <span class="material-icons">error_outline</span>{{ error }}
       </div>
-
       <div class="form-field">
         <label>Nombre completo</label>
-        <input [(ngModel)]="form.nombre" 
-       (ngModelChange)="generarCredenciales()" 
-       placeholder="Ej: Ana García" />
+        <input [(ngModel)]="form.nombre" (ngModelChange)="generarCredenciales()" placeholder="Ej: Ana García" />
       </div>
-
       <div class="form-field">
         <label>Email</label>
         <input [(ngModel)]="form.email" type="email" placeholder="correo@empresa.com" />
       </div>
-
       <div class="form-field">
         <label>Rol</label>
         <select [(ngModel)]="form.rol">
           <option *ngFor="let r of roles" [value]="r.value">{{ r.label }}</option>
         </select>
       </div>
-
       <div class="form-field" *ngIf="!modoEdicion">
         <label>Contraseña inicial</label>
-        <input [(ngModel)]="form.password" type="text" placeholder="Ej: nombre2026!" />
+        <input [(ngModel)]="form.password" type="text" placeholder="Se genera automáticamente" />
       </div>
     </div>
-
     <div class="modal-foot">
       <button class="btn-cancelar" (click)="cerrarModal()">Cancelar</button>
-      <button class="btn-guardar" (click)="guardar()">
-        {{ modoEdicion ? 'Guardar cambios' : 'Crear usuario' }}
+      <button class="btn-guardar" (click)="guardar()">{{ modoEdicion ? 'Guardar cambios' : 'Crear usuario' }}</button>
+    </div>
+  </div>
+
+  <!-- MODAL CONFIRMACIÓN -->
+  <div class="confirm-modal" *ngIf="confirmVisible">
+    <div class="confirm-icon" [class]="'confirm-icon-' + confirmTipo">
+      <span class="material-icons">
+        {{ confirmTipo === 'danger' ? 'person_off' : confirmTipo === 'success' ? 'how_to_reg' : 'lock_reset' }}
+      </span>
+    </div>
+    <div class="confirm-body">
+      <h3 class="confirm-titulo">{{ confirmMensaje }}</h3>
+      <p class="confirm-subtexto">{{ confirmSubtexto }}</p>
+    </div>
+    <div class="confirm-foot">
+      <button class="btn-cancelar" (click)="cerrarConfirm()">Cancelar</button>
+      <button class="btn-confirmar"
+              [class]="'btn-confirmar-' + confirmTipo"
+              (click)="ejecutarConfirm()">
+        {{ confirmTipo === 'danger' ? 'Sí, desactivar' : confirmTipo === 'success' ? 'Sí, reactivar' : 'Sí, resetear' }}
       </button>
     </div>
   </div>

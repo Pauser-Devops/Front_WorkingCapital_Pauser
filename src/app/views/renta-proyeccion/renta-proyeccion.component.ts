@@ -43,7 +43,6 @@ export class RentaProyeccionComponent implements OnInit {
       next: r => {
         this.cargando = false;
         if (r.estado === 'OK') {
-          // Construir 12 filas — con datos si existen, vacías si no
           this.filas = Array.from({ length: 12 }, (_, i) => {
             const mes = i + 1;
             return r.meses[mes] ?? {
@@ -63,15 +62,13 @@ export class RentaProyeccionComponent implements OnInit {
     this.cargarDatos();
   }
 
-  // Recalcula renta, cred_anual encadenado y saldo para todas las filas
+  // Recalcula renta y saldo para todas las filas
   recalcularSaldos() {
     for (const fila of this.filas) {
-      // Renta = Ventas × 1.5%
       fila.renta = fila.ventas != null
         ? Math.round(fila.ventas * fila.porcentaje)
         : null;
 
-      // Saldo = Renta + Cred Anual (solo si se ingresó manualmente)
       if (fila.renta != null) {
         fila.saldo = fila.renta + (fila.cred_anual ?? 0);
       } else {
@@ -80,19 +77,58 @@ export class RentaProyeccionComponent implements OnInit {
     }
   }
 
-  onVentasChange(fila: MesData, val: string) {
-    fila.ventas = val === '' ? null : parseFloat(val.replace(/\./g, '').replace(',', '.'));
+  // ── Helpers de formateo para inputs de tabla ──────────────────────────────
+
+  /** Convierte string de input (puede tener comas de miles) a número */
+  private parseInput(val: string): number | null {
+    if (val === '' || val == null) return null;
+    // Elimina comas de miles, acepta punto decimal
+    const clean = val.replace(/,/g, '');
+    const n = parseFloat(clean);
+    return isNaN(n) ? null : n;
+  }
+
+  /** Formatea número: miles con coma, 2 decimales con punto. Ej: 1,234.56 */
+  fmtInput(n: number | null): string {
+    if (n == null) return '';
+    return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  // ── Ventas ────────────────────────────────────────────────────────────────
+
+  onVentasFocus(event: FocusEvent) {
+    const input = event.target as HTMLInputElement;
+    const raw = this.parseInput(input.value);
+    input.value = raw != null ? raw.toString() : '';
+    setTimeout(() => input.select(), 0);
+  }
+
+  onVentasBlur(fila: MesData, event: FocusEvent) {
+    const input = event.target as HTMLInputElement;
+    fila.ventas = this.parseInput(input.value);
     this.recalcularSaldos();
     this.guardarMes(fila);
+    input.value = this.fmtInput(fila.ventas);
   }
-get totalVentas(): number {
-  return this.filas.reduce((s, f) => s + (f.ventas || 0), 0);
-}
-  onCredChange(fila: MesData, val: string) {
-    fila.cred_anual = val === '' ? null : parseFloat(val.replace(/\./g, '').replace(',', '.'));
+
+  // ── Crédito Anual ─────────────────────────────────────────────────────────
+
+  onCredFocus(event: FocusEvent) {
+    const input = event.target as HTMLInputElement;
+    const raw = this.parseInput(input.value);
+    input.value = raw != null ? raw.toString() : '';
+    setTimeout(() => input.select(), 0);
+  }
+
+  onCredBlur(fila: MesData, event: FocusEvent) {
+    const input = event.target as HTMLInputElement;
+    fila.cred_anual = this.parseInput(input.value);
     this.recalcularSaldos();
     this.guardarMes(fila);
+    input.value = this.fmtInput(fila.cred_anual);
   }
+
+  // ── Persistencia ──────────────────────────────────────────────────────────
 
   guardarMes(fila: MesData) {
     this.guardando[fila.mes] = true;
@@ -107,6 +143,12 @@ get totalVentas(): number {
     });
   }
 
+  // ── Totales ───────────────────────────────────────────────────────────────
+
+  get totalVentas(): number {
+    return this.filas.reduce((s, f) => s + (f.ventas || 0), 0);
+  }
+
   get totalRenta(): number {
     return this.filas.reduce((s, f) => s + (f.renta || 0), 0);
   }
@@ -114,6 +156,8 @@ get totalVentas(): number {
   get totalSaldo(): number {
     return this.filas.reduce((s, f) => s + (f.saldo || 0), 0);
   }
+
+  // ── Utilidades ────────────────────────────────────────────────────────────
 
   nombreMes(mes: number): string { return MESES[mes - 1]; }
 
@@ -123,4 +167,38 @@ get totalVentas(): number {
   }
 
   trackByMes(_: number, f: MesData) { return f.mes; }
+
+  // ── Panel de valores manuales ─────────────────────────────────────────────
+
+  valoresManualesPanel: Record<number, number | null> = {};
+  editandoManualId: number | null = null;
+
+  setValorManualPanel(concepto_id: number, val: string) {
+    const clean = val.replace(/,/g, '').replace(/[^0-9.]/g, '');
+    this.valoresManualesPanel[concepto_id] = clean === '' ? null : parseFloat(clean);
+  }
+
+  fmtPanel(concepto_id: number): string {
+    const v = this.valoresManualesPanel[concepto_id];
+    if (v === null || v === undefined || isNaN(v)) return '';
+    if (this.editandoManualId === concepto_id) return v.toString();
+    return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  onFocusManualPanel(concepto_id: number, event: FocusEvent) {
+    this.editandoManualId = concepto_id;
+    const v = this.valoresManualesPanel[concepto_id];
+    const input = event.target as HTMLInputElement;
+    input.value = v !== null && v !== undefined ? v.toString() : '';
+    setTimeout(() => input.select(), 0);
+  }
+
+  onBlurManualPanel(concepto_id: number, event: FocusEvent) {
+    this.editandoManualId = null;
+    const input = event.target as HTMLInputElement;
+    const v = this.valoresManualesPanel[concepto_id];
+    input.value = v !== null && v !== undefined && !isNaN(v)
+      ? v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : '';
+  }
 }

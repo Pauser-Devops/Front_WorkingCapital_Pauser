@@ -308,9 +308,11 @@ export class StockVsCxpComponent implements OnInit, OnDestroy {
 
   trackByFecha(_: number, col: Columna) { return col.fecha; }
   trackByProv(_: number, p: string) { return p; }
+
+  // ── Exportar Excel ─────────────────────────────────────────────────
   exportar() {
-    const col = this.columnas[this.columnas.length - 1];
+    const col = this.columnaActiva;   // ← fecha visible en pantalla
     if (!col) return;
-    window.open(`${API}/exportar/ingresos?fecha_corte=${col.fecha}`, '_blank');
+    window.open(`${API}/exportar/stock-cxp?fecha_corte=${col.fecha}`, '_blank');
   }
 }

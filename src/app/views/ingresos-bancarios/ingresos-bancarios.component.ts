@@ -76,7 +76,7 @@ export class IngresosBancariosComponent implements OnInit {
 
   constructor(private http: HttpClient) {
     this.cargarSync();
-   }
+  }
 
   ngOnInit() {
     this.cargarMeses();
@@ -238,7 +238,8 @@ export class IngresosBancariosComponent implements OnInit {
     this.totalConc = d.filter(r => r.conciliado).length;
     this.totalSinConc = d.filter(r => !r.conciliado).length;
     this.pctConc = this.totalRegistros
-      ? Math.round(this.totalConc / this.totalRegistros * 100) : 0;
+      ? Number((this.totalConc / this.totalRegistros * 100).toFixed(2))
+      : 0;
     this.montoConciliado = d.filter(r => r.conciliado).reduce((s, r) => s + (r.monto || 0), 0);
     this.montoSinConc = this.totalMonto - this.montoConciliado;
   }

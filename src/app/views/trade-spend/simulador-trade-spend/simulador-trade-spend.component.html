@@ -1,0 +1,451 @@
+<div class="ts-container">
+
+  <!-- ── Tabs de navegación ─────────────────────────────────────── -->
+  <div class="nav-tabs">
+    <div class="nav-tab" [class.active]="vistaActual === 'lista'"     (click)="irA('lista')">Simulaciones</div>
+    <div class="nav-tab" [class.active]="vistaActual === 'nueva'"     (click)="irA('nueva')">Nueva simulación</div>
+    <div class="nav-tab" [class.active]="vistaActual === 'resultado'" (click)="irA('resultado')">Resultado</div>
+    <div class="nav-tab" [class.active]="vistaActual === 'resumen'"   (click)="irA('resumen')">Resumen por agencia</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       PANTALLA 1 — Lista de simulaciones
+  ═══════════════════════════════════════════════════════════════ -->
+  <div *ngIf="vistaActual === 'lista'">
+
+    <div class="page-header">
+      <div>
+        <div class="page-title">Simulador Trade Spend</div>
+        <div class="page-sub">Simulaciones guardadas · Enero 2026</div>
+      </div>
+      <div class="header-actions">
+        <select [(ngModel)]="filtroAgencia">
+          <option>Todas las agencias</option>
+          <option *ngFor="let a of agencias">{{ a }}</option>
+        </select>
+        <button class="btn btn-primary" (click)="nuevaSimulacion()">+ Nueva simulación</button>
+      </div>
+    </div>
+
+    <!-- Métricas resumen -->
+    <div class="metrics-row">
+      <div class="metric-card">
+        <div class="metric-label">Total simulaciones</div>
+        <div class="metric-val">{{ simulaciones.length }}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">% TS prom. simulado</div>
+        <div class="metric-val pos">{{ promPctTS | number:'1.1-1' }}%</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">SKUs involucrados</div>
+        <div class="metric-val">23</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">TTV total estimado</div>
+        <div class="metric-val">{{ formatCurrency(totalTTV) }}</div>
+      </div>
+    </div>
+
+    <!-- Tabla de simulaciones -->
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Agencia</th>
+              <th>Fecha</th>
+              <th>Canal</th>
+              <th>TTV estimado</th>
+              <th>% TS</th>
+              <th>Estado</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let sim of simulacionesFiltradas">
+              <td>
+                <span class="fw-500">{{ sim.nombre }}</span>
+                <span class="row-sub">{{ sim.canal }}</span>
+              </td>
+              <td>{{ sim.agencia }}</td>
+              <td>{{ sim.fecha }}</td>
+              <td>{{ sim.canal }}</td>
+              <td>{{ formatCurrency(sim.ttv_estimado ?? 0) }}</td>
+              <td>
+                <span class="ts-pct">{{ sim.pct_ts | number:'1.1-1' }}%</span>
+                <div class="progress-bar">
+                  <div class="progress-fill" [style.width.%]="pctFill(sim.pct_ts ?? 0)"></div>
+                </div>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="badgeEstado(sim.estado)">
+                  {{ labelEstado(sim.estado) }}
+                </span>
+              </td>
+              <td>
+                <button class="btn btn-ghost btn-sm" (click)="verSimulacion(sim)">Ver</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       PANTALLA 2 — Nueva simulación (wizard)
+  ═══════════════════════════════════════════════════════════════ -->
+  <div *ngIf="vistaActual === 'nueva'">
+
+    <div class="page-header">
+      <div>
+        <div class="page-title">Nueva simulación</div>
+        <div class="page-sub">Configura parámetros y acciones comerciales</div>
+      </div>
+      <button class="btn btn-ghost" (click)="irA('lista')">← Volver</button>
+    </div>
+
+    <!-- Barra de pasos -->
+    <div class="step-bar">
+      <div class="step" [class.done]="pasoActual > 1" [class.active]="pasoActual === 1">
+        <div class="step-num">1</div> Contexto
+      </div>
+      <div class="step-line"></div>
+      <div class="step" [class.done]="pasoActual > 2" [class.active]="pasoActual === 2">
+        <div class="step-num">2</div> SKUs y acciones
+      </div>
+      <div class="step-line"></div>
+      <div class="step" [class.done]="pasoActual > 3" [class.active]="pasoActual === 3">
+        <div class="step-num">3</div> Volumen
+      </div>
+      <div class="step-line"></div>
+      <div class="step" [class.active]="pasoActual === 4">
+        <div class="step-num">4</div> Resultado
+      </div>
+    </div>
+
+    <!-- Paso 1: Contexto -->
+    <div class="card mb-1">
+      <div class="section-title">Contexto de la simulación</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nombre de la simulación</label>
+          <input type="text" [(ngModel)]="formSimulacion.nombre" placeholder="Ej: Enero CHM – Pepsi + CC" />
+        </div>
+        <div class="form-group">
+          <label>Agencia</label>
+          <select [(ngModel)]="formSimulacion.agencia">
+            <option *ngFor="let a of agencias">{{ a }}</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row-3">
+        <div class="form-group">
+          <label>Mes</label>
+          <select [(ngModel)]="formSimulacion.mes">
+            <option *ngFor="let m of meses">{{ m }}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Canal</label>
+          <select [(ngModel)]="formSimulacion.canal">
+            <option *ngFor="let c of canales">{{ c }}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Negocio / categoría</label>
+          <select [(ngModel)]="formSimulacion.negocio">
+            <option *ngFor="let n of negocios">{{ n }}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paso 2: SKUs y acciones -->
+    <div class="card mb-1">
+      <div class="section-title">SKUs y acciones comerciales</div>
+      <div class="alert alert-info">
+        Las acciones disponibles provienen de la Política Comercial vigente.
+        Puedes ajustar el rango y tipo de acción por SKU.
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Negocio</th>
+              <th>Precio base</th>
+              <th>Rango de acción</th>
+              <th>Acción</th>
+              <th>Precio final</th>
+              <th>MG %</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let sku of skusSimulados">
+              <td>
+                <span class="fw-500">{{ sku.nombre }}</span>
+                <span class="row-sub">{{ sku.und_pqt }} und/pqt · BA0{{ sku.cod_sku }}</span>
+              </td>
+              <td>{{ sku.negocio }}</td>
+              <td>S/ {{ sku.precio_base | number:'1.2-2' }}</td>
+              <td>
+                <select [(ngModel)]="sku.rango_seleccionado" class="select-sm">
+                  <option>{{ sku.rango_seleccionado }}</option>
+                </select>
+              </td>
+              <td>
+                <span class="badge"
+                  [class.badge-boni]="sku.tipo_accion === 'Boni'"
+                  [class.badge-dscto]="sku.tipo_accion === 'Descuento'"
+                  [class.badge-sin]="sku.tipo_accion === 'Sin Acción'">
+                  {{ sku.accion }}
+                </span>
+              </td>
+              <td><strong>S/ {{ sku.precio_final | number:'1.2-2' }}</strong></td>
+              <td>{{ sku.mg_pct | number:'1.1-1' }}%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card-footer-row">
+        <button class="btn btn-ghost btn-sm">+ Agregar SKU</button>
+        <div class="tag-row">
+          <span class="tag">{{ skusSimulados.length }} SKUs activos</span>
+          <span class="tag">{{ cantBonificaciones }} bonificaciones</span>
+          <span class="tag">{{ cantDescuentos }} descuentos</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn btn-ghost" (click)="guardarBorrador()">Guardar borrador</button>
+      <button class="btn btn-primary" (click)="calcularResultado()">Calcular resultado →</button>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       PANTALLA 3 — Resultado de la simulación
+  ═══════════════════════════════════════════════════════════════ -->
+  <div *ngIf="vistaActual === 'resultado' && simulacionActiva">
+
+    <div class="page-header">
+      <div>
+        <div class="page-title">Resultado simulación</div>
+        <div class="page-sub">
+          {{ simulacionActiva.nombre }} · {{ simulacionActiva.agencia }} · Canal {{ simulacionActiva.canal }}
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-ghost" (click)="irA('nueva')">← Editar</button>
+        <button class="btn btn-primary" (click)="aprobarSimulacion()">Aprobar y guardar</button>
+      </div>
+    </div>
+
+    <!-- Métricas -->
+    <div class="metrics-row">
+      <div class="metric-card">
+        <div class="metric-label">TTV total estimado</div>
+        <div class="metric-val">{{ formatCurrency(simulacionActiva.ttv_estimado ?? 0) }}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Costo trade spend</div>
+        <div class="metric-val neg">{{ formatCurrency(simulacionActiva.costo_ts ?? 0) }}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">% TS sobre TTV</div>
+        <div class="metric-val pos">{{ simulacionActiva.pct_ts | number:'1.1-1' }}%</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">GAP vs objetivo</div>
+        <div class="metric-val" [class.pos]="(simulacionActiva.gap ?? 0) >= 0" [class.neg]="(simulacionActiva.gap ?? 0) < 0">
+          {{ labelGap(simulacionActiva.gap ?? 0) }}
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2 mb-1">
+
+      <!-- Desglose por SKU -->
+      <div class="card">
+        <div class="section-title">Desglose por SKU</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>SKU</th>
+                <th>Pqts est.</th>
+                <th>TTV</th>
+                <th>Costo TS</th>
+                <th>% TS</th>
+                <th>GAP</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let sku of skusSimulados">
+                <td>{{ sku.nombre }}</td>
+                <td>{{ sku.pqts_estimados | number }}</td>
+                <td>S/ {{ sku.ttv | number }}</td>
+                <td>S/ {{ sku.costo_ts | number }}</td>
+                <td>{{ sku.pct_ts | number:'1.1-1' }}%</td>
+                <td>
+                  <span class="badge" [ngClass]="badgeGap(sku.gap)">{{ labelGap(sku.gap) }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Resumen financiero -->
+      <div class="card">
+        <div class="section-title">Resumen financiero</div>
+        <div class="result-block">
+          <div class="result-row">
+            <span class="result-key">TTV sin acción (base)</span>
+            <span class="result-val">{{ formatCurrency(ttvBase) }}</span>
+          </div>
+          <div class="result-row">
+            <span class="result-key">Bonificaciones en especie</span>
+            <span class="result-val neg">– {{ formatCurrency(bonificaciones) }}</span>
+          </div>
+          <div class="result-row">
+            <span class="result-key">Descuentos directos</span>
+            <span class="result-val neg">– {{ formatCurrency(descuentos) }}</span>
+          </div>
+          <div class="result-row total-row">
+            <span class="result-key fw-500">TTV neto estimado</span>
+            <span class="result-val highlight">{{ formatCurrency(ttvNeto) }}</span>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="section-title">% TS por canal</div>
+        <div class="canal-list">
+          <div class="canal-item" *ngFor="let item of [
+            {label: 'OFF + TELSELL',       pct: 8.47},
+            {label: 'MAYO + Sub Dist.',    pct: 9.23},
+            {label: 'TT Plaza',            pct: 0}
+          ]">
+            <div class="canal-header">
+              <span class="canal-label">{{ item.label }}</span>
+              <span class="canal-pct">{{ item.pct > 0 ? (item.pct | number:'1.2-2') + '%' : '—' }}</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width.%]="pctFill(item.pct)"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Comparativa vs histórico Chess -->
+    <div class="card">
+      <div class="section-title">Comparativa: simulado vs. histórico (Chess base)</div>
+      <div class="alert alert-warn" *ngIf="skusConProblema.length > 0">
+        <strong>{{ skusConProblema[0].nombre }}</strong>
+        <ng-container *ngIf="skusConProblema.length > 1">
+          y {{ skusConProblema.length - 1 }} SKU(s) más
+        </ng-container>
+        superan el % TS histórico de su rango. Revisa el volumen estimado.
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>TTV histórico</th>
+              <th>TTV simulado</th>
+              <th>Var. %</th>
+              <th>% TS histórico</th>
+              <th>% TS simulado</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let sku of skusSimulados">
+              <td>{{ sku.nombre }}</td>
+              <td>S/ {{ (sku.ttv * 0.97) | number:'1.0-0' }}</td>
+              <td>S/ {{ sku.ttv | number:'1.0-0' }}</td>
+              <td [class.text-pos]="sku.gap >= 0" [class.text-neg]="sku.gap < 0">
+                {{ sku.gap >= 0 ? '+' : '' }}{{ (sku.gap / (sku.ttv || 1) * 100) | number:'1.1-1' }}%
+              </td>
+              <td>{{ (sku.pct_ts - 1.2) | number:'1.1-1' }}%</td>
+              <td>{{ sku.pct_ts | number:'1.1-1' }}%</td>
+              <td>
+                <span class="badge"
+                  [class.badge-pos]="sku.pct_ts <= 10"
+                  [class.badge-neg]="sku.pct_ts > 10">
+                  {{ sku.pct_ts <= 10 ? 'OK' : 'Revisar' }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       PANTALLA 4 — Resumen por agencia
+  ═══════════════════════════════════════════════════════════════ -->
+  <div *ngIf="vistaActual === 'resumen'">
+
+    <div class="page-header">
+      <div>
+        <div class="page-title">Resumen por agencia</div>
+        <div class="page-sub">Vista consolidada · Enero 2026</div>
+      </div>
+      <select>
+        <option>Enero 2026</option>
+      </select>
+    </div>
+
+    <div class="grid-2">
+      <div class="card" *ngFor="let ag of resumenAgencias">
+        <div class="agencia-header">{{ ag.agencia }}</div>
+        <div class="grid-2-sm mb-1">
+          <div class="metric-card">
+            <div class="metric-label">TTV simulado</div>
+            <div class="metric-val val-md">{{ formatCurrency(ag.ttv_simulado) }}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">% TS</div>
+            <div class="metric-val val-md" [class.pos]="!ag.excede_limite" [class.neg]="ag.excede_limite">
+              {{ ag.pct_ts | number:'1.2-2' }}%
+            </div>
+          </div>
+        </div>
+        <div class="alert alert-warn" *ngIf="ag.excede_limite">
+          Excede el límite de % TS. Revisa acciones de esta agencia.
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Negocio</th><th>Pqts</th><th>TTV</th><th>% TS</th><th>GAP</th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let n of ag.negocios">
+                <td>{{ n.negocio }}</td>
+                <td>{{ n.pqts | number }}</td>
+                <td>S/ {{ n.ttv | number }}</td>
+                <td>{{ n.pct_ts | number:'1.1-1' }}%</td>
+                <td>
+                  <span class="badge" [ngClass]="badgeGap(n.gap)">{{ labelGap(n.gap) }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>

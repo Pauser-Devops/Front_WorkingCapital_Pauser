@@ -81,7 +81,10 @@ export class IngresosComponent implements OnInit {
   tipoCambio = 0;
   readonly IDS_USD = IDS_USD;
   readonly BANCO_KEY = BANCO_KEY;
-
+  //Prosegur sincronización botón 
+  sincronizando = false;
+  syncMensaje = '';
+  syncTipo: 'ok' | 'info' | '' = '';
   // Saldo original en dólares por concepto
   saldosUsdOriginal: Record<number, number> = {};
   ibkUsdSoles = 0;
@@ -445,4 +448,38 @@ export class IngresosComponent implements OnInit {
 
   trackById(_: number, c: Concepto) { return c.id; }
   trackByFecha(_: number, col: Columna) { return col.fecha; }
+
+  // PROSEGUR SINCRONIZACIÓN
+  sincronizarProsegur() {
+    this.sincronizando = true;
+    this.syncMensaje = '';
+    this.http.post<any>(`${API}/wk/prosegur-sync`, {}).subscribe({
+      next: r => {
+        this.sincronizando = false;
+        if (r.estado === 'OK') {
+          const r1 = r.resultado?.anio_actual;
+          const r2 = r.resultado?.anio_anterior;
+          const total = (r1?.insertados || 0) + (r2?.insertados || 0);
+          if (total > 0) {
+            this.syncMensaje = `✓ ${total} filas nuevas agregadas`;
+            this.syncTipo = 'ok';
+          } else {
+            this.syncMensaje = 'Sin filas nuevas — Está al día';
+            this.syncTipo = 'info';
+          }
+        } else {
+          this.syncMensaje = 'Error al sincronizar';
+          this.syncTipo = 'info';
+        }
+        // Oculta el mensaje después de 4 segundos
+        setTimeout(() => { this.syncMensaje = ''; this.syncTipo = ''; }, 4000);
+      },
+      error: () => {
+        this.sincronizando = false;
+        this.syncMensaje = 'Error al sincronizar';
+        this.syncTipo = 'info';
+        setTimeout(() => { this.syncMensaje = ''; }, 4000);
+      }
+    });
+  }
 }
