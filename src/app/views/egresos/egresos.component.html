@@ -41,8 +41,7 @@
       <input class="eg-filtro-input" type="date" [(ngModel)]="filtroDesde" />
       <label class="eg-filtro-label">Hasta</label>
       <input class="eg-filtro-input" type="date" [(ngModel)]="filtroHasta" />
-      <button class="eg-filtro-clear" (click)="filtroDesde=''; filtroHasta=''"
-        *ngIf="filtroDesde || filtroHasta">
+      <button class="eg-filtro-clear" (click)="filtroDesde=''; filtroHasta=''" *ngIf="filtroDesde || filtroHasta">
         ✕ Limpiar
       </button>
     </div>
@@ -52,6 +51,25 @@
     </button>
   </div>
 
+  <!-- KPIs -->
+  <div class="eg-kpis" *ngIf="!cargando && columnasFiltradas.length > 0">
+    <div class="eg-kpi">
+      <div class="eg-kpi-label">Total Proveedores</div>
+      <div class="eg-kpi-val">{{ fmt(kpis.totalProveedores) }}</div>
+    </div>
+    <div class="eg-kpi eg-kpi-warn">
+      <div class="eg-kpi-label">IGV por Pagar</div>
+      <div class="eg-kpi-val">{{ fmt(kpis.igvPorPagar) }}</div>
+    </div>
+    <div class="eg-kpi">
+      <div class="eg-kpi-label">Renta Preliquidación</div>
+      <div class="eg-kpi-val">{{ fmt(kpis.rentaPreliq) }}</div>
+    </div>
+    <div class="eg-kpi eg-kpi-primary">
+      <div class="eg-kpi-label">Total a Pagar</div>
+      <div class="eg-kpi-val">{{ fmt(kpis.totalPagar) }}</div>
+    </div>
+  </div>
   <!-- TABLA PRINCIPAL -->
   <div class="eg-tabla-wrap" *ngIf="!cargando && conceptos.length > 0 && columnasFiltradas.length > 0">
     <table class="eg-tabla">
@@ -71,38 +89,31 @@
             <td class="eg-td-seccion eg-col-sticky">
               {{ c.seccion === 'RENTA' ? '' : c.nombre }}
             </td>
-            <td *ngFor="let col of columnasFiltradas; trackBy: trackByFecha"
-              class="eg-td-seccion-fill"></td>
+            <td *ngFor="let col of columnasFiltradas; trackBy: trackByFecha" class="eg-td-seccion-fill"></td>
           </tr>
 
           <!-- TOTAL -->
           <tr *ngIf="esTotal(c)" class="eg-row-total">
             <td class="eg-td-label total eg-col-sticky">{{ c.nombre }}</td>
-            <td class="eg-td-val total"
-              *ngFor="let col of columnasFiltradas; trackBy: trackByFecha">
+            <td class="eg-td-val total" *ngFor="let col of columnasFiltradas; trackBy: trackByFecha">
               {{ fmt(getTotal(c, col.fecha)) }}
             </td>
           </tr>
 
           <!-- ITEM -->
-          <tr *ngIf="esItem(c) && mostrarFila(c.id)" class="eg-row-item"
-            [class.eg-row-total-pagar]="c.id === 49">
-            <td class="eg-td-label eg-col-sticky"
-              [style.paddingLeft.px]="16 + (c.indent || 0) * 12"
+          <tr *ngIf="esItem(c) && mostrarFila(c.id)" class="eg-row-item" [class.eg-row-total-pagar]="c.id === 49">
+            <td class="eg-td-label eg-col-sticky" [style.paddingLeft.px]="16 + (c.indent || 0) * 12"
               [class.eg-td-total-pagar]="c.id === 49">
               {{ c.nombre }}
             </td>
-            <td class="eg-td-val editable"
-              *ngFor="let col of columnasFiltradas; trackBy: trackByFecha"
+            <td class="eg-td-val editable" *ngFor="let col of columnasFiltradas; trackBy: trackByFecha"
               [class.eg-td-total-pagar]="c.id === 49"
               [class.vacio]="!conceptoAplicaEnFecha(c.id, col.fecha) || getValor(c.id, col.fecha) === null"
               (dblclick)="conceptoAplicaEnFecha(c.id, col.fecha) && iniciarEdicion(c.id, col.fecha)"
-              [attr.data-cid]="c.id"
-              [attr.data-fecha]="col.fecha">
+              [attr.data-cid]="c.id" [attr.data-fecha]="col.fecha">
               <ng-container *ngIf="esEditando(c.id, col.fecha); else spanItem">
                 <input class="eg-input-celda" type="number" [value]="valorEditando"
-                  (input)="valorEditando = $any($event.target).value"
-                  (keydown.enter)="confirmarEdicion()"
+                  (input)="valorEditando = $any($event.target).value" (keydown.enter)="confirmarEdicion()"
                   (keydown.escape)="cancelarEdicion()" />
               </ng-container>
               <ng-template #spanItem>
@@ -113,20 +124,15 @@
 
           <!-- SUBITEM -->
           <tr *ngIf="esSubitem(c)" class="eg-row-subitem">
-            <td class="eg-td-label subitem eg-col-sticky"
-              [style.paddingLeft.px]="16 + (c.indent || 0) * 12">
+            <td class="eg-td-label subitem eg-col-sticky" [style.paddingLeft.px]="16 + (c.indent || 0) * 12">
               <span class="eg-indent-line"></span>{{ c.nombre }}
             </td>
-            <td class="eg-td-val editable"
-              *ngFor="let col of columnasFiltradas; trackBy: trackByFecha"
-              [class.vacio]="getValor(c.id, col.fecha) === null"
-              (dblclick)="iniciarEdicion(c.id, col.fecha)"
-              [attr.data-cid]="c.id"
-              [attr.data-fecha]="col.fecha">
+            <td class="eg-td-val editable" *ngFor="let col of columnasFiltradas; trackBy: trackByFecha"
+              [class.vacio]="getValor(c.id, col.fecha) === null" (dblclick)="iniciarEdicion(c.id, col.fecha)"
+              [attr.data-cid]="c.id" [attr.data-fecha]="col.fecha">
               <ng-container *ngIf="esEditando(c.id, col.fecha); else spanSub">
                 <input class="eg-input-celda" type="number" [value]="valorEditando"
-                  (input)="valorEditando = $any($event.target).value"
-                  (keydown.enter)="confirmarEdicion()"
+                  (input)="valorEditando = $any($event.target).value" (keydown.enter)="confirmarEdicion()"
                   (keydown.escape)="cancelarEdicion()" />
               </ng-container>
               <ng-template #spanSub>
@@ -142,8 +148,8 @@
 
   <!-- EMPTY -->
   <div class="eg-empty" *ngIf="!cargando && !error && columnas.length === 0">
-    <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none"
-      stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#94a3b8"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
       <rect x="3" y="3" width="18" height="18" rx="2" />
       <line x1="3" y1="9" x2="21" y2="9" />
       <line x1="3" y1="15" x2="21" y2="15" />
@@ -188,8 +194,7 @@
         <!-- ── Secciones normales (todo excepto RENTA) ── -->
         <ng-container *ngFor="let c of conceptos; trackBy: trackById">
 
-          <div class="eg-panel-seccion eg-modal-seccion-header"
-            *ngIf="esSeccion(c) && c.seccion !== 'RENTA'">
+          <div class="eg-panel-seccion eg-modal-seccion-header" *ngIf="esSeccion(c) && c.seccion !== 'RENTA'">
             {{ c.nombre }}
           </div>
 
@@ -202,11 +207,10 @@
               <span class="eg-badge-calc" *ngIf="c.id === 7"> = Facturas + Envases</span>
               <span class="eg-badge-auto" *ngIf="esCalculado(c) && c.id !== 7">AUTO</span>
             </label>
-            <input *ngIf="esCalculado(c)" class="eg-input-manual eg-input-readonly"
-              type="text" [value]="fmtInput(c.id)" readonly placeholder="—" />
-            <input *ngIf="!esCalculado(c)" class="eg-input-manual" type="text"
-              [value]="fmtInput(c.id)" (focus)="onInputFocus($event, c.id)"
-              (blur)="onInputBlur($event, c.id)"
+            <input *ngIf="esCalculado(c)" class="eg-input-manual eg-input-readonly" type="text" [value]="fmtInput(c.id)"
+              readonly placeholder="—" />
+            <input *ngIf="!esCalculado(c)" class="eg-input-manual" type="text" [value]="fmtInput(c.id)"
+              (focus)="onInputFocus($event, c.id)" (blur)="onInputBlur($event, c.id)"
               (input)="setValorPanel(c.id, $any($event.target).value)" placeholder="0.00" />
           </div>
 
@@ -228,15 +232,15 @@
               <div class="eg-renta-grupo-label">Ventas</div>
               <div class="eg-manual-row">
                 <label class="eg-manual-label">Venta Mes Cerrado</label>
-                <input class="eg-input-manual" type="text" [value]="fmtInput(33)"
-                  (focus)="onInputFocus($event, 33)" (blur)="onInputBlur($event, 33)"
-                  (input)="setValorPanel(33, $any($event.target).value)" placeholder="0.00" />
+                <input class="eg-input-manual" type="text" [value]="fmtInput(33)" (focus)="onInputFocus($event, 33)"
+                  (blur)="onInputBlur($event, 33)" (input)="setValorPanel(33, $any($event.target).value)"
+                  placeholder="0.00" />
               </div>
               <div class="eg-manual-row">
                 <label class="eg-manual-label">Venta Mes en Curso</label>
-                <input class="eg-input-manual" type="text" [value]="fmtInput(34)"
-                  (focus)="onInputFocus($event, 34)" (blur)="onInputBlur($event, 34)"
-                  (input)="setValorPanel(34, $any($event.target).value)" placeholder="0.00" />
+                <input class="eg-input-manual" type="text" [value]="fmtInput(34)" (focus)="onInputFocus($event, 34)"
+                  (blur)="onInputBlur($event, 34)" (input)="setValorPanel(34, $any($event.target).value)"
+                  placeholder="0.00" />
               </div>
               <div class="eg-panel-total" style="margin-top:6px">
                 <span>Total Ventas</span>
@@ -246,8 +250,8 @@
                 <label class="eg-manual-label">IGV Ventas (18%)
                   <span class="eg-badge-auto">AUTO</span>
                 </label>
-                <input class="eg-input-manual eg-input-readonly" type="text"
-                  [value]="fmtInput(39)" readonly placeholder="—" />
+                <input class="eg-input-manual eg-input-readonly" type="text" [value]="fmtInput(39)" readonly
+                  placeholder="—" />
               </div>
             </div>
 
@@ -256,15 +260,15 @@
               <div class="eg-renta-grupo-label">Compras</div>
               <div class="eg-manual-row">
                 <label class="eg-manual-label">Compras Mes Cerrado</label>
-                <input class="eg-input-manual" type="text" [value]="fmtInput(36)"
-                  (focus)="onInputFocus($event, 36)" (blur)="onInputBlur($event, 36)"
-                  (input)="setValorPanel(36, $any($event.target).value)" placeholder="0.00" />
+                <input class="eg-input-manual" type="text" [value]="fmtInput(36)" (focus)="onInputFocus($event, 36)"
+                  (blur)="onInputBlur($event, 36)" (input)="setValorPanel(36, $any($event.target).value)"
+                  placeholder="0.00" />
               </div>
               <div class="eg-manual-row">
                 <label class="eg-manual-label">Compras Mes en Curso</label>
-                <input class="eg-input-manual" type="text" [value]="fmtInput(37)"
-                  (focus)="onInputFocus($event, 37)" (blur)="onInputBlur($event, 37)"
-                  (input)="setValorPanel(37, $any($event.target).value)" placeholder="0.00" />
+                <input class="eg-input-manual" type="text" [value]="fmtInput(37)" (focus)="onInputFocus($event, 37)"
+                  (blur)="onInputBlur($event, 37)" (input)="setValorPanel(37, $any($event.target).value)"
+                  placeholder="0.00" />
               </div>
               <div class="eg-panel-total" style="margin-top:6px">
                 <span>Total Compras</span>
@@ -274,16 +278,15 @@
                 <label class="eg-manual-label">IGV Compras (18%)
                   <span class="eg-badge-auto">AUTO</span>
                 </label>
-                <input class="eg-input-manual eg-input-readonly" type="text"
-                  [value]="fmtInput(40)" readonly placeholder="—" />
+                <input class="eg-input-manual eg-input-readonly" type="text" [value]="fmtInput(40)" readonly
+                  placeholder="—" />
               </div>
             </div>
 
           </div>
 
           <!-- IGV POR PAGAR -->
-          <div class="eg-panel-total"
-            style="margin-bottom:16px; background:#fef3f2; border-color:#fca5a5">
+          <div class="eg-panel-total" style="margin-bottom:16px; background:#fef3f2; border-color:#fca5a5">
             <span>IGV por Pagar <span class="eg-badge-auto">AUTO</span></span>
             <strong style="color:#dc2626">{{ fmt(valoresPanel[41] ?? 0) }}</strong>
           </div>
@@ -296,41 +299,41 @@
             </div>
             <div class="eg-manual-row">
               <label class="eg-manual-label">Crédito de Rta Anual</label>
-              <input class="eg-input-manual" type="text" [value]="fmtInput(43)"
-                (focus)="onInputFocus($event, 43)" (blur)="onInputBlur($event, 43)"
-                (input)="setValorPanel(43, $any($event.target).value)" placeholder="0.00" />
+              <input class="eg-input-manual" type="text" [value]="fmtInput(43)" (focus)="onInputFocus($event, 43)"
+                (blur)="onInputBlur($event, 43)" (input)="setValorPanel(43, $any($event.target).value)"
+                placeholder="0.00" />
             </div>
             <div class="eg-manual-row calculado">
               <label class="eg-manual-label">Renta Preliquidación
                 <span class="eg-badge-auto">AUTO</span>
               </label>
-              <input class="eg-input-manual eg-input-readonly" type="text"
-                [value]="fmtInput(44)" readonly placeholder="—" />
+              <input class="eg-input-manual eg-input-readonly" type="text" [value]="fmtInput(44)" readonly
+                placeholder="—" />
             </div>
             <div class="eg-manual-row calculado">
               <label class="eg-manual-label">IGV Preliquidación
                 <span class="eg-badge-auto">AUTO</span>
               </label>
-              <input class="eg-input-manual eg-input-readonly" type="text"
-                [value]="fmtInput(45)" readonly placeholder="—" />
+              <input class="eg-input-manual eg-input-readonly" type="text" [value]="fmtInput(45)" readonly
+                placeholder="—" />
             </div>
             <div class="eg-manual-row">
               <label class="eg-manual-label">ITAN 6/9</label>
-              <input class="eg-input-manual" type="text" [value]="fmtInput(46)"
-                (focus)="onInputFocus($event, 46)" (blur)="onInputBlur($event, 46)"
-                (input)="setValorPanel(46, $any($event.target).value)" placeholder="0.00" />
+              <input class="eg-input-manual" type="text" [value]="fmtInput(46)" (focus)="onInputFocus($event, 46)"
+                (blur)="onInputBlur($event, 46)" (input)="setValorPanel(46, $any($event.target).value)"
+                placeholder="0.00" />
             </div>
             <div class="eg-manual-row">
               <label class="eg-manual-label">Percepciones por Pagar</label>
-              <input class="eg-input-manual" type="text" [value]="fmtInput(47)"
-                (focus)="onInputFocus($event, 47)" (blur)="onInputBlur($event, 47)"
-                (input)="setValorPanel(47, $any($event.target).value)" placeholder="0.00" />
+              <input class="eg-input-manual" type="text" [value]="fmtInput(47)" (focus)="onInputFocus($event, 47)"
+                (blur)="onInputBlur($event, 47)" (input)="setValorPanel(47, $any($event.target).value)"
+                placeholder="0.00" />
             </div>
             <div class="eg-manual-row">
               <label class="eg-manual-label">RTA de 2da</label>
-              <input class="eg-input-manual" type="text" [value]="fmtInput(48)"
-                (focus)="onInputFocus($event, 48)" (blur)="onInputBlur($event, 48)"
-                (input)="setValorPanel(48, $any($event.target).value)" placeholder="0.00" />
+              <input class="eg-input-manual" type="text" [value]="fmtInput(48)" (focus)="onInputFocus($event, 48)"
+                (blur)="onInputBlur($event, 48)" (input)="setValorPanel(48, $any($event.target).value)"
+                placeholder="0.00" />
             </div>
           </div>
 
@@ -348,8 +351,7 @@
 
   <div class="eg-modal-footer">
     <button class="eg-btn-cancelar" (click)="cerrarPanel()">Cancelar</button>
-    <button class="eg-btn-guardar" (click)="guardarFecha()"
-      [disabled]="!nuevaFecha || guardandoFecha">
+    <button class="eg-btn-guardar" (click)="guardarFecha()" [disabled]="!nuevaFecha || guardandoFecha">
       <div class="eg-spinner-sm" *ngIf="guardandoFecha"></div>
       {{ guardandoFecha ? 'Guardando...' : (fechaExistente ? 'Actualizar' : 'Guardar fecha') }}
     </button>

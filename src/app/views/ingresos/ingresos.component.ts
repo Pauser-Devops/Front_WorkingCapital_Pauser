@@ -89,7 +89,13 @@ export class IngresosComponent implements OnInit {
   saldosUsdOriginal: Record<number, number> = {};
   ibkUsdSoles = 0;
   ibkUsdOriginal = 0;
-  indiceActivo = 0;
+  filtroDesde = '';
+  filtroHasta = '';
+
+  // IDs Snacks ingresos (se ocultan desde abril 2026)
+  readonly IDS_SNACKS_ING = new Set([20, 29, 40]); // CHIMBOTE SNACKS x3
+  // IDs nuevos Chimbote (visibles desde marzo 2026)
+  readonly IDS_NUEVOS_ING = new Set([55, 56]); // CHIMBOTE INVENTARIOS, CHIMBOTE VENTAS CONTADO
   // Detalle PROSEGUR para mostrar breakdown en el modal
   prosegurDetalle: {
     puno: number | null;
@@ -102,13 +108,7 @@ export class IngresosComponent implements OnInit {
   constructor(private http: HttpClient, private wkRefresh: WkRefreshService) { }
 
   ngOnInit() { this.cargarConceptos(); }
-  exportar() {
-    if (!this.colActiva) return;
-    window.open(`${API}/exportar/ingresos?fecha_corte=${this.colActiva.fecha}`, '_blank');
-  }
-  get colActiva(): Columna | null {
-    return this.columnas[this.indiceActivo] ?? null;
-  }
+
   cargarConceptos() {
     this.cargando = true;
     this.http.get<any>(`${API}/wk/ingresos-conceptos`).subscribe({
@@ -136,7 +136,7 @@ export class IngresosComponent implements OnInit {
           this.columnas = Array.from(fechasSet).sort().map(f => ({
             fecha: f, label: this.formatFechaCorta(f), guardado: true,
           }));
-          this.indiceActivo = Math.max(0, this.columnas.length - 1);
+
           this.datos = {};
           for (const d of r.datos) {
             if (!this.datos[d.concepto_id]) this.datos[d.concepto_id] = {};
@@ -147,9 +147,26 @@ export class IngresosComponent implements OnInit {
       error: () => { this.cargando = false; this.error = 'Error al cargar datos'; }
     });
   }
-  irAFecha(i: number) { this.indiceActivo = i; }
-  irAnterior() { if (this.indiceActivo > 0) this.indiceActivo--; }
-  irSiguiente() { if (this.indiceActivo < this.columnas.length - 1) this.indiceActivo++; }
+  get columnasFiltradas(): Columna[] {
+    if (!this.filtroDesde && !this.filtroHasta) return this.columnas;
+    return this.columnas.filter(col => {
+      const ok1 = !this.filtroDesde || col.fecha >= this.filtroDesde;
+      const ok2 = !this.filtroHasta || col.fecha <= this.filtroHasta;
+      return ok1 && ok2;
+    });
+  }
+
+  exportar() {
+    if (!this.columnasFiltradas.length) return;
+    const fechas = this.columnasFiltradas.map(c => c.fecha).join(',');
+    window.open(`${API}/exportar/ingresos?fechas=${fechas}`, '_blank');
+  }
+
+  // Actualiza mostrarFila para multi-columna
+  mostrarFila(concepto_id: number): boolean {
+    if (!this.IDS_SNACKS_ING.has(concepto_id)) return true;
+    return this.columnasFiltradas.some(col => this.conceptoAplicaEnFecha(concepto_id, col.fecha));
+  }
   get conceptosBancoAuto(): Concepto[] {
     return this.conceptos.filter(c => IDS_AUTO.has(c.id));
   }
@@ -481,5 +498,27 @@ export class IngresosComponent implements OnInit {
         setTimeout(() => { this.syncMensaje = ''; }, 4000);
       }
     });
+  }
+  conceptoAplicaEnFecha(concepto_id: number, fecha: string): boolean {
+    if (!fecha) return true;
+    const esAbrilOmas = fecha >= '2026-04-01';
+    if (this.IDS_SNACKS_ING.has(concepto_id) && esAbrilOmas) return false;
+    return true;
+  }
+  get kpisIng() {
+    const totalSeccion = (nombreSeccion: string) =>
+      this.columnasFiltradas.reduce((acc, col) => {
+        const totalConcepto = this.conceptos.find(
+          x => x.tipo_fila === 'total' && x.seccion === nombreSeccion
+        );
+        return acc + (totalConcepto ? this.getTotal(totalConcepto, col.fecha) : 0);
+      }, 0);
+
+    return {
+      totalBancos: totalSeccion('SALDOS BANCOS'),
+      totalProsegur: totalSeccion('PROSEGUR'),
+      ventasContado: totalSeccion('VENTAS CONTADO REPARTO'),
+      ventasCredito: totalSeccion('VENTAS CRÉDITO 3-10 DÍAS'),
+    };
   }
 }

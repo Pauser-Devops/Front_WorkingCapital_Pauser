@@ -453,17 +453,31 @@ export class EgresosComponent implements OnInit {
   trackByFecha(_: number, col: Columna) { return col.fecha; }
 
 
-conceptoAplicaEnFecha(concepto_id: number, fecha: string): boolean {
-  if (!fecha) return true;
-  const esAbrilOmas = fecha >= '2026-04-01';
-  const esMarzOmas  = fecha >= '2026-03-01';
-  if (this.IDS_SNACKS.has(concepto_id) && esAbrilOmas) return false;   // snacks se ocultan en abril
-  if (this.IDS_NUEVOS.has(concepto_id) && !esMarzOmas) return false;   // trujillo/chimbote desde marzo
-  return true;
-}
+  conceptoAplicaEnFecha(concepto_id: number, fecha: string): boolean {
+    if (!fecha) return true;
+    const esAbrilOmas = fecha >= '2026-04-01';
+    const esMarzOmas = fecha >= '2026-03-01';
+    if (this.IDS_SNACKS.has(concepto_id) && esAbrilOmas) return false;   // snacks se ocultan en abril
+    if (this.IDS_NUEVOS.has(concepto_id) && !esMarzOmas) return false;   // trujillo/chimbote desde marzo
+    return true;
+  }
 
-mostrarFila(concepto_id: number): boolean {
-  if (!this.IDS_SNACKS.has(concepto_id) && !this.IDS_NUEVOS.has(concepto_id)) return true;
-  return this.columnasFiltradas.some(col => this.conceptoAplicaEnFecha(concepto_id, col.fecha));
-}
+  mostrarFila(concepto_id: number): boolean {
+    if (!this.IDS_SNACKS.has(concepto_id) && !this.IDS_NUEVOS.has(concepto_id)) return true;
+    return this.columnasFiltradas.some(col => this.conceptoAplicaEnFecha(concepto_id, col.fecha));
+  }
+  get kpis() {
+    const suma = (id: number) =>
+      this.columnasFiltradas.reduce((acc, col) => acc + (this.getValor(id, col.fecha) || 0), 0);
+
+    return {
+      totalProveedores: this.columnasFiltradas.reduce((acc, col) => {
+        const c = this.conceptos.find(x => x.tipo_fila === 'total' && x.seccion === 'PROVEEDORES PRINCIPALES');
+        return acc + (c ? this.getTotal(c, col.fecha) : 0);
+      }, 0),
+      igvPorPagar: suma(ID_IGV_POR_PAGAR),
+      rentaPreliq: suma(ID_RENTA_PRELIQ),
+      totalPagar: suma(ID_TOTAL_PAGAR),
+    };
+  }
 }

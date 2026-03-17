@@ -15,7 +15,6 @@
         <div class="ing-subtitle">Working Capital · Vista por fecha</div>
       </div>
     </div>
-
     <div class="ing-header-actions">
       <span class="ing-sync-msg" *ngIf="syncMensaje" [class.ok]="syncTipo === 'ok'">
         {{ syncMensaje }}
@@ -39,6 +38,7 @@
       </button>
     </div>
   </div>
+
   <!-- LOADING -->
   <div class="ing-loading" *ngIf="cargando">
     <div class="ing-spinner"></div>
@@ -48,29 +48,52 @@
   <!-- ERROR -->
   <div class="ing-error" *ngIf="error && !cargando">{{ error }}</div>
 
-  <!-- NAV FECHAS + EXPORTAR -->
+  <!-- FILTRO + EXPORTAR -->
   <div class="ing-nav-bar" *ngIf="!cargando && columnas.length > 0">
-    <button class="btn-nav" (click)="irAnterior()" [disabled]="indiceActivo === 0">‹</button>
-    <div class="ing-chips">
-      <button *ngFor="let col of columnas; let i = index" class="ing-chip" [class.ing-chip-activo]="i === indiceActivo"
-        (click)="irAFecha(i)">
-        {{ col.label }}
+    <div class="eg-filtro-rango">
+      <label class="eg-filtro-label">Desde</label>
+      <input class="eg-filtro-input" type="date" [(ngModel)]="filtroDesde" />
+      <label class="eg-filtro-label">Hasta</label>
+      <input class="eg-filtro-input" type="date" [(ngModel)]="filtroHasta" />
+      <button class="eg-filtro-clear" (click)="filtroDesde=''; filtroHasta=''" *ngIf="filtroDesde || filtroHasta">
+        ✕ Limpiar
       </button>
     </div>
-    <button class="btn-nav" (click)="irSiguiente()" [disabled]="indiceActivo === columnas.length - 1">›</button>
-    <button class="btn-export" (click)="exportar()" [disabled]="!colActiva">
+    <button class="btn-export" (click)="exportar()">
       <span class="material-icons">download</span>
       Exportar
     </button>
   </div>
+  <!-- KPIs -->
+  <div class="eg-kpis" *ngIf="!cargando && columnasFiltradas.length > 0">
+    <div class="eg-kpi">
+      <div class="eg-kpi-label">Total Bancos</div>
+      <div class="eg-kpi-val">{{ fmt(kpisIng.totalBancos) }}</div>
+    </div>
+    <div class="eg-kpi">
+      <div class="eg-kpi-label">Total Prosegur</div>
+      <div class="eg-kpi-val">{{ fmt(kpisIng.totalProsegur) }}</div>
+    </div>
+    <div class="eg-kpi">
+      <div class="eg-kpi-label">Ventas Contado</div>
+      <div class="eg-kpi-val">{{ fmt(kpisIng.ventasContado) }}</div>
+    </div>
+    <div class="eg-kpi eg-kpi-primary">
+      <div class="eg-kpi-label">Ventas Crédito</div>
+      <div class="eg-kpi-val">{{ fmt(kpisIng.ventasCredito) }}</div>
+    </div>
+  </div>
 
   <!-- TABLA PRINCIPAL -->
-  <div class="ing-tabla-wrap" *ngIf="!cargando && conceptos.length > 0 && colActiva" (click)="onClickTabla($event)">
+  <div class="ing-tabla-wrap" *ngIf="!cargando && conceptos.length > 0 && columnasFiltradas.length > 0"
+    (click)="onClickTabla($event)">
     <table class="ing-tabla">
       <thead>
         <tr>
-          <th class="ing-th-concepto">Concepto</th>
-          <th class="ing-th-fecha">{{ colActiva.label }}</th>
+          <th class="ing-th-concepto ing-col-sticky">Concepto</th>
+          <th class="ing-th-fecha" *ngFor="let col of columnasFiltradas; trackBy: trackByFecha">
+            {{ col.label }}
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -78,34 +101,37 @@
 
           <!-- SECCIÓN -->
           <tr *ngIf="esSeccion(c)" class="ing-row-seccion">
-            <td class="ing-td-seccion" colspan="2">{{ c.nombre }}</td>
+            <td class="ing-td-seccion ing-col-sticky">{{ c.nombre }}</td>
+            <td *ngFor="let col of columnasFiltradas; trackBy: trackByFecha" class="ing-td-seccion-fill"></td>
           </tr>
 
           <!-- TOTAL -->
           <tr *ngIf="esTotal(c)" class="ing-row-total">
-            <td class="ing-td-label total">{{ c.nombre }}</td>
-            <td class="ing-td-val total">
-              {{ fmt(getTotal(c, colActiva.fecha)) }}
+            <td class="ing-td-label total ing-col-sticky">{{ c.nombre }}</td>
+            <td class="ing-td-val total" *ngFor="let col of columnasFiltradas; trackBy: trackByFecha">
+              {{ fmt(getTotal(c, col.fecha)) }}
             </td>
           </tr>
 
           <!-- ITEM -->
-          <tr *ngIf="esItem(c)" class="ing-row-item" [class.auto]="esAuto(c) || esProsegurAuto(c)">
-            <td class="ing-td-label" [style.paddingLeft.px]="16 + (c.indent || 0) * 10">
+          <tr *ngIf="esItem(c) && mostrarFila(c.id)" class="ing-row-item" [class.auto]="esAuto(c) || esProsegurAuto(c)">
+            <td class="ing-td-label ing-col-sticky" [style.paddingLeft.px]="16 + (c.indent || 0) * 10">
               {{ c.nombre }}
               <span class="ing-badge-auto" *ngIf="esAuto(c) || esProsegurAuto(c)">BD</span>
             </td>
-            <td class="ing-td-val"
-              (dblclick)="!esAuto(c) && !esProsegurAuto(c) && iniciarEdicion(c.id, colActiva.fecha)"
+            <td class="ing-td-val" *ngFor="let col of columnasFiltradas; trackBy: trackByFecha"
               [class.editable]="!esAuto(c) && !esProsegurAuto(c)"
-              [class.vacio]="getValor(c.id, colActiva.fecha) === null" [attr.data-cid]="c.id"
-              [attr.data-fecha]="colActiva.fecha">
-              <input *ngIf="esEditando(c.id, colActiva.fecha)" class="ing-input-celda" type="number"
-                [value]="valorEditando" (input)="valorEditando = $any($event.target).value"
-                (keydown.enter)="confirmarEdicion()" (keydown.escape)="cancelarEdicion()" />
-              <span *ngIf="!esEditando(c.id, colActiva.fecha)">
-                {{ fmt(getValor(c.id, colActiva.fecha)) }}
-              </span>
+              [class.vacio]="!conceptoAplicaEnFecha(c.id, col.fecha) || getValor(c.id, col.fecha) === null"
+              (dblclick)="!esAuto(c) && !esProsegurAuto(c) && conceptoAplicaEnFecha(c.id, col.fecha) && iniciarEdicion(c.id, col.fecha)"
+              [attr.data-cid]="c.id" [attr.data-fecha]="col.fecha">
+              <ng-container *ngIf="esEditando(c.id, col.fecha); else spanItem">
+                <input class="ing-input-celda" type="number" [value]="valorEditando"
+                  (input)="valorEditando = $any($event.target).value" (keydown.enter)="confirmarEdicion()"
+                  (keydown.escape)="cancelarEdicion()" />
+              </ng-container>
+              <ng-template #spanItem>
+                <span>{{ conceptoAplicaEnFecha(c.id, col.fecha) ? fmt(getValor(c.id, col.fecha)) : '—' }}</span>
+              </ng-template>
             </td>
           </tr>
 
@@ -129,11 +155,8 @@
 
 </div>
 
-<!-- ═══════════════════════════════════════════
-     MODAL NUEVA FECHA
-═══════════════════════════════════════════ -->
+<!-- MODAL (sin cambios) -->
 <div class="ing-modal-overlay" *ngIf="mostrarPanel" (click)="cerrarPanel()"></div>
-
 <div class="ing-modal" *ngIf="mostrarPanel">
 
   <div class="ing-modal-header">
@@ -153,8 +176,6 @@
   </div>
 
   <div class="ing-modal-body">
-
-    <!-- Fila superior: fecha + aviso -->
     <div class="ing-modal-top">
       <div class="ing-field" style="margin-bottom:0">
         <label class="ing-label">Fecha de corte</label>
@@ -178,7 +199,7 @@
 
     <ng-container *ngIf="nuevaFecha && !cargandoFecha">
 
-      <!-- ── SALDOS BANCOS ── -->
+      <!-- SALDOS BANCOS -->
       <div class="ing-panel-seccion">Saldos Bancos</div>
       <div class="ing-fields-grid">
         <div class="ing-field-item" *ngFor="let c of conceptosBancoAuto">
@@ -211,14 +232,11 @@
         Recalcular desde BD
       </button>
 
-      <!-- ── PROSEGUR ── -->
+      <!-- PROSEGUR -->
       <div class="ing-panel-seccion">PROSEGUR</div>
       <div class="ing-fields-grid" style="margin-bottom:8px">
-
         <div class="ing-field-item">
-          <label class="ing-manual-label">
-            PUNO <span class="ing-badge-auto" style="margin-left:6px">BD</span>
-          </label>
+          <label class="ing-manual-label">PUNO <span class="ing-badge-auto" style="margin-left:6px">BD</span></label>
           <div class="ing-prosegur-box" [class.cargando]="calculandoProsegur">
             <div class="ing-spinner-sm" *ngIf="calculandoProsegur"></div>
             <input *ngIf="!calculandoProsegur" class="ing-input-manual" type="text" [value]="fmtPanel(13)"
@@ -226,11 +244,8 @@
               (blur)="onBlurManualPanel(13, $event)" placeholder="—" />
           </div>
         </div>
-
         <div class="ing-field-item">
-          <label class="ing-manual-label">
-            HUARAZ <span class="ing-badge-auto" style="margin-left:6px">BD</span>
-          </label>
+          <label class="ing-manual-label">HUARAZ <span class="ing-badge-auto" style="margin-left:6px">BD</span></label>
           <div class="ing-prosegur-box" [class.cargando]="calculandoProsegur">
             <div class="ing-spinner-sm" *ngIf="calculandoProsegur"></div>
             <input *ngIf="!calculandoProsegur" class="ing-input-manual" type="text" [value]="fmtPanel(14)"
@@ -238,11 +253,9 @@
               (blur)="onBlurManualPanel(14, $event)" placeholder="—" />
           </div>
         </div>
-
         <div class="ing-field-item">
-          <label class="ing-manual-label">
-            TRUJILLO <span class="ing-badge-auto" style="margin-left:6px">BD</span>
-          </label>
+          <label class="ing-manual-label">TRUJILLO <span class="ing-badge-auto"
+              style="margin-left:6px">BD</span></label>
           <div class="ing-prosegur-box" [class.cargando]="calculandoProsegur">
             <div class="ing-spinner-sm" *ngIf="calculandoProsegur"></div>
             <input *ngIf="!calculandoProsegur" class="ing-input-manual" type="text" [value]="fmtPanel(15)"
@@ -250,11 +263,9 @@
               (blur)="onBlurManualPanel(15, $event)" placeholder="—" />
           </div>
         </div>
-
         <div class="ing-field-item">
-          <label class="ing-manual-label">
-            INGRESOS EN EL DÍA <span class="ing-badge-auto" style="margin-left:6px">BD</span>
-          </label>
+          <label class="ing-manual-label">INGRESOS EN EL DÍA <span class="ing-badge-auto"
+              style="margin-left:6px">BD</span></label>
           <div class="ing-prosegur-box" [class.cargando]="calculandoProsegur">
             <div class="ing-spinner-sm" *ngIf="calculandoProsegur"></div>
             <input *ngIf="!calculandoProsegur" class="ing-input-manual" type="text" [value]="fmtPanel(16)"
@@ -269,9 +280,7 @@
             <span>Chimbote: {{ fmt(prosegurDetalle.trujillo) }}</span>
           </div>
         </div>
-
       </div>
-
       <button class="ing-btn-calcular" style="margin-bottom:24px" (click)="calcularProsegur()"
         [disabled]="!nuevaFecha || calculandoProsegur">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -283,12 +292,13 @@
         Recalcular PROSEGUR
       </button>
 
-      <!-- ── SECCIONES MANUALES ── -->
+      <!-- SECCIONES MANUALES -->
       <ng-container *ngFor="let grupo of manualesAgrupados">
         <ng-container *ngIf="grupo[0] !== 'PROSEGUR'">
           <div class="ing-panel-seccion">{{ grupo[0] }}</div>
           <div class="ing-fields-grid" style="margin-bottom:24px">
-            <div class="ing-field-item" *ngFor="let c of grupo[1]">
+            <div class="ing-field-item" *ngFor="let c of grupo[1]"
+              [style.display]="conceptoAplicaEnFecha(c.id, nuevaFecha) ? '' : 'none'">
               <label class="ing-manual-label">{{ c.nombre }}</label>
               <input class="ing-input-manual" type="text" [value]="fmtPanel(c.id)"
                 (input)="setValorManualPanel(c.id, $any($event.target).value)"
@@ -300,7 +310,6 @@
       </ng-container>
 
     </ng-container>
-
   </div>
 
   <div class="ing-modal-footer">
@@ -310,5 +319,4 @@
       {{ guardandoFecha ? 'Guardando...' : (fechaExistente ? 'Actualizar' : 'Guardar fecha') }}
     </button>
   </div>
-
 </div>

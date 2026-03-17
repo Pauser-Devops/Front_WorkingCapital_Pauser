@@ -843,3 +843,146 @@
   from { opacity: 0; transform: translateY(-4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+.ing-tabla-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ing-tabla {
+  min-width: 100%;
+  width: max-content;
+}
+
+.ing-col-sticky {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--bg-card, #fff);
+}
+
+.ing-row-seccion .ing-col-sticky {
+  background: inherit;
+}
+
+.ing-th-concepto {
+  min-width: 240px;
+  width: 240px;
+}
+
+.ing-th-fecha {
+  min-width: 130px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ing-td-seccion-fill {
+  background: inherit;
+}
+
+.ing-tabla thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+.ing-tabla thead .ing-col-sticky {
+  z-index: 4;
+}
+.eg-filtro-rango {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.eg-filtro-label {
+  font-size: 12px;
+  color: var(--text-muted, #64748b);
+  font-weight: 500;
+}
+
+.eg-filtro-input {
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 13px;
+  color: var(--text, #1e293b);
+  background: var(--bg-card, #fff);
+  cursor: pointer;
+}
+
+.eg-filtro-input:focus {
+  outline: none;
+  border-color: var(--primary, #1d4ed8);
+}
+
+.eg-filtro-clear {
+  background: none;
+  border: 1px solid #bfdbfe;
+  color: #2563eb;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.eg-filtro-clear:hover {
+  background: #eff6ff;
+}
+
+.eg-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+}
+
+.eg-kpi {
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 10px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.eg-kpi-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted, #64748b);
+}
+
+.eg-kpi-val {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text, #1e293b);
+  letter-spacing: -0.02em;
+}
+
+.eg-kpi-primary {
+  border-color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.eg-kpi-primary .eg-kpi-val {
+  color: #1d4ed8;
+}
+
+.eg-kpi-warn {
+  border-color: #dc2626;
+  background: #fef2f2;
+}
+
+.eg-kpi-warn .eg-kpi-val {
+  color: #dc2626;
+}
+
+@media (max-width: 768px) {
+  .eg-kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
