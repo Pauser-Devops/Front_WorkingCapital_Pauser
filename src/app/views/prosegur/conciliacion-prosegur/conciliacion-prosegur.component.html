@@ -4,9 +4,9 @@
   <div class="cp-header">
     <div class="cp-header-left">
       <div class="cp-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
-          fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
         </svg>
       </div>
       <div>
@@ -14,12 +14,21 @@
         <div class="cp-subtitle">Cruce banco vs registros PROSEGUR</div>
       </div>
     </div>
+    <button class="ing-btn-calcular" (click)="sincronizarProsegur()" [disabled]="sincronizando">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10" />
+        <polyline points="1 20 1 14 7 14" />
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+      </svg>
+      {{ sincronizando ? 'Sincronizando...' : 'PROSEGUR' }}
+    </button>
     <button class="cp-btn-export" (click)="exportar()" [disabled]="!resultado || exportando">
-      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
-        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-        <polyline points="7 10 12 15 17 10"/>
-        <line x1="12" y1="15" x2="12" y2="3"/>
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="7 10 12 15 17 10" />
+        <line x1="12" y1="15" x2="12" y2="3" />
       </svg>
       {{ exportando ? 'Exportando...' : 'Exportar Excel' }}
     </button>
@@ -119,10 +128,10 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let r of resumenPorSede"
-          [class.cp-row-warn]="r.diferencia !== 0">
+        <tr *ngFor="let r of resumenPorSede" [class.cp-row-warn]="r.diferencia !== 0">
           <td class="cp-td-sede">{{ r.sede }}</td>
-          <td><span class="cp-badge" [class.billetes]="r.tipo === 'billetes'" [class.monedas]="r.tipo === 'monedas'">{{ r.tipo }}</span></td>
+          <td><span class="cp-badge" [class.billetes]="r.tipo === 'billetes'" [class.monedas]="r.tipo === 'monedas'">{{
+              r.tipo }}</span></td>
           <td class="cp-td-num">{{ fmt(r.total_ibk) }}</td>
           <td class="cp-td-num">{{ fmt(r.total_prosegur) }}</td>
           <td class="cp-td-num" [class.cp-dif-warn]="r.diferencia !== 0" [class.cp-dif-ok]="r.diferencia === 0">
@@ -154,8 +163,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let f of filasFiltradas"
-          [class.cp-row-warn]="f.descuadre"
+        <tr *ngFor="let f of filasFiltradas" [class.cp-row-warn]="f.descuadre"
           [class.cp-row-ok]="!f.descuadre && f.codigo">
           <td>{{ fmtFecha(f.fecha_ibk) }}</td>
           <td><span class="cp-codigo" *ngIf="f.codigo">{{ f.codigo }}</span></td>

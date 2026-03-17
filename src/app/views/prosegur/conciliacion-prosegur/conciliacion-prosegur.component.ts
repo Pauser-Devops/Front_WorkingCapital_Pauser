@@ -49,27 +49,31 @@ export class ConciliacionProsegurComponent implements OnInit {
   anioSeleccionado = new Date().getFullYear();
 
   meses = [
-    { v: 1,  n: 'Enero' },    { v: 2,  n: 'Febrero' },
-    { v: 3,  n: 'Marzo' },    { v: 4,  n: 'Abril' },
-    { v: 5,  n: 'Mayo' },     { v: 6,  n: 'Junio' },
-    { v: 7,  n: 'Julio' },    { v: 8,  n: 'Agosto' },
-    { v: 9,  n: 'Septiembre'},{ v: 10, n: 'Octubre' },
-    { v: 11, n: 'Noviembre' },{ v: 12, n: 'Diciembre' },
+    { v: 1, n: 'Enero' }, { v: 2, n: 'Febrero' },
+    { v: 3, n: 'Marzo' }, { v: 4, n: 'Abril' },
+    { v: 5, n: 'Mayo' }, { v: 6, n: 'Junio' },
+    { v: 7, n: 'Julio' }, { v: 8, n: 'Agosto' },
+    { v: 9, n: 'Septiembre' }, { v: 10, n: 'Octubre' },
+    { v: 11, n: 'Noviembre' }, { v: 12, n: 'Diciembre' },
   ];
 
   // ── Estado ─────────────────────────────────────────
-  cargando      = false;
-  error         = '';
+  cargando = false;
+  error = '';
   resultado: ResumenCruce | null = null;
-  exportando    = false;
+  exportando = false;
 
   // ── Filtro tabla ───────────────────────────────────
   soloDescuadres = false;
-  filtroCodigo   = '';
+  filtroCodigo = '';
 
-  constructor(private http: HttpClient) {}
+  sincronizando = false;
+  syncMensaje = '';
+  syncTipo: 'ok' | 'info' | '' = '';
 
-  ngOnInit() {  }
+  constructor(private http: HttpClient) { }
+
+  ngOnInit() { }
 
   get endpoint(): string {
     return this.bancoSeleccionado === 'IBK'
@@ -85,7 +89,7 @@ export class ConciliacionProsegurComponent implements OnInit {
 
   cargar() {
     this.cargando = true;
-    this.error    = '';
+    this.error = '';
     this.resultado = null;
 
     this.http.get<ResumenCruce>(
@@ -142,15 +146,15 @@ export class ConciliacionProsegurComponent implements OnInit {
       if (!f.sede) continue;
       const key = `${f.sede}__${f.tipo}`;
       if (!map[key]) map[key] = { sede: f.sede, tipo: f.tipo || '', total_ibk: 0, total_prosegur: 0, diferencia: 0 };
-      map[key].total_ibk      += f.monto_ibk;
+      map[key].total_ibk += f.monto_ibk;
       map[key].total_prosegur += f.monto_prosegur;
-      map[key].diferencia     += f.diferencia;
+      map[key].diferencia += f.diferencia;
     }
     return Object.values(map).map(r => ({
       ...r,
-      total_ibk:      round2(r.total_ibk),
+      total_ibk: round2(r.total_ibk),
       total_prosegur: round2(r.total_prosegur),
-      diferencia:     round2(r.diferencia),
+      diferencia: round2(r.diferencia),
     })).sort((a, b) => a.sede.localeCompare(b.sede));
   }
 
@@ -162,7 +166,40 @@ export class ConciliacionProsegurComponent implements OnInit {
   fmtFecha(f: string | null): string {
     if (!f) return '—';
     const d = new Date(f + 'T00:00:00');
-    return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+  }
+
+   sincronizarProsegur() {
+    this.sincronizando = true;
+    this.syncMensaje = '';
+    this.http.post<any>(`${API}/wk/prosegur-sync`, {}).subscribe({
+      next: r => {
+        this.sincronizando = false;
+        if (r.estado === 'OK') {
+          const r1 = r.resultado?.anio_actual;
+          const r2 = r.resultado?.anio_anterior;
+          const total = (r1?.insertados || 0) + (r2?.insertados || 0);
+          if (total > 0) {
+            this.syncMensaje = `✓ ${total} filas nuevas agregadas`;
+            this.syncTipo = 'ok';
+          } else {
+            this.syncMensaje = 'Sin filas nuevas — Está al día';
+            this.syncTipo = 'info';
+          }
+        } else {
+          this.syncMensaje = 'Error al sincronizar';
+          this.syncTipo = 'info';
+        }
+        // Oculta el mensaje después de 4 segundos
+        setTimeout(() => { this.syncMensaje = ''; this.syncTipo = ''; }, 4000);
+      },
+      error: () => {
+        this.sincronizando = false;
+        this.syncMensaje = 'Error al sincronizar';
+        this.syncTipo = 'info';
+        setTimeout(() => { this.syncMensaje = ''; }, 4000);
+      }
+    });
   }
 }
 

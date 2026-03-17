@@ -14,44 +14,57 @@ const ID_ENVASES = 9;
 const ID_SALARIOS = 19;
 const ID_MOVILIDADES = 20;
 
-const ID_VENTAS_GRAV = 33;
-const ID_VENTAS_NO_GRAV = 34;
-const ID_TOTAL_VENTAS = 35;
-const ID_COMPRAS_18 = 36;
-const ID_COMPRAS_10 = 37;
-const ID_COMPRAS_NO_GRAV = 38;
-const ID_TOTAL_COMPRAS = 39;
-const ID_IGV_CALC = 40;
-const ID_RENTA_3RA = 41;
-const ID_CRED_RTA = 42;
-const ID_RENTA_PRELIQ = 43;
-const ID_IGV_PRELIQ = 44;
-const ID_ITAN = 45;
-const ID_PERCEPCIONES = 46;
-const ID_RTA_2DA = 47;
-const ID_TOTAL_PAGAR = 48;
+// RENTA (renombrados)
+const ID_VENTA_MES_CERRADO = 33;
+const ID_VENTA_MES_CURSO = 34;
+const ID_TOTAL_VENTAS = 35;  // calc = 33+34
+const ID_COMPRAS_MES_CERRADO = 36;
+const ID_COMPRAS_MES_CURSO = 37;
+const ID_TOTAL_COMPRAS = 38;  // calc = 36+37
+const ID_IGV_VENTAS = 39;  // calc = 35×18%
+const ID_IGV_COMPRAS = 40;  // calc = 38×18%
+const ID_IGV_POR_PAGAR = 41;  // calc = 39−40
+const ID_RENTA_3RA = 42;  // fijo 0.015
+const ID_CRED_RTA = 43;
+const ID_RENTA_PRELIQ = 44;  // calc = 35×1.5%−43
+const ID_IGV_PRELIQ = 45;  // calc = igual a 41
+const ID_ITAN_RENTA = 46;
+const ID_PERCEPCIONES_RENTA = 47;
+const ID_RTA_2DA = 48;
+const ID_TOTAL_PAGAR = 49;  // calc
 
-// IDs que se calculan automáticamente
+// IMPUESTOS (nuevos)
+const ID_IMP_ITAN = 50; // ajusta según los IDs que genere el INSERT
+const ID_IMP_IGV = 51;
+const ID_IMP_RENTA = 52;
+const ID_IMP_PERCEPCIONES = 53;
+const ID_IMP_ESSALUD = 54;
+const ID_IMP_AFP = 55;
+
+// IDs calculados automáticamente (no editables)
 const IDS_CALCULADOS = new Set([
-  ID_BACKUS, ID_TOTAL_VENTAS, ID_TOTAL_COMPRAS,
-  ID_IGV_CALC, ID_RENTA_PRELIQ,
-  ID_IGV_PRELIQ, ID_TOTAL_PAGAR
+  ID_BACKUS,
+  ID_TOTAL_VENTAS, ID_TOTAL_COMPRAS,
+  ID_IGV_VENTAS, ID_IGV_COMPRAS, ID_IGV_POR_PAGAR,
+  ID_RENTA_PRELIQ, ID_IGV_PRELIQ,
+  ID_TOTAL_PAGAR
 ]);
 
+
+
 const DEFAULTS_FIJOS: Record<number, number> = {
-  15: 66528,        // Corporación San Francisco
-  16: 22176,        // Representaciones San Santiago
-  21: 205000,       // Provisión CTS
-  22: 148966.67,    // Provisión Gratificación
-  27: 130272.01,    // INTERBANK
-  28: 37903.02,     // PICHINCHA
-  29: 31368.71,     // BCP
-  30: 19928.59,     // CONTRATO MUTUO
+  15: 66528,          // Corporación San Francisco
+  16: 22176,          // Representaciones San Santiago
+  21: 205000,         // Provisión CTS
+  22: 148966.67,      // Provisión Gratificación
+  27: 130272.01,      // INTERBANK
+  28: 37903.02,       // PICHINCHA
+  29: 31368.71,       // BCP
+  30: 19928.59,       // CONTRATO MUTUO
 };
 
 const MOVILIDADES_DEFAULT = 61000;
 const SALARIO_BASE = 820000;
-
 interface Concepto {
   id: number;
   nombre: string;
@@ -90,7 +103,13 @@ export class EgresosComponent implements OnInit {
   valoresPanel: Record<number, number | null> = {};
   editandoPanelId: number | null = null;
 
+  filtroDesde = '';
+  filtroHasta = '';
+
   readonly IDS_CALCULADOS = IDS_CALCULADOS;
+
+  readonly IDS_SNACKS = new Set([3, 5]);
+  readonly IDS_NUEVOS = new Set([57, 58]); // ajusta con tus IDs reales
 
   constructor(
     private http: HttpClient,
@@ -100,15 +119,19 @@ export class EgresosComponent implements OnInit {
 
   ngOnInit() { this.cargarConceptos(); }
   // Después de:  columnas: Columna[] = [];
-  indiceActivo = 0;
-
-  get colActiva(): Columna | null {
-    return this.columnas[this.indiceActivo] ?? null;
+  get columnasFiltradas(): Columna[] {
+    if (!this.filtroDesde && !this.filtroHasta) return this.columnas;
+    return this.columnas.filter(col => {
+      const ok1 = !this.filtroDesde || col.fecha >= this.filtroDesde;
+      const ok2 = !this.filtroHasta || col.fecha <= this.filtroHasta;
+      return ok1 && ok2;
+    });
   }
   // ── Defaults ──────────────────────────────────────────
   exportar() {
-    if (!this.colActiva) return;
-    window.open(`${API}/exportar/egresos?fecha_corte=${this.colActiva.fecha}`, '_blank');
+    if (!this.columnasFiltradas.length) return;
+    const fechas = this.columnasFiltradas.map(c => c.fecha).join(',');
+    window.open(`${API}/exportar/egresos?fechas=${fechas}`, '_blank');
   }
   aplicarDefaults() {
     if (!this.nuevaFecha) return;
@@ -144,44 +167,46 @@ export class EgresosComponent implements OnInit {
   recalcularRenta() {
     const v = (id: number) => this.valoresPanel[id] || 0;
 
-    const ventasGrav = v(ID_VENTAS_GRAV);
-    const ventasNoGrav = v(ID_VENTAS_NO_GRAV);
-    const compras18 = v(ID_COMPRAS_18);
-    const compras10 = v(ID_COMPRAS_10);
-    const comprasNoGrav = v(ID_COMPRAS_NO_GRAV);
+    const ventaCerrado = v(ID_VENTA_MES_CERRADO);
+    const ventaCurso = v(ID_VENTA_MES_CURSO);
+    const comprasCerrado = v(ID_COMPRAS_MES_CERRADO);
+    const comprasCurso = v(ID_COMPRAS_MES_CURSO);
     const credRta = v(ID_CRED_RTA);
-    const itan = v(ID_ITAN);
-    const percepciones = v(ID_PERCEPCIONES);
+    const itan = v(ID_ITAN_RENTA);
+    const percepciones = v(ID_PERCEPCIONES_RENTA);
     const rta2da = v(ID_RTA_2DA);
 
     // Totales
-    const totalVentas = ventasGrav + ventasNoGrav;
-    const totalCompras = compras18 + compras10 + comprasNoGrav;
+    const totalVentas = ventaCerrado + ventaCurso;
+    const totalCompras = comprasCerrado + comprasCurso;
 
-    // IGV Calculado = (Ventas Grav × 18%) - (Compras Grav 18% × 18%)
-    const igvCalc = (ventasGrav * 0.18) - (compras18 * 0.18);
+    // IGV
+    const igvVentas = totalVentas * 0.18;
+    const igvCompras = totalCompras * 0.18;
+    const igvPorPagar = igvVentas - igvCompras;
 
-    // Renta 3era = solo el factor 1.5% — NO se calcula, se guarda como 0.015
-    const renta3ra = 0.015;
-
-    // Renta Preliq = Total Ventas × 1.5% - Crédito Rta Anual
+    // Renta
+    const renta3ra = 0.015;  // solo el factor, no se calcula
     const rentaPreliq = (totalVentas * 0.015) - credRta;
 
-    // IGV Preliq = IGV Calculado
-    const igvPreliq = igvCalc;
+    // IGV Preliq = igual a IGV por Pagar
+    const igvPreliq = igvPorPagar;
 
     // Total a Pagar
     const totalPagar = igvPreliq + rentaPreliq + itan + percepciones + rta2da;
 
-    this.valoresPanel[ID_TOTAL_VENTAS] = Math.round(totalVentas * 100) / 100;
-    this.valoresPanel[ID_TOTAL_COMPRAS] = Math.round(totalCompras * 100) / 100;
-    this.valoresPanel[ID_IGV_CALC] = Math.round(igvCalc * 100) / 100;
-    this.valoresPanel[ID_RENTA_3RA] = renta3ra;  // ← solo 0.015
-    this.valoresPanel[ID_RENTA_PRELIQ] = Math.round(rentaPreliq * 100) / 100;
-    this.valoresPanel[ID_IGV_PRELIQ] = Math.round(igvPreliq * 100) / 100;
-    this.valoresPanel[ID_TOTAL_PAGAR] = Math.round(totalPagar * 100) / 100;
-  }
+    const r = (n: number) => Math.round(n * 100) / 100;
 
+    this.valoresPanel[ID_TOTAL_VENTAS] = r(totalVentas);
+    this.valoresPanel[ID_TOTAL_COMPRAS] = r(totalCompras);
+    this.valoresPanel[ID_IGV_VENTAS] = r(igvVentas);
+    this.valoresPanel[ID_IGV_COMPRAS] = r(igvCompras);
+    this.valoresPanel[ID_IGV_POR_PAGAR] = r(igvPorPagar);
+    this.valoresPanel[ID_RENTA_3RA] = renta3ra;
+    this.valoresPanel[ID_RENTA_PRELIQ] = r(rentaPreliq);
+    this.valoresPanel[ID_IGV_PRELIQ] = r(igvPreliq);
+    this.valoresPanel[ID_TOTAL_PAGAR] = r(totalPagar);
+  }
   // ── Carga ─────────────────────────────────────────────
 
   cargarConceptos() {
@@ -205,7 +230,7 @@ export class EgresosComponent implements OnInit {
           this.columnas = Array.from(fechasSet).sort().map(f => ({
             fecha: f, label: this.formatFechaCorta(f)
           }));
-          this.indiceActivo = Math.max(0, this.columnas.length - 1);
+
           this.datos = {};
           for (const d of r.datos) {
             if (!this.datos[d.concepto_id]) this.datos[d.concepto_id] = {};
@@ -216,10 +241,6 @@ export class EgresosComponent implements OnInit {
       error: () => { this.cargando = false; this.error = 'Error al cargar datos'; }
     });
   }
-  irAFecha(i: number) { this.indiceActivo = i; }
-  irAnterior() { if (this.indiceActivo > 0) this.indiceActivo--; }
-  irSiguiente() { if (this.indiceActivo < this.columnas.length - 1) this.indiceActivo++; }
-  // ── Panel ──────────────────────────────────────────────
 
   abrirPanel() {
     this.mostrarPanel = true;
@@ -249,23 +270,24 @@ export class EgresosComponent implements OnInit {
       error: () => { this.cargandoFecha = false; }
     });
   }
-
   setValorPanel(concepto_id: number, val: string) {
     const clean = val.replace(/[^0-9.]/g, '');
     const num = clean === '' ? null : parseFloat(clean);
     this.valoresPanel[concepto_id] = num;
 
-    // Recalcular según qué campo cambió
     if (concepto_id === ID_FACTURAS || concepto_id === ID_ENVASES) {
       this.recalcularBackus();
     }
-    if ([ID_VENTAS_GRAV, ID_VENTAS_NO_GRAV, ID_COMPRAS_18,
-      ID_COMPRAS_10, ID_COMPRAS_NO_GRAV, ID_CRED_RTA,
-      ID_ITAN, ID_PERCEPCIONES, ID_RTA_2DA].includes(concepto_id)) {
+
+    const RENTA_INPUTS = [
+      ID_VENTA_MES_CERRADO, ID_VENTA_MES_CURSO,
+      ID_COMPRAS_MES_CERRADO, ID_COMPRAS_MES_CURSO,
+      ID_CRED_RTA, ID_ITAN_RENTA, ID_PERCEPCIONES_RENTA, ID_RTA_2DA
+    ];
+    if (RENTA_INPUTS.includes(concepto_id)) {
       this.recalcularRenta();
     }
   }
-
   onInputFocus(e: FocusEvent, concepto_id: number) {
     this.editandoPanelId = concepto_id;
     const v = this.valoresPanel[concepto_id];
@@ -429,4 +451,19 @@ export class EgresosComponent implements OnInit {
 
   trackById(_: number, c: Concepto) { return c.id; }
   trackByFecha(_: number, col: Columna) { return col.fecha; }
+
+
+conceptoAplicaEnFecha(concepto_id: number, fecha: string): boolean {
+  if (!fecha) return true;
+  const esAbrilOmas = fecha >= '2026-04-01';
+  const esMarzOmas  = fecha >= '2026-03-01';
+  if (this.IDS_SNACKS.has(concepto_id) && esAbrilOmas) return false;   // snacks se ocultan en abril
+  if (this.IDS_NUEVOS.has(concepto_id) && !esMarzOmas) return false;   // trujillo/chimbote desde marzo
+  return true;
+}
+
+mostrarFila(concepto_id: number): boolean {
+  if (!this.IDS_SNACKS.has(concepto_id) && !this.IDS_NUEVOS.has(concepto_id)) return true;
+  return this.columnasFiltradas.some(col => this.conceptoAplicaEnFecha(concepto_id, col.fecha));
+}
 }
