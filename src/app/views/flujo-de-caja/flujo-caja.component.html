@@ -1,0 +1,280 @@
+<div class="fc-wrap">
+
+  <!-- ══ HEADER ══════════════════════════════════════════════════════════ -->
+  <div class="fc-header">
+    <div class="fc-header-left">
+      <div class="fc-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+          <polyline points="16 7 22 7 22 13" />
+        </svg>
+      </div>
+      <div>
+        <div class="fc-title">Flujo de Caja</div>
+        <div class="fc-subtitle">Ingresos y egresos · agrupados por clasificación</div>
+      </div>
+    </div>
+
+    <button class="fc-btn-aplicar" (click)="cargarResumen()" [disabled]="cargando">
+      <svg *ngIf="!cargando" xmlns="http://www.w3.org/2000/svg" width="15" height="15"
+        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+        stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.51"/>
+      </svg>
+      <div class="fc-spinner-sm" *ngIf="cargando"></div>
+      {{ cargando ? 'Cargando…' : 'Actualizar' }}
+    </button>
+  </div>
+
+  <!-- ══ FILTROS ══════════════════════════════════════════════════════════ -->
+  <div class="fc-filtros-wrap">
+
+    <!-- Tabs modo filtro -->
+    <div class="fc-modo-tabs">
+      <button class="fc-modo-tab" [class.active]="modoFiltro === 'mes'"
+        (click)="modoFiltro = 'mes'; onModoChange()">Por mes</button>
+      <button class="fc-modo-tab" [class.active]="modoFiltro === 'rango'"
+        (click)="modoFiltro = 'rango'; onModoChange()">Rango de fechas</button>
+    </div>
+
+    <div class="fc-filtros-body">
+
+      <!-- Filtro por mes -->
+      <div class="fc-filtro-grupo" *ngIf="modoFiltro === 'mes'">
+        <label class="fc-label">Mes</label>
+        <select class="fc-select" [(ngModel)]="mesSeleccionado" (change)="onMesChange()">
+          <option value="">Todos</option>
+          <option *ngFor="let m of mesesDisponibles" [value]="m.mes">
+            {{ m.mes | titlecase }} {{ m.anio }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Filtro por rango -->
+      <ng-container *ngIf="modoFiltro === 'rango'">
+        <div class="fc-filtro-grupo">
+          <label class="fc-label">Desde</label>
+          <input class="fc-input-date" type="date" [(ngModel)]="fechaDesde" />
+        </div>
+        <div class="fc-filtro-grupo">
+          <label class="fc-label">Hasta</label>
+          <input class="fc-input-date" type="date" [(ngModel)]="fechaHasta" />
+        </div>
+      </ng-container>
+
+    </div>
+
+    <!-- Filtro bancos -->
+    <div class="fc-bancos-wrap">
+      <span class="fc-label">Bancos</span>
+      <div class="fc-bancos-chips">
+        <button *ngFor="let b of bancosDisponibles"
+          class="fc-chip"
+          [class.active]="isBancoActivo(b.tabla)"
+          (click)="toggleBanco(b.tabla)">
+          {{ b.nombre }}
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══ ERROR ══════════════════════════════════════════════════════════ -->
+  <div class="fc-error" *ngIf="error && !cargando">{{ error }}</div>
+
+  <!-- ══ LOADING vacío ══════════════════════════════════════════════════ -->
+  <div class="fc-loading" *ngIf="cargando && !resumen">
+    <div class="fc-spinner"></div>
+    <span>Consolidando registros bancarios…</span>
+  </div>
+
+  <!-- ══ CONTENIDO ════════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="resumen && !error">
+
+    <!-- KPI strip -->
+    <div class="fc-kpis">
+      <div class="fc-kpi fc-kpi-ing">
+        <span class="fc-kpi-label">Total Ingresos</span>
+        <span class="fc-kpi-valor">{{ fmt(resumen.total_ingresos) }}</span>
+        <span class="fc-kpi-sub">{{ resumen.ingresos.length }} categorías · {{ labelPeriodo }}</span>
+      </div>
+      <div class="fc-kpi fc-kpi-egr">
+        <span class="fc-kpi-label">Total Egresos</span>
+        <span class="fc-kpi-valor">{{ fmt(resumen.total_egresos) }}</span>
+        <span class="fc-kpi-sub">{{ resumen.egresos.length }} categorías</span>
+      </div>
+      <div class="fc-kpi" [class.fc-kpi-pos]="resumen.neto >= 0" [class.fc-kpi-neg]="resumen.neto < 0">
+        <span class="fc-kpi-label">Neto</span>
+        <span class="fc-kpi-valor">{{ fmt(resumen.neto) }}</span>
+        <span class="fc-kpi-sub">{{ resumen.neto >= 0 ? 'Superávit' : 'Déficit' }}</span>
+      </div>
+    </div>
+
+    <!-- ── INGRESOS ─────────────────────────────────────────────── -->
+    <div class="fc-seccion">
+      <div class="fc-seccion-header fc-header-ing">
+        <div class="fc-seccion-titulo">
+          <span class="fc-dot fc-dot-ing"></span>
+          INGRESOS
+          <span class="fc-badge">{{ resumen.ingresos.length }}</span>
+        </div>
+        <span class="fc-seccion-total">{{ fmt(resumen.total_ingresos) }}</span>
+      </div>
+
+      <table class="fc-tabla">
+        <thead>
+          <tr>
+            <th class="fc-th-clasi">Clasificación</th>
+            <th class="fc-th-bar"></th>
+            <th class="fc-th-pct">%</th>
+            <th class="fc-th-cant">Ops.</th>
+            <th class="fc-th-monto">Total S/</th>
+            <th class="fc-th-accion"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let g of resumen.ingresos; trackBy: trackByClasi" class="fc-row fc-row-ing">
+            <td class="fc-td-clasi">{{ g.clasificacion }}</td>
+            <td class="fc-td-bar">
+              <div class="fc-bar-track">
+                <div class="fc-bar-fill fc-bar-ing"
+                  [style.width.%]="pctNum(g.total, resumen.total_ingresos)"></div>
+              </div>
+            </td>
+            <td class="fc-td-pct">{{ pct(g.total, resumen.total_ingresos) }}</td>
+            <td class="fc-td-cant">{{ g.cantidad }}</td>
+            <td class="fc-td-monto fc-monto-ing">{{ fmt(g.total) }}</td>
+            <td class="fc-td-accion">
+              <button class="fc-btn-ver" (click)="verDetalle(g.clasificacion, 'ingreso')"
+                title="Ver registros">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr class="fc-row-total">
+            <td colspan="4" class="fc-td-total-label">TOTAL INGRESOS</td>
+            <td class="fc-td-monto fc-monto-ing"><strong>{{ fmt(resumen.total_ingresos) }}</strong></td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <!-- ── EGRESOS ──────────────────────────────────────────────── -->
+    <div class="fc-seccion">
+      <div class="fc-seccion-header fc-header-egr">
+        <div class="fc-seccion-titulo">
+          <span class="fc-dot fc-dot-egr"></span>
+          EGRESOS
+          <span class="fc-badge">{{ resumen.egresos.length }}</span>
+        </div>
+        <span class="fc-seccion-total">{{ fmt(resumen.total_egresos) }}</span>
+      </div>
+
+      <table class="fc-tabla">
+        <thead>
+          <tr>
+            <th class="fc-th-clasi">Clasificación</th>
+            <th class="fc-th-bar"></th>
+            <th class="fc-th-pct">%</th>
+            <th class="fc-th-cant">Ops.</th>
+            <th class="fc-th-monto">Total S/</th>
+            <th class="fc-th-accion"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let g of resumen.egresos; trackBy: trackByClasi" class="fc-row fc-row-egr">
+            <td class="fc-td-clasi">{{ g.clasificacion }}</td>
+            <td class="fc-td-bar">
+              <div class="fc-bar-track">
+                <div class="fc-bar-fill fc-bar-egr"
+                  [style.width.%]="pctNum(g.total, resumen.total_egresos)"></div>
+              </div>
+            </td>
+            <td class="fc-td-pct">{{ pct(g.total, resumen.total_egresos) }}</td>
+            <td class="fc-td-cant">{{ g.cantidad }}</td>
+            <td class="fc-td-monto fc-monto-egr">{{ fmt(g.total) }}</td>
+            <td class="fc-td-accion">
+              <button class="fc-btn-ver" (click)="verDetalle(g.clasificacion, 'egreso')"
+                title="Ver registros">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr class="fc-row-total">
+            <td colspan="4" class="fc-td-total-label">TOTAL EGRESOS</td>
+            <td class="fc-td-monto fc-monto-egr"><strong>{{ fmt(resumen.total_egresos) }}</strong></td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+  </ng-container>
+
+  <!-- ══ MODAL DETALLE ════════════════════════════════════════════════════ -->
+  <div class="fc-overlay" *ngIf="mostrarDetalle" (click)="cerrarDetalle()"></div>
+  <div class="fc-modal" *ngIf="mostrarDetalle">
+
+    <div class="fc-modal-header">
+      <div>
+        <div class="fc-modal-titulo">{{ detalle?.clasificacion ?? '…' }}</div>
+        <div class="fc-modal-sub">
+          {{ detalle?.tipo === 'ingreso' ? 'Ingresos' : 'Egresos' }} ·
+          {{ detalle?.cantidad ?? 0 }} registros ·
+          <strong>{{ fmt(detalle?.total) }}</strong>
+        </div>
+      </div>
+      <button class="fc-modal-close" (click)="cerrarDetalle()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+          stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="fc-modal-body">
+      <div class="fc-loading" *ngIf="cargandoDetalle">
+        <div class="fc-spinner"></div>
+        <span>Cargando registros…</span>
+      </div>
+
+      <table class="fc-tabla fc-tabla-detalle" *ngIf="detalle && !cargandoDetalle">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Banco</th>
+            <th>Descripción</th>
+            <th>Sede</th>
+            <th class="fc-th-monto">Monto S/</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of detalle.registros"
+            [class.fc-row-ing]="detalle.tipo === 'ingreso'"
+            [class.fc-row-egr]="detalle.tipo === 'egreso'">
+            <td class="fc-td-fecha">{{ r.fecha }}</td>
+            <td class="fc-td-banco">{{ r.banco }}</td>
+            <td class="fc-td-desc">{{ r.descripcion }}</td>
+            <td class="fc-td-sede">{{ r.sede || '—' }}</td>
+            <td class="fc-td-monto"
+              [class.fc-monto-ing]="detalle.tipo === 'ingreso'"
+              [class.fc-monto-egr]="detalle.tipo === 'egreso'">
+              {{ fmt(r.monto) }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+</div>

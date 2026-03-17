@@ -44,13 +44,16 @@
       <app-dash-wk *ngIf="vista === 'dashwk'"></app-dash-wk>
       <app-maes *ngIf="vista === 'maes'"></app-maes>
       <app-simulador-trade-spend *ngIf="vista === 'simuladorTS'"></app-simulador-trade-spend>
+      <app-flujo-caja *ngIf="vista === 'flujoCaja'"></app-flujo-caja>
       <app-pga *ngIf="vista === 'pga'"></app-pga>
+      <app-conciliacion-prosegur *ngIf="vista === 'conciliacionProsegur'"></app-conciliacion-prosegur>
       <app-usuarios *ngIf="vista === 'usuarios'"></app-usuarios>
       <div class="wk-coming" *ngIf="vista !== 'semanal' && vista !== 'mensual' && vista !== 'ingresos' 
              && vista !== 'egresos' && vista !== 'stock' && vista !== 'ingresosbancarios' 
              && vista !== 'reportes-bancarios' && vista !== 'registroIB' && vista !== 'compBancario' && vista !== 'analisisBancarios' 
              && vista !== 'comparadorIngresos' && vista !== 'dashwk' && vista !== 'maes' && vista !== 'pga' 
-             && vista !== 'renta' && vista !== 'usuarios' && vista !== 'simuladorTS'">
+             && vista !== 'renta' && vista !== 'usuarios' && vista !== 'simuladorTS' && vista !== 'flujoCaja'
+             && vista !== 'conciliacionProsegur'">
         <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
           <circle cx="26" cy="26" r="23" stroke="#0070C0" stroke-width="2" fill="#EBF3FB" />
           <path d="M26 15v11l7 4" stroke="#0070C0" stroke-width="2.5" stroke-linecap="round" />

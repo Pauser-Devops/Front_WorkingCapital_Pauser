@@ -42,6 +42,15 @@ export class SidebarComponent {
       ]
     },
     {
+      label: 'Traking Prosegur - Bancos',
+      icono: 'local_shipping',
+      abierto: true,
+      modulos: [
+        { id: 'conciliacionProsegur', label: 'Cruce Prosegur' },
+       
+      ]
+    },
+    {
       label: 'Working Capital',
       icono: 'trending_up',
       abierto: true,
@@ -53,7 +62,7 @@ export class SidebarComponent {
         { id: 'egresos',  label: 'Egresos',            roles: ['admin', 'gerencia', 'finanzas_admin'] },
         { id: 'stock',    label: 'Stock vs CxP',       roles: ['admin', 'gerencia', 'finanzas_admin'] },
         { id: 'renta',    label: 'Renta y Proyección', roles: ['admin', 'gerencia', 'finanzas_admin'] },
-        { id: 'flujo',    label: 'Flujo de Caja',      roles: ['admin', 'gerencia', 'finanzas_admin'] },
+        { id: 'flujoCaja',    label: 'Flujo de Caja',      roles: ['admin', 'gerencia', 'finanzas_admin'] },
       ]
     },
     {
@@ -67,7 +76,7 @@ export class SidebarComponent {
     },
     {
       label: 'Revenue',
-      icono: 'settings',
+      icono: 'payments',
       abierto: true,
       modulos: [
         { id: 'simuladorTS', label: 'Simulador' ,roles: ['admin', 'gerencia']},

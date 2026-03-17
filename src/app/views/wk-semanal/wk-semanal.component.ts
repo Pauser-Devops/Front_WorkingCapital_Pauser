@@ -149,4 +149,5 @@ export class WkSemanalComponent implements OnInit, OnDestroy {
     if (!this.fechaActiva) return;
     window.open(`${API}/exportar/wk-semanal?fecha_corte=${this.fechaActiva}`, '_blank');
   }
+  
 }

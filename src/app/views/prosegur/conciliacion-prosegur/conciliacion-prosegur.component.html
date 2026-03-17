@@ -1,0 +1,194 @@
+<div class="cp-wrap">
+
+  <!-- HEADER -->
+  <div class="cp-header">
+    <div class="cp-header-left">
+      <div class="cp-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+      </div>
+      <div>
+        <div class="cp-title">Conciliación PROSEGUR</div>
+        <div class="cp-subtitle">Cruce banco vs registros PROSEGUR</div>
+      </div>
+    </div>
+    <button class="cp-btn-export" (click)="exportar()" [disabled]="!resultado || exportando">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      {{ exportando ? 'Exportando...' : 'Exportar Excel' }}
+    </button>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="cp-filtros">
+
+    <!-- Banco -->
+    <div class="cp-filtro-grupo">
+      <label class="cp-filtro-label">Banco</label>
+      <div class="cp-btn-grupo">
+        <button class="cp-btn-banco" [class.activo]="bancoSeleccionado === 'IBK'"
+          (click)="bancoSeleccionado = 'IBK'; cargar()">IBK</button>
+        <button class="cp-btn-banco" [class.activo]="bancoSeleccionado === 'BBVA'"
+          (click)="bancoSeleccionado = 'BBVA'; cargar()">BBVA</button>
+      </div>
+    </div>
+
+    <!-- Mes -->
+    <div class="cp-filtro-grupo">
+      <label class="cp-filtro-label">Mes</label>
+      <select class="cp-select" [(ngModel)]="mesSeleccionado" (change)="cargar()">
+        <option *ngFor="let m of meses" [value]="m.v">{{ m.n }}</option>
+      </select>
+    </div>
+
+    <!-- Año -->
+    <div class="cp-filtro-grupo">
+      <label class="cp-filtro-label">Año</label>
+      <select class="cp-select" [(ngModel)]="anioSeleccionado" (change)="cargar()">
+        <option [value]="2025">2025</option>
+        <option [value]="2026">2026</option>
+        <option [value]="2027">2027</option>
+      </select>
+    </div>
+
+    <!-- Filtro código -->
+    <div class="cp-filtro-grupo">
+      <label class="cp-filtro-label">Código</label>
+      <select class="cp-select" [(ngModel)]="filtroCodigo">
+        <option value="">Todos</option>
+        <option *ngFor="let c of codigosDisponibles" [value]="c">{{ c }}</option>
+      </select>
+    </div>
+
+    <!-- Solo descuadres -->
+    <div class="cp-filtro-grupo cp-filtro-check">
+      <label class="cp-check-label">
+        <input type="checkbox" [(ngModel)]="soloDescuadres" />
+        Solo descuadres
+      </label>
+    </div>
+
+  </div>
+
+  <!-- LOADING -->
+  <div class="cp-loading" *ngIf="cargando">
+    <div class="cp-spinner"></div>
+    <span>Cargando cruce...</span>
+  </div>
+
+  <!-- ERROR -->
+  <div class="cp-error" *ngIf="error && !cargando">{{ error }}</div>
+
+  <!-- RESUMEN KPIs -->
+  <div class="cp-kpis" *ngIf="resultado && !cargando">
+    <div class="cp-kpi">
+      <div class="cp-kpi-label">Total IBK</div>
+      <div class="cp-kpi-val">{{ fmt(resultado.total_ibk) }}</div>
+    </div>
+    <div class="cp-kpi">
+      <div class="cp-kpi-label">Total PROSEGUR</div>
+      <div class="cp-kpi-val">{{ fmt(resultado.total_prosegur) }}</div>
+    </div>
+    <div class="cp-kpi" [class.cp-kpi-warn]="resultado.diferencia_total !== 0">
+      <div class="cp-kpi-label">Diferencia total</div>
+      <div class="cp-kpi-val">{{ fmt(resultado.diferencia_total) }}</div>
+    </div>
+    <div class="cp-kpi" [class.cp-kpi-warn]="resultado.total_descuadres > 0">
+      <div class="cp-kpi-label">Registros</div>
+      <div class="cp-kpi-val">{{ resultado.total_filas }}</div>
+    </div>
+  </div>
+
+  <!-- RESUMEN POR SEDE -->
+  <div class="cp-seccion-titulo" *ngIf="resultado && !cargando">Resumen por sede</div>
+  <div class="cp-tabla-wrap cp-tabla-resumen" *ngIf="resultado && !cargando">
+    <table class="cp-tabla">
+      <thead>
+        <tr>
+          <th>Sede</th>
+          <th>Tipo</th>
+          <th class="cp-th-num">Total IBK</th>
+          <th class="cp-th-num">Total PROSEGUR</th>
+          <th class="cp-th-num">Diferencia</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of resumenPorSede"
+          [class.cp-row-warn]="r.diferencia !== 0">
+          <td class="cp-td-sede">{{ r.sede }}</td>
+          <td><span class="cp-badge" [class.billetes]="r.tipo === 'billetes'" [class.monedas]="r.tipo === 'monedas'">{{ r.tipo }}</span></td>
+          <td class="cp-td-num">{{ fmt(r.total_ibk) }}</td>
+          <td class="cp-td-num">{{ fmt(r.total_prosegur) }}</td>
+          <td class="cp-td-num" [class.cp-dif-warn]="r.diferencia !== 0" [class.cp-dif-ok]="r.diferencia === 0">
+            {{ fmt(r.diferencia) }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- DETALLE POR REGISTRO -->
+  <div class="cp-seccion-titulo" *ngIf="resultado && !cargando">
+    Detalle — {{ mesNombre }} {{ anioSeleccionado }} · {{ bancoSeleccionado }}
+    <span class="cp-badge-count">{{ filasFiltradas.length }} registros</span>
+  </div>
+
+  <div class="cp-tabla-wrap" *ngIf="resultado && !cargando">
+    <table class="cp-tabla">
+      <thead>
+        <tr>
+          <th>Fecha IBK</th>
+          <th>Código</th>
+          <th>Sede</th>
+          <th>Descripción</th>
+          <th>Fecha PROSEGUR</th>
+          <th class="cp-th-num">Monto IBK</th>
+          <th class="cp-th-num">Monto PROSEGUR</th>
+          <th class="cp-th-num">Diferencia</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let f of filasFiltradas"
+          [class.cp-row-warn]="f.descuadre"
+          [class.cp-row-ok]="!f.descuadre && f.codigo">
+          <td>{{ fmtFecha(f.fecha_ibk) }}</td>
+          <td><span class="cp-codigo" *ngIf="f.codigo">{{ f.codigo }}</span></td>
+          <td>
+            <span *ngIf="f.sede">
+              {{ f.sede }}
+              <span class="cp-badge" [class.billetes]="f.tipo === 'billetes'" [class.monedas]="f.tipo === 'monedas'">
+                {{ f.tipo }}
+              </span>
+            </span>
+          </td>
+          <td class="cp-td-desc">{{ f.descripcion }}</td>
+          <td>
+            <span *ngIf="f.fecha_prosegur_ini">
+              {{ fmtFecha(f.fecha_prosegur_ini) }}
+              <span *ngIf="f.fecha_prosegur_fin && f.fecha_prosegur_fin !== f.fecha_prosegur_ini">
+                → {{ fmtFecha(f.fecha_prosegur_fin) }}
+              </span>
+            </span>
+          </td>
+          <td class="cp-td-num">{{ fmt(f.monto_ibk) }}</td>
+          <td class="cp-td-num">{{ fmt(f.monto_prosegur) }}</td>
+          <td class="cp-td-num" [class.cp-dif-warn]="f.descuadre" [class.cp-dif-ok]="!f.descuadre">
+            {{ fmt(f.diferencia) }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- EMPTY -->
+  <div class="cp-empty" *ngIf="resultado && resultado.total_filas === 0 && !cargando">
+    <p>Sin registros PROSEGUR en {{ bancoSeleccionado }} para {{ mesNombre }} {{ anioSeleccionado }}</p>
+  </div>
+
+</div>
