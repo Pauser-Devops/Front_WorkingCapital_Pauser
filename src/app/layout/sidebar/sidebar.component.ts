@@ -42,8 +42,8 @@ export class SidebarComponent {
       ]
     },
     {
-      label: 'Traking Prosegur - Bancos',
-      icono: 'local_shipping',
+      label: 'Prosegur - Bancos',
+      icono: 'payments',
       abierto: true,
       modulos: [
         { id: 'conciliacionProsegur', label: 'Cruce Prosegur' },
@@ -76,7 +76,7 @@ export class SidebarComponent {
     },
     {
       label: 'Revenue',
-      icono: 'payments',
+      icono: 'account_balance_wallet',
       abierto: true,
       modulos: [
         { id: 'simuladorTS', label: 'Simulador' ,roles: ['admin', 'gerencia']},

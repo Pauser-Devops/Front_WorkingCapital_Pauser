@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { WkRefreshService } from './../../shared/services/wk-refresh.service';
 import { Subject } from 'rxjs';
+import { FormsModule } from '@angular/forms';
 import { takeUntil } from 'rxjs/operators';
 
 const API = environment.apiUrl;
@@ -36,9 +37,10 @@ interface WkDatos {
 @Component({
   selector: 'app-wk-semanal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './wk-semanal.component.html',
   styleUrls: ['./wk-semanal.component.css'],
+ 
 })
 export class WkSemanalComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
@@ -48,9 +50,9 @@ export class WkSemanalComponent implements OnInit, OnDestroy {
   datos: Record<string, WkDatos> = {};
   cargando = true;
   error = '';
+  filtroDesde = '';
+  filtroHasta = '';
 
-  get fechaActiva(): string { return this.fechas[this.indiceActivo] ?? ''; }
-  get datosActivos(): WkDatos | null { return this.datos[this.fechaActiva] ?? null; }
 
   constructor(private http: HttpClient, private wkRefresh: WkRefreshService) { }
 
@@ -123,9 +125,6 @@ export class WkSemanalComponent implements OnInit, OnDestroy {
     this.cargarResumen(fecha);
   }
 
-  irAFecha(i: number) { this.indiceActivo = i; }
-  irAnterior() { if (this.indiceActivo > 0) this.indiceActivo--; }
-  irSiguiente() { if (this.indiceActivo < this.fechas.length - 1) this.indiceActivo++; }
 
   formatFecha(f: string): string {
     const m = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
@@ -145,9 +144,26 @@ export class WkSemanalComponent implements OnInit, OnDestroy {
   entries(obj: Record<string, number>): [string, number][] {
     return Object.entries(obj);
   }
+
+
+  get fechasFiltradas(): string[] {
+    if (!this.filtroDesde && !this.filtroHasta) return this.fechas;
+    return this.fechas.filter(f => {
+      const ok1 = !this.filtroDesde || f >= this.filtroDesde;
+      const ok2 = !this.filtroHasta || f <= this.filtroHasta;
+      return ok1 && ok2;
+    });
+  }
+
+  get fechaActiva(): string { return this.fechasFiltradas[this.indiceActivo] ?? ''; }
+  get datosActivos(): WkDatos | null { return this.datos[this.fechaActiva] ?? null; }
+
+  irAFecha(i: number) { this.indiceActivo = i; }
+  irAnterior() { if (this.indiceActivo > 0) this.indiceActivo--; }
+  irSiguiente() { if (this.indiceActivo < this.fechasFiltradas.length - 1) this.indiceActivo++; }
+
   exportar() {
     if (!this.fechaActiva) return;
     window.open(`${API}/exportar/wk-semanal?fecha_corte=${this.fechaActiva}`, '_blank');
   }
-  
 }

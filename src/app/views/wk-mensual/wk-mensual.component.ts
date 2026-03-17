@@ -5,6 +5,7 @@ import { environment } from '../../../environments/environment';
 import { WkRefreshService } from './../../shared/services/wk-refresh.service';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { FormsModule } from '@angular/forms';
 
 const API = environment.apiUrl;
 
@@ -42,7 +43,7 @@ interface Mes {
 @Component({
   selector: 'app-wk-mensual',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './wk-mensual.component.html',
   styleUrls: ['./wk-mensual.component.css'],
 })
@@ -55,9 +56,7 @@ export class WkMensualComponent implements OnInit, OnDestroy {
   cargando = true;
   error = '';
 
-  get mesActivo(): Mes | null { return this.meses[this.indiceActivo] ?? null; }
-  get datosActivos(): WkDatos | null { return this.mesActivo ? (this.datos[this.mesActivo.ym] ?? null) : null; }
-
+ 
   constructor(private http: HttpClient, private wkRefresh: WkRefreshService) { }
 
   ngOnInit() {
@@ -136,10 +135,6 @@ export class WkMensualComponent implements OnInit, OnDestroy {
     });
   }
 
-  irAMes(i: number) { this.indiceActivo = i; }
-  irAnterior() { if (this.indiceActivo > 0) this.indiceActivo--; }
-  irSiguiente() { if (this.indiceActivo < this.meses.length - 1) this.indiceActivo++; }
-
   fmt(n: number | null | undefined): string {
     if (n == null) return '—';
     return n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -150,8 +145,32 @@ export class WkMensualComponent implements OnInit, OnDestroy {
   entries(obj: Record<string, number>): [string, number][] {
     return Object.entries(obj);
   }
-  exportar() {
-    if (!this.mesActivo) return;
-    window.open(`${API}/exportar/wk-mensual?fecha_corte=${this.mesActivo.fecha}`, '_blank');
-  }
+ 
+
+
+  filtroDesde = '';
+filtroHasta = '';
+
+get mesesFiltrados(): Mes[] {
+  if (!this.filtroDesde && !this.filtroHasta) return this.meses;
+  return this.meses.filter(m => {
+    const ok1 = !this.filtroDesde || m.fecha >= this.filtroDesde;
+    const ok2 = !this.filtroHasta || m.fecha <= this.filtroHasta;
+    return ok1 && ok2;
+  });
+}
+
+get mesActivo(): Mes | null { return this.mesesFiltrados[this.indiceActivo] ?? null; }
+get datosActivos(): WkDatos | null {
+  return this.mesActivo ? (this.datos[this.mesActivo.ym] ?? null) : null;
+}
+
+irAMes(i: number) { this.indiceActivo = i; }
+irAnterior() { if (this.indiceActivo > 0) this.indiceActivo--; }
+irSiguiente() { if (this.indiceActivo < this.mesesFiltrados.length - 1) this.indiceActivo++; }
+
+exportar() {
+  if (!this.mesActivo) return;
+  window.open(`${API}/exportar/wk-mensual?fecha_corte=${this.mesActivo.fecha}`, '_blank');
+}
 }

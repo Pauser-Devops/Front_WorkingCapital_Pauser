@@ -92,11 +92,9 @@ export class IngresosComponent implements OnInit {
   filtroDesde = '';
   filtroHasta = '';
 
-  // IDs Snacks ingresos (se ocultan desde abril 2026)
-  readonly IDS_SNACKS_ING = new Set([20, 29, 40]); // CHIMBOTE SNACKS x3
-  // IDs nuevos Chimbote (visibles desde marzo 2026)
-  readonly IDS_NUEVOS_ING = new Set([55, 56]); // CHIMBOTE INVENTARIOS, CHIMBOTE VENTAS CONTADO
-  // Detalle PROSEGUR para mostrar breakdown en el modal
+  readonly IDS_SNACKS_ING = new Set([20, 29, 40]);
+
+
   prosegurDetalle: {
     puno: number | null;
     huaraz: number | null;
@@ -162,11 +160,7 @@ export class IngresosComponent implements OnInit {
     window.open(`${API}/exportar/ingresos?fechas=${fechas}`, '_blank');
   }
 
-  // Actualiza mostrarFila para multi-columna
-  mostrarFila(concepto_id: number): boolean {
-    if (!this.IDS_SNACKS_ING.has(concepto_id)) return true;
-    return this.columnasFiltradas.some(col => this.conceptoAplicaEnFecha(concepto_id, col.fecha));
-  }
+
   get conceptosBancoAuto(): Concepto[] {
     return this.conceptos.filter(c => IDS_AUTO.has(c.id));
   }
@@ -499,12 +493,21 @@ export class IngresosComponent implements OnInit {
       }
     });
   }
+
+
   conceptoAplicaEnFecha(concepto_id: number, fecha: string): boolean {
     if (!fecha) return true;
     const esAbrilOmas = fecha >= '2026-04-01';
     if (this.IDS_SNACKS_ING.has(concepto_id) && esAbrilOmas) return false;
     return true;
   }
+
+  mostrarFila(concepto_id: number): boolean {
+    if (!this.IDS_SNACKS_ING.has(concepto_id)) return true;
+    return this.columnasFiltradas.some(col => this.conceptoAplicaEnFecha(concepto_id, col.fecha));
+  }
+
+
   get kpisIng() {
     const totalSeccion = (nombreSeccion: string) =>
       this.columnasFiltradas.reduce((acc, col) => {

@@ -15,18 +15,25 @@
 
   <!-- ── Navegador de fechas ─────────────────────────────────────── -->
   <div class="nav-fechas" *ngIf="!cargando && !error && columnas.length > 0">
-
+    <div class="eg-filtro-rango">
+      <label class="eg-filtro-label">Desde</label>
+      <input class="eg-filtro-input" type="date" [(ngModel)]="filtroDesde" />
+      <label class="eg-filtro-label">Hasta</label>
+      <input class="eg-filtro-input" type="date" [(ngModel)]="filtroHasta" />
+      <button class="eg-filtro-clear" (click)="filtroDesde=''; filtroHasta=''; indiceActivo=0"
+        *ngIf="filtroDesde || filtroHasta">
+        ✕ Limpiar
+      </button>
+    </div>
     <button class="btn-nav" (click)="irAnterior()" [disabled]="indiceActivo === 0">‹</button>
-
     <div class="chips-fechas">
-      <button *ngFor="let col of columnas; let i = index; trackBy: trackByFecha" class="chip-fecha"
+      <button *ngFor="let col of columnasFiltradas; let i = index; trackBy: trackByFecha" class="chip-fecha"
         [class.chip-activo]="i === indiceActivo" (click)="irAFecha(i)">
         {{ col.label }}
       </button>
-
     </div>
-
-    <button class="btn-nav" (click)="irSiguiente()" [disabled]="indiceActivo === columnas.length - 1">›</button>
+    <button class="btn-nav" (click)="irSiguiente()"
+      [disabled]="indiceActivo === columnasFiltradas.length - 1">›</button>
     <button class="btn-export" (click)="exportar()" [disabled]="!columnaActiva">
       <span class="material-icons">download</span>
       Exportar

@@ -225,3 +225,44 @@
 .btn-export .material-icons {
   font-size: 16px;
 }
+.eg-filtro-rango {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.eg-filtro-label {
+  font-size: 12px;
+  color: var(--text-muted, #64748b);
+  font-weight: 500;
+}
+
+.eg-filtro-input {
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 13px;
+  color: var(--text, #1e293b);
+  background: var(--bg-card, #fff);
+  cursor: pointer;
+}
+
+.eg-filtro-input:focus {
+  outline: none;
+  border-color: var(--primary, #1d4ed8);
+}
+
+.eg-filtro-clear {
+  background: none;
+  border: 1px solid #bfdbfe;
+  color: #2563eb;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.eg-filtro-clear:hover {
+  background: #eff6ff;
+}

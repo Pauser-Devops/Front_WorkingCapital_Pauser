@@ -192,15 +192,66 @@
 }
 
 
+/* --- Estilos para el contenedor HEADER --- */
 .cp-header {
+  display: flex;
+  justify-content: space-between; /* Empuja el grupo izquierdo a un lado y el derecho al otro */
+  align-items: center;
+  padding: 16px; /* Ajusta según necesites */
+  gap: 15px; /* Espacio mínimo si se encogen */
+}
+
+/* Encapsulamos el título e icono izquierdos */
+.cp-header-left {
   display: flex;
   align-items: center;
   gap: 10px;
 }
-.ing-btn-nueva {
+
+/* --- ESTILO PARA TU BOTÓN 'PROSEGUR' (.ing-btn-calcular) --- */
+.ing-btn-calcular {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px; /* Un poco más de padding para que se vea mejor */
+  background-color: #f8fafc; /* Fondo suave */
+  border: 1px solid #e2e8f0;
+  border-radius: 8px; /* Bordes más redondeados */
+  color: #475569; /* Texto gris oscuro */
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
   white-space: nowrap;
+  /* Margen derecho para separarlo un poco del botón de exportar */
+  margin-right: 10px; 
 }
 
+/* Efectos hover/active para el botón */
+.ing-btn-calcular:hover:not(:disabled) {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #1e293b;
+}
+
+/* Estado deshabilitado (Sincronizando) */
+.ing-btn-calcular:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #f1f5f9;
+}
+
+/* Animación de rotación para el icono SVG cuando está deshabilitado */
+.ing-btn-calcular:disabled svg {
+  animation: spin 1.5s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* --- Tus estilos de mensaje de sincronización (se mantienen) --- */
 .ing-sync-msg {
   font-size: 12px;
   color: #64748b;
@@ -210,10 +261,12 @@
   white-space: nowrap;
   animation: fadeIn 0.2s ease;
 }
+
 .ing-sync-msg.ok {
   color: #16a34a;
   background: #f0fdf4;
 }
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-4px); }
   to   { opacity: 1; transform: translateY(0); }

@@ -47,22 +47,6 @@ export class StockVsCxpComponent implements OnInit, OnDestroy {
   // ── Navegación por fecha (una a la vez) ──────────────────────────
   indiceActivo = 0;
 
-  get columnaActiva(): Columna | null {
-    return this.columnas[this.indiceActivo] ?? null;
-  }
-
-  irAnterior() {
-    if (this.indiceActivo > 0) this.indiceActivo--;
-  }
-
-  irSiguiente() {
-    if (this.indiceActivo < this.columnas.length - 1) this.indiceActivo++;
-  }
-
-  irAFecha(i: number) {
-    this.indiceActivo = i;
-  }
-
   // Modal nueva fecha
   mostrarModal = false;
   nuevaFecha = '';
@@ -309,9 +293,30 @@ export class StockVsCxpComponent implements OnInit, OnDestroy {
   trackByFecha(_: number, col: Columna) { return col.fecha; }
   trackByProv(_: number, p: string) { return p; }
 
-  // ── Exportar Excel ─────────────────────────────────────────────────
+
+
+  filtroDesde = '';
+  filtroHasta = '';
+
+  get columnasFiltradas(): Columna[] {
+    if (!this.filtroDesde && !this.filtroHasta) return this.columnas;
+    return this.columnas.filter(col => {
+      const ok1 = !this.filtroDesde || col.fecha >= this.filtroDesde;
+      const ok2 = !this.filtroHasta || col.fecha <= this.filtroHasta;
+      return ok1 && ok2;
+    });
+  }
+
+  get columnaActiva(): Columna | null {
+    return this.columnasFiltradas[this.indiceActivo] ?? null;
+  }
+
+  irAnterior() { if (this.indiceActivo > 0) this.indiceActivo--; }
+  irSiguiente() { if (this.indiceActivo < this.columnasFiltradas.length - 1) this.indiceActivo++; }
+  irAFecha(i: number) { this.indiceActivo = i; }
+
   exportar() {
-    const col = this.columnaActiva;   // ← fecha visible en pantalla
+    const col = this.columnaActiva;
     if (!col) return;
     window.open(`${API}/exportar/stock-cxp?fecha_corte=${col.fecha}`, '_blank');
   }

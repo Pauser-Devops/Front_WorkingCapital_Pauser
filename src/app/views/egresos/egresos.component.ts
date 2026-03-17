@@ -63,6 +63,7 @@ const DEFAULTS_FIJOS: Record<number, number> = {
   30: 19928.59,       // CONTRATO MUTUO
 };
 
+
 const MOVILIDADES_DEFAULT = 61000;
 const SALARIO_BASE = 820000;
 interface Concepto {
@@ -108,8 +109,7 @@ export class EgresosComponent implements OnInit {
 
   readonly IDS_CALCULADOS = IDS_CALCULADOS;
 
-  readonly IDS_SNACKS = new Set([3, 5]);
-  readonly IDS_NUEVOS = new Set([57, 58]); // ajusta con tus IDs reales
+  readonly IDS_SNACKS = new Set([5]);
 
   constructor(
     private http: HttpClient,
@@ -452,20 +452,18 @@ export class EgresosComponent implements OnInit {
   trackById(_: number, c: Concepto) { return c.id; }
   trackByFecha(_: number, col: Columna) { return col.fecha; }
 
-
   conceptoAplicaEnFecha(concepto_id: number, fecha: string): boolean {
     if (!fecha) return true;
     const esAbrilOmas = fecha >= '2026-04-01';
-    const esMarzOmas = fecha >= '2026-03-01';
-    if (this.IDS_SNACKS.has(concepto_id) && esAbrilOmas) return false;   // snacks se ocultan en abril
-    if (this.IDS_NUEVOS.has(concepto_id) && !esMarzOmas) return false;   // trujillo/chimbote desde marzo
+    if (this.IDS_SNACKS.has(concepto_id) && esAbrilOmas) return false;
     return true;
   }
 
   mostrarFila(concepto_id: number): boolean {
-    if (!this.IDS_SNACKS.has(concepto_id) && !this.IDS_NUEVOS.has(concepto_id)) return true;
+    if (!this.IDS_SNACKS.has(concepto_id)) return true;
     return this.columnasFiltradas.some(col => this.conceptoAplicaEnFecha(concepto_id, col.fecha));
   }
+
   get kpis() {
     const suma = (id: number) =>
       this.columnasFiltradas.reduce((acc, col) => acc + (this.getValor(id, col.fecha) || 0), 0);
