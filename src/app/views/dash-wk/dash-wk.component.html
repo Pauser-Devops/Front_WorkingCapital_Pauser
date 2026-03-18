@@ -13,7 +13,15 @@
       <span class="material-icons">refresh</span>
     </button>
   </div>
-
+  <div class="dash-filtro-rango">
+    <div class="eg-filtro-rango">
+      <label class="eg-filtro-label">Desde</label>
+      <input class="eg-filtro-input" type="date" [(ngModel)]="filtroDesde" (change)="cargar()" />
+      <label class="eg-filtro-label">Hasta</label>
+      <input class="eg-filtro-input" type="date" [(ngModel)]="filtroHasta" (change)="cargar()" />
+      <button class="eg-filtro-clear" (click)="limpiarFiltro()" *ngIf="filtroDesde || filtroHasta">✕ Limpiar</button>
+    </div>
+  </div>
   <!-- ── KPI CARDS ──────────────────────────────────────────────── -->
   <div class="kpi-grid">
     <div class="kpi-card" [class]="d.kpis.wk >= 0 ? 'kpi-wk-pos' : 'kpi-wk-neg'">
@@ -54,27 +62,26 @@
           <button [class.activo]="vistaGrafico === 'mensual'" (click)="vistaGrafico = 'mensual'">Mensual</button>
         </div>
       </div>
-      <svg viewBox="0 0 700 160" class="chart-svg" *ngIf="serieActiva.length >= 2"
-           (mouseleave)="ocultarTooltip()">
+      <svg viewBox="0 0 700 160" class="chart-svg" *ngIf="serieActiva.length >= 2" (mouseleave)="ocultarTooltip()">
         <path [attr.d]="areaWK(serieActiva)" class="area-wk" />
         <polyline [attr.points]="lineaWK(serieActiva)" class="linea-wk" />
         <g *ngFor="let pt of puntosLinea(serieActiva); let i = index; let last = last">
           <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="14" class="dot-hover"
-                  (mouseenter)="mostrarTooltip(pt, serieActiva)"
-                  (mouseleave)="ocultarTooltip()" />
+            (mouseenter)="mostrarTooltip(pt, serieActiva)" (mouseleave)="ocultarTooltip()" />
           <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="4" class="dot-wk" />
           <text [attr.x]="pt.x" [attr.y]="pt.y - 8" class="label-dot"
-                *ngIf="serieActiva.length <= 8 || i === 0 || last">{{ fmtM(pt.val) }}</text>
-          <text *ngIf="i === 0 || last || serieActiva.length <= 8 || i % 2 === 0"
-                [attr.x]="pt.x" [attr.y]="155" class="label-eje">{{ pt.label }}</text>
+            *ngIf="serieActiva.length <= 8 || i === 0 || last">{{ fmtM(pt.val) }}</text>
+          <text *ngIf="i === 0 || last || serieActiva.length <= 8 || i % 2 === 0" [attr.x]="pt.x" [attr.y]="155"
+            class="label-eje">{{ pt.label }}</text>
         </g>
         <g *ngIf="tooltip.visible"
-           [attr.transform]="'translate(' + tooltipX(tooltip.x) + ',' + tooltipY(tooltip.y) + ')'">
+          [attr.transform]="'translate(' + tooltipX(tooltip.x) + ',' + tooltipY(tooltip.y) + ')'">
           <rect x="0" y="0" width="130" height="68" rx="6" class="tooltip-bg" />
           <text x="10" y="16" class="tooltip-fecha">{{ tooltip.label }}</text>
           <line x1="0" y1="22" x2="130" y2="22" class="tooltip-sep" />
           <text x="10" y="36" class="tooltip-lbl">WK</text>
-          <text x="120" y="36" class="tooltip-val" [class]="tooltip.wk >= 0 ? 'tooltip-pos' : 'tooltip-neg'">{{ fmtM(tooltip.wk) }}</text>
+          <text x="120" y="36" class="tooltip-val" [class]="tooltip.wk >= 0 ? 'tooltip-pos' : 'tooltip-neg'">{{
+            fmtM(tooltip.wk) }}</text>
           <text x="10" y="50" class="tooltip-lbl">Activo</text>
           <text x="120" y="50" class="tooltip-val tooltip-act">{{ fmtM(tooltip.activo) }}</text>
           <text x="10" y="64" class="tooltip-lbl">Pasivo</text>
@@ -98,18 +105,13 @@
         <div class="donut-panel">
           <div class="donut-panel-left">
             <span class="donut-panel-label">Activo · {{ fmt(d.kpis.activo) }}</span>
-            <app-donut-chart
-              [slices]="slicesActivoFiltrados"
-              [total]="d.kpis.activo"
-              [showLegend]="false">
+            <app-donut-chart [slices]="slicesActivoFiltrados" [total]="d.kpis.activo" [showLegend]="false">
             </app-donut-chart>
           </div>
           <!-- Leyenda lateral controlada por el dashboard -->
           <div class="donut-leyenda-lateral">
-            <div class="donut-ley-row"
-                 *ngFor="let s of slicesActivo"
-                 [class.donut-ley-hidden]="hiddenActivo.has(s.name)"
-                 (click)="toggleActivo(s.name)">
+            <div class="donut-ley-row" *ngFor="let s of slicesActivo"
+              [class.donut-ley-hidden]="hiddenActivo.has(s.name)" (click)="toggleActivo(s.name)">
               <span class="donut-ley-dot" [style.background]="s.color"></span>
               <span class="donut-ley-name">{{ s.name }}</span>
               <span class="donut-ley-val">{{ fmtM(s.value) }}</span>
@@ -124,18 +126,13 @@
         <div class="donut-panel">
           <div class="donut-panel-left">
             <span class="donut-panel-label">Pasivo · {{ fmt(d.kpis.pasivo) }}</span>
-            <app-donut-chart
-              [slices]="slicesPasivoFiltrados"
-              [total]="d.kpis.pasivo"
-              [showLegend]="false">
+            <app-donut-chart [slices]="slicesPasivoFiltrados" [total]="d.kpis.pasivo" [showLegend]="false">
             </app-donut-chart>
           </div>
           <!-- Leyenda lateral controlada por el dashboard -->
           <div class="donut-leyenda-lateral">
-            <div class="donut-ley-row"
-                 *ngFor="let s of slicesPasivo"
-                 [class.donut-ley-hidden]="hiddenPasivo.has(s.name)"
-                 (click)="togglePasivo(s.name)">
+            <div class="donut-ley-row" *ngFor="let s of slicesPasivo"
+              [class.donut-ley-hidden]="hiddenPasivo.has(s.name)" (click)="togglePasivo(s.name)">
               <span class="donut-ley-dot" [style.background]="s.color"></span>
               <span class="donut-ley-name">{{ s.name }}</span>
               <span class="donut-ley-val">{{ fmtM(s.value) }}</span>
@@ -186,13 +183,15 @@
       <table class="var-tabla">
         <thead>
           <tr>
-            <th>Concepto</th><th>Anterior</th><th>Actual</th><th>Var %</th>
+            <th>Concepto</th>
+            <th>Anterior</th>
+            <th>Actual</th>
+            <th>Var %</th>
           </tr>
         </thead>
         <tbody>
           <ng-container *ngFor="let row of d.tabla_variaciones">
-            <tr class="var-sep"
-                *ngIf="row.tipo === 'pasivo' && d.tabla_variaciones.indexOf(row) > 0
+            <tr class="var-sep" *ngIf="row.tipo === 'pasivo' && d.tabla_variaciones.indexOf(row) > 0
                        && d.tabla_variaciones[d.tabla_variaciones.indexOf(row)-1].tipo === 'activo'">
               <td colspan="4" class="var-sep-lbl">PASIVO</td>
             </tr>

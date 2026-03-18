@@ -91,6 +91,7 @@ export class IngresosComponent implements OnInit {
   ibkUsdOriginal = 0;
   filtroDesde = '';
   filtroHasta = '';
+  private readonly IDS_SUBCUENTAS_BCP = new Set([2, 3, 4]);
 
   readonly IDS_SNACKS_ING = new Set([20, 29, 40]);
 
@@ -403,7 +404,9 @@ export class IngresosComponent implements OnInit {
     for (let i = idx - 1; i >= 0; i--) {
       const c = this.conceptos[i];
       if (c.tipo_fila === 'seccion') break;
-      if (c.tipo_fila === 'item') suma += this.getValor(c.id, fecha) || 0;
+      if (c.tipo_fila === 'item' && !this.IDS_SUBCUENTAS_BCP.has(c.id)) {
+        suma += this.getValor(c.id, fecha) || 0;
+      }
     }
     return suma;
   }
@@ -509,6 +512,22 @@ export class IngresosComponent implements OnInit {
 
 
   get kpisIng() {
+    const sumaConceptos = (ids: number[]) =>
+      this.columnasFiltradas.reduce((acc, col) =>
+        acc + ids.reduce((s, id) => s + (this.getValor(id, col.fecha) || 0), 0), 0);
+
+    // IDs de bancos consolidados únicamente (sin BCP LN=2, BCP TRUX=3, BCP SEDES=4)
+    const ID_BCP = 5;
+    const ID_INTERBANK = 6;
+    const ID_BBVA = 7;
+    const ID_CAJA_ARQ = 8;
+    const ID_PICHINCHA = 9;
+    const ID_BNACION = 10;
+
+    const totalBancos = this.columnasFiltradas.reduce((acc, col) =>
+      acc + [ID_BCP, ID_INTERBANK, ID_BBVA, ID_CAJA_ARQ, ID_PICHINCHA, ID_BNACION]
+        .reduce((s, id) => s + (this.getValor(id, col.fecha) || 0), 0), 0);
+
     const totalSeccion = (nombreSeccion: string) =>
       this.columnasFiltradas.reduce((acc, col) => {
         const totalConcepto = this.conceptos.find(
@@ -518,7 +537,7 @@ export class IngresosComponent implements OnInit {
       }, 0);
 
     return {
-      totalBancos: totalSeccion('SALDOS BANCOS'),
+      totalBancos,
       totalProsegur: totalSeccion('PROSEGUR'),
       ventasContado: totalSeccion('VENTAS CONTADO REPARTO'),
       ventasCredito: totalSeccion('VENTAS CRÉDITO 3-10 DÍAS'),

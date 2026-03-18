@@ -13,35 +13,34 @@ const ID_FACTURAS = 8;
 const ID_ENVASES = 9;
 const ID_SALARIOS = 19;
 const ID_MOVILIDADES = 20;
+// IMPUESTOS
+const ID_IMP_ITAN        = 33;
+const ID_IMP_IGV         = 34;
+const ID_IMP_RENTA       = 35;
+const ID_IMP_PERCEPCIONES= 36;
+const ID_IMP_ESSALUD     = 37;
+const ID_IMP_AFP         = 38;
+// IMP TOTAL = 39
 
-// RENTA (renombrados)
-const ID_VENTA_MES_CERRADO = 33;
-const ID_VENTA_MES_CURSO = 34;
-const ID_TOTAL_VENTAS = 35;  // calc = 33+34
-const ID_COMPRAS_MES_CERRADO = 36;
-const ID_COMPRAS_MES_CURSO = 37;
-const ID_TOTAL_COMPRAS = 38;  // calc = 36+37
-const ID_IGV_VENTAS = 39;  // calc = 35×18%
-const ID_IGV_COMPRAS = 40;  // calc = 38×18%
-const ID_IGV_POR_PAGAR = 41;  // calc = 39−40
-const ID_RENTA_3RA = 42;  // fijo 0.015
-const ID_CRED_RTA = 43;
-const ID_RENTA_PRELIQ = 44;  // calc = 35×1.5%−43
-const ID_IGV_PRELIQ = 45;  // calc = igual a 41
-const ID_ITAN_RENTA = 46;
-const ID_PERCEPCIONES_RENTA = 47;
-const ID_RTA_2DA = 48;
-const ID_TOTAL_PAGAR = 49;  // calc
+// RENTA
+const ID_VENTA_MES_CERRADO  = 41;
+const ID_VENTA_MES_CURSO    = 42;
+const ID_TOTAL_VENTAS       = 43;
+const ID_COMPRAS_MES_CERRADO= 44;
+const ID_COMPRAS_MES_CURSO  = 45;
+const ID_TOTAL_COMPRAS      = 46;
+const ID_IGV_VENTAS         = 47;
+const ID_IGV_COMPRAS        = 48;
+const ID_IGV_POR_PAGAR      = 49;
+const ID_RENTA_3RA          = 50;
+const ID_CRED_RTA           = 51;
+const ID_RENTA_PRELIQ       = 52;
+const ID_IGV_PRELIQ         = 53;
+const ID_ITAN_RENTA         = 54;
+const ID_PERCEPCIONES_RENTA = 55;
+const ID_RTA_2DA            = 56;
+const ID_TOTAL_PAGAR        = 57;
 
-// IMPUESTOS (nuevos)
-const ID_IMP_ITAN = 50; // ajusta según los IDs que genere el INSERT
-const ID_IMP_IGV = 51;
-const ID_IMP_RENTA = 52;
-const ID_IMP_PERCEPCIONES = 53;
-const ID_IMP_ESSALUD = 54;
-const ID_IMP_AFP = 55;
-
-// IDs calculados automáticamente (no editables)
 const IDS_CALCULADOS = new Set([
   ID_BACKUS,
   ID_TOTAL_VENTAS, ID_TOTAL_COMPRAS,
@@ -49,7 +48,6 @@ const IDS_CALCULADOS = new Set([
   ID_RENTA_PRELIQ, ID_IGV_PRELIQ,
   ID_TOTAL_PAGAR
 ]);
-
 
 
 const DEFAULTS_FIJOS: Record<number, number> = {
@@ -196,7 +194,6 @@ export class EgresosComponent implements OnInit {
     const totalPagar = igvPreliq + rentaPreliq + itan + percepciones + rta2da;
 
     const r = (n: number) => Math.round(n * 100) / 100;
-
     this.valoresPanel[ID_TOTAL_VENTAS] = r(totalVentas);
     this.valoresPanel[ID_TOTAL_COMPRAS] = r(totalCompras);
     this.valoresPanel[ID_IGV_VENTAS] = r(igvVentas);
@@ -263,6 +260,8 @@ export class EgresosComponent implements OnInit {
         if (r.estado === 'OK' && r.fecha_existente) {
           this.fechaExistente = true;
           for (const d of r.datos) this.valoresPanel[d.concepto_id] = d.valor;
+          this.recalcularBackus();
+        this.recalcularRenta();
         } else {
           this.aplicarDefaults();
         }
@@ -356,11 +355,18 @@ export class EgresosComponent implements OnInit {
   }
 
   getTotal(concepto: Concepto, fecha: string): number {
+    // Para totales con valor guardado en BD, úsalo directo
+    const valorGuardado = this.getValor(concepto.id, fecha);
+    if (valorGuardado !== null) return valorGuardado;
+
+    // Para totales sin valor en BD, suma items hacia atrás
+    // pero para en el primer total anterior (no solo en sección)
     const idx = this.conceptos.indexOf(concepto);
     let suma = 0;
     for (let i = idx - 1; i >= 0; i--) {
       const c = this.conceptos[i];
       if (c.tipo_fila === 'seccion') break;
+      if (c.tipo_fila === 'total') break; // ← CLAVE: para en el total anterior
       if (c.tipo_fila === 'item') suma += this.getValor(c.id, fecha) || 0;
     }
     return suma;
@@ -372,11 +378,16 @@ export class EgresosComponent implements OnInit {
     for (let i = idx - 1; i >= 0; i--) {
       const c = this.conceptos[i];
       if (c.tipo_fila === 'seccion') break;
+      if (c.tipo_fila === 'total') break; // ← mismo fix
       if (c.tipo_fila === 'item') suma += this.valoresPanel[c.id] || 0;
     }
     return suma;
   }
-
+  getTotalPagar(fecha: string): number {
+  const v = (id: number) => this.getValor(id, fecha) || 0;
+  return v(ID_IGV_PRELIQ) + v(ID_RENTA_PRELIQ) + v(ID_ITAN_RENTA) +
+         v(ID_PERCEPCIONES_RENTA) + v(ID_RTA_2DA);
+}
   esSeccion(c: Concepto) { return c.tipo_fila === 'seccion'; }
   esTotal(c: Concepto) { return c.tipo_fila === 'total'; }
   esItem(c: Concepto) { return c.tipo_fila === 'item'; }
@@ -475,7 +486,7 @@ export class EgresosComponent implements OnInit {
       }, 0),
       igvPorPagar: suma(ID_IGV_POR_PAGAR),
       rentaPreliq: suma(ID_RENTA_PRELIQ),
-      totalPagar: suma(ID_TOTAL_PAGAR),
+      totalPagar:suma(57),
     };
   }
 }

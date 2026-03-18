@@ -32,6 +32,9 @@
       </svg>
       {{ exportando ? 'Exportando...' : 'Exportar Excel' }}
     </button>
+    <button class="cp-btn-export" (click)="exportarProsegur()" [disabled]="!resultado">
+      Exportar PROSEGUR
+    </button>
   </div>
 
   <!-- FILTROS -->

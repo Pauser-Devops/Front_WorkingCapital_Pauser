@@ -6,27 +6,27 @@ import { WkRefreshService } from './../../shared/services/wk-refresh.service';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { DonutChartComponent, DonutSlice } from '../../shared/components/donut-chart/donut-chart.component';
-
+import { FormsModule } from '@angular/forms';
 const API = environment.apiUrl;
 
 const COLORES_ACTIVO: Record<string, string> = {
-  'Bancos':      '#1d4ed8',
-  'Prosegur':    '#0369a1',
+  'Bancos': '#1d4ed8',
+  'Prosegur': '#0369a1',
   'Inventarios': '#0891b2',
-  'CxC':         '#0284c7',
-  'Venta Ruta':  '#6366f1',
+  'CxC': '#0284c7',
+  'Venta Ruta': '#6366f1',
 };
 
 const COLORES_PASIVO: Record<string, string> = {
-  'Proveedores':    '#c2410c',
-  'G&G':            '#b45309',
-  'Impuestos':      '#dc2626',
-  'Detracciones':   '#9333ea',
-  'Préstamos':      '#be185d',
-  'Comodato':       '#0f766e',
+  'Proveedores': '#c2410c',
+  'G&G': '#b45309',
+  'Impuestos': '#dc2626',
+  'Detracciones': '#9333ea',
+  'Préstamos': '#be185d',
+  'Comodato': '#0f766e',
 };
 
-const FALLBACK = ['#3b82f6','#06b6d4','#8b5cf6','#ec4899','#f59e0b','#10b981','#f43f5e','#6366f1'];
+const FALLBACK = ['#3b82f6', '#06b6d4', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#f43f5e', '#6366f1'];
 
 function asignarColores(data: Record<string, number>, paleta: Record<string, string>): DonutSlice[] {
   return Object.entries(data)
@@ -55,21 +55,23 @@ interface DashData {
 @Component({
   selector: 'app-dash-wk',
   standalone: true,
-  imports: [CommonModule, DecimalPipe, DonutChartComponent],
+ imports: [CommonModule, DecimalPipe, DonutChartComponent, FormsModule],
   templateUrl: './dash-wk.component.html',
   styleUrls: ['./dash-wk.component.css'],
 })
 export class DashWkComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
-  datos:   DashData | null = null;
+  datos: DashData | null = null;
   cargando = true;
-  error    = '';
+  error = '';
 
   vistaGrafico: 'semanal' | 'mensual' = 'semanal';
 
   slicesActivo: DonutSlice[] = [];
   slicesPasivo: DonutSlice[] = [];
+  filtroDesde = '';
+  filtroHasta = '';
 
   // Sets para filtrar desde la leyenda lateral del dashboard
   hiddenActivo = new Set<string>();
@@ -77,7 +79,7 @@ export class DashWkComponent implements OnInit, OnDestroy {
 
   tooltip = { visible: false, x: 0, y: 0, label: '', wk: 0, activo: 0, pasivo: 0 };
 
-  constructor(private http: HttpClient, private wkRefresh: WkRefreshService) {}
+  constructor(private http: HttpClient, private wkRefresh: WkRefreshService) { }
 
   ngOnInit() {
     this.wkRefresh.ingresosGuardado$.pipe(takeUntil(this.destroy$)).subscribe(() => this.cargar());
@@ -88,23 +90,35 @@ export class DashWkComponent implements OnInit, OnDestroy {
   ngOnDestroy() { this.destroy$.next(); this.destroy$.complete(); }
 
   cargar() {
-    this.cargando = true;
-    this.http.get<any>(`${API}/dashboard-wk/resumen`).subscribe({
-      next: r => {
-        this.cargando = false;
-        if (r.estado === 'OK') {
-          this.datos = r.datos;
-          this.slicesActivo = asignarColores(r.datos.composicion_activo, COLORES_ACTIVO);
-          this.slicesPasivo = asignarColores(r.datos.composicion_pasivo, COLORES_PASIVO);
-          this.hiddenActivo.clear();
-          this.hiddenPasivo.clear();
-        } else {
-          this.error = r.detalle ?? 'Error al cargar';
-        }
-      },
-      error: () => { this.cargando = false; this.error = 'Error de conexión'; }
-    });
-  }
+  this.cargando = true;
+  let url = `${API}/dashboard-wk/resumen`;
+  const params = [];
+  if (this.filtroDesde) params.push(`fecha_desde=${this.filtroDesde}`);
+  if (this.filtroHasta) params.push(`fecha_hasta=${this.filtroHasta}`);
+  if (params.length) url += '?' + params.join('&');
+
+  this.http.get<any>(url).subscribe({
+    next: r => {
+      this.cargando = false;
+      if (r.estado === 'OK') {
+        this.datos = r.datos;
+        this.slicesActivo = asignarColores(r.datos.composicion_activo, COLORES_ACTIVO);
+        this.slicesPasivo = asignarColores(r.datos.composicion_pasivo, COLORES_PASIVO);
+        this.hiddenActivo.clear();
+        this.hiddenPasivo.clear();
+      } else {
+        this.error = r.detalle ?? 'Error al cargar';
+      }
+    },
+    error: () => { this.cargando = false; this.error = 'Error de conexión'; }
+  });
+}
+
+limpiarFiltro() {
+  this.filtroDesde = '';
+  this.filtroHasta = '';
+  this.cargar();
+}
 
   // ── Toggle leyenda ────────────────────────────────────────────
   toggleActivo(name: string) {
@@ -143,7 +157,7 @@ export class DashWkComponent implements OnInit, OnDestroy {
   fmtM(n: number | null | undefined): string {
     if (n == null) return '—';
     if (Math.abs(n) >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
-    if (Math.abs(n) >= 1_000)     return (n / 1_000).toFixed(0) + 'K';
+    if (Math.abs(n) >= 1_000) return (n / 1_000).toFixed(0) + 'K';
     return n.toFixed(0);
   }
 
@@ -164,8 +178,10 @@ export class DashWkComponent implements OnInit, OnDestroy {
   // ── Tooltip línea ─────────────────────────────────────────────
   mostrarTooltip(pt: { x: number; y: number; label: string; val: number }, serie: PuntoSerie[]) {
     const punto = serie.find(p => p.label === pt.label);
-    this.tooltip = { visible: true, x: pt.x, y: pt.y, label: pt.label,
-      wk: punto?.wk ?? pt.val, activo: punto?.activo ?? 0, pasivo: punto?.pasivo ?? 0 };
+    this.tooltip = {
+      visible: true, x: pt.x, y: pt.y, label: pt.label,
+      wk: punto?.wk ?? pt.val, activo: punto?.activo ?? 0, pasivo: punto?.pasivo ?? 0
+    };
   }
 
   ocultarTooltip() { this.tooltip = { ...this.tooltip, visible: false }; }
@@ -201,7 +217,7 @@ export class DashWkComponent implements OnInit, OnDestroy {
     return `M${pad},${h - pad} L${pts.join(' L')} L${pad + (w - pad * 2)},${h - pad} Z`;
   }
 
-  puntosLinea(serie: PuntoSerie[], w = 700, h = 160, pad = 30): {x:number;y:number;label:string;val:number}[] {
+  puntosLinea(serie: PuntoSerie[], w = 700, h = 160, pad = 30): { x: number; y: number; label: string; val: number }[] {
     if (!serie.length) return [];
     const vals = serie.map(p => p.wk);
     const min = Math.min(...vals), max = Math.max(...vals), rango = max - min || 1;
@@ -214,7 +230,7 @@ export class DashWkComponent implements OnInit, OnDestroy {
 
   barrasProveedores(prov: Record<string, number>, provAnt: Record<string, number>, maxW = 220) {
     const entries = Object.entries(prov).sort((a, b) => b[1] - a[1]);
-    const maxVal  = Math.max(...entries.map(e => e[1]), 1);
+    const maxVal = Math.max(...entries.map(e => e[1]), 1);
     return entries.map(([nombre, actual]) => ({
       nombre, actual,
       anterior: provAnt[nombre] ?? 0,

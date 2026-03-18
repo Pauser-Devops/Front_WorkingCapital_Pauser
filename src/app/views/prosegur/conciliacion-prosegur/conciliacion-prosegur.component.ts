@@ -169,7 +169,7 @@ export class ConciliacionProsegurComponent implements OnInit {
     return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
   }
 
-   sincronizarProsegur() {
+  sincronizarProsegur() {
     this.sincronizando = true;
     this.syncMensaje = '';
     this.http.post<any>(`${API}/wk/prosegur-sync`, {}).subscribe({
@@ -199,6 +199,15 @@ export class ConciliacionProsegurComponent implements OnInit {
         this.syncTipo = 'info';
         setTimeout(() => { this.syncMensaje = ''; }, 4000);
       }
+    });
+  }
+  exportarProsegur() {
+    const url = `${API}/cruce/prosegur-exportar-unificado?mes=${this.mesSeleccionado}&anio=${this.anioSeleccionado}`;
+    this.http.get(url, { responseType: 'blob' }).subscribe(blob => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `PROSEGUR_Conciliado_${this.mesNombre}_${this.anioSeleccionado}.xlsx`;
+      a.click();
     });
   }
 }

@@ -93,15 +93,20 @@
           </tr>
 
           <!-- TOTAL -->
-          <tr *ngIf="esTotal(c)" class="eg-row-total">
-            <td class="eg-td-label total eg-col-sticky">{{ c.nombre }}</td>
-            <td class="eg-td-val total" *ngFor="let col of columnasFiltradas; trackBy: trackByFecha">
-              {{ fmt(getTotal(c, col.fecha)) }}
+          <!-- TOTAL -->
+          <tr *ngIf="esTotal(c)" class="eg-row-total" [class.eg-row-total-pagar]="c.id === 57">
+            <td class="eg-td-label total eg-col-sticky" [class.eg-td-total-pagar]="c.id === 57">
+              {{ c.nombre }}
+            </td>
+            <td class="eg-td-val total" *ngFor="let col of columnasFiltradas; trackBy: trackByFecha"
+              [class.eg-td-total-pagar]="c.id === 57">
+              {{ c.id === 57 ? fmt(getTotalPagar(col.fecha)) : fmt(getTotal(c, col.fecha)) }}
             </td>
           </tr>
 
           <!-- ITEM -->
-          <tr *ngIf="esItem(c) && mostrarFila(c.id)" class="eg-row-item" [class.eg-row-total-pagar]="c.id === 49">
+          <!-- ITEM -->
+          <tr *ngIf="esItem(c) && mostrarFila(c.id)" class="eg-row-item" [class.eg-row-total-pagar]="c.id === 57">
             <td class="eg-td-label eg-col-sticky" [style.paddingLeft.px]="16 + (c.indent || 0) * 12"
               [class.eg-td-total-pagar]="c.id === 49">
               {{ c.nombre }}
@@ -117,7 +122,11 @@
                   (keydown.escape)="cancelarEdicion()" />
               </ng-container>
               <ng-template #spanItem>
-                <span>{{ conceptoAplicaEnFecha(c.id, col.fecha) ? fmt(getValor(c.id, col.fecha)) : '—' }}</span>
+                <span>{{
+                  c.id === 57
+                  ? fmt(getTotalPagar(col.fecha))
+                  : (conceptoAplicaEnFecha(c.id, col.fecha) ? fmt(getValor(c.id, col.fecha)) : '—')
+                  }}</span>
               </ng-template>
             </td>
           </tr>
@@ -222,6 +231,7 @@
         </ng-container>
 
         <!-- ── SECCIÓN RENTA ── -->
+        <!-- ── SECCIÓN RENTA ── -->
         <div class="eg-renta-wrap">
           <div class="eg-panel-seccion" style="margin-top:0; margin-bottom:14px"></div>
 
@@ -232,25 +242,23 @@
               <div class="eg-renta-grupo-label">Ventas</div>
               <div class="eg-manual-row">
                 <label class="eg-manual-label">Venta Mes Cerrado</label>
-                <input class="eg-input-manual" type="text" [value]="fmtInput(33)" (focus)="onInputFocus($event, 33)"
-                  (blur)="onInputBlur($event, 33)" (input)="setValorPanel(33, $any($event.target).value)"
+                <input class="eg-input-manual" type="text" [value]="fmtInput(41)" (focus)="onInputFocus($event, 41)"
+                  (blur)="onInputBlur($event, 41)" (input)="setValorPanel(41, $any($event.target).value)"
                   placeholder="0.00" />
               </div>
               <div class="eg-manual-row">
                 <label class="eg-manual-label">Venta Mes en Curso</label>
-                <input class="eg-input-manual" type="text" [value]="fmtInput(34)" (focus)="onInputFocus($event, 34)"
-                  (blur)="onInputBlur($event, 34)" (input)="setValorPanel(34, $any($event.target).value)"
+                <input class="eg-input-manual" type="text" [value]="fmtInput(42)" (focus)="onInputFocus($event, 42)"
+                  (blur)="onInputBlur($event, 42)" (input)="setValorPanel(42, $any($event.target).value)"
                   placeholder="0.00" />
               </div>
               <div class="eg-panel-total" style="margin-top:6px">
                 <span>Total Ventas</span>
-                <strong>{{ fmt(valoresPanel[35] ?? 0) }}</strong>
+                <strong>{{ fmt(valoresPanel[43] ?? 0) }}</strong>
               </div>
               <div class="eg-manual-row calculado" style="margin-top:6px">
-                <label class="eg-manual-label">IGV Ventas (18%)
-                  <span class="eg-badge-auto">AUTO</span>
-                </label>
-                <input class="eg-input-manual eg-input-readonly" type="text" [value]="fmtInput(39)" readonly
+                <label class="eg-manual-label">IGV Ventas (18%) <span class="eg-badge-auto">AUTO</span></label>
+                <input class="eg-input-manual eg-input-readonly" type="text" [value]="fmtInput(47)" readonly
                   placeholder="—" />
               </div>
             </div>
@@ -260,25 +268,23 @@
               <div class="eg-renta-grupo-label">Compras</div>
               <div class="eg-manual-row">
                 <label class="eg-manual-label">Compras Mes Cerrado</label>
-                <input class="eg-input-manual" type="text" [value]="fmtInput(36)" (focus)="onInputFocus($event, 36)"
-                  (blur)="onInputBlur($event, 36)" (input)="setValorPanel(36, $any($event.target).value)"
+                <input class="eg-input-manual" type="text" [value]="fmtInput(44)" (focus)="onInputFocus($event, 44)"
+                  (blur)="onInputBlur($event, 44)" (input)="setValorPanel(44, $any($event.target).value)"
                   placeholder="0.00" />
               </div>
               <div class="eg-manual-row">
                 <label class="eg-manual-label">Compras Mes en Curso</label>
-                <input class="eg-input-manual" type="text" [value]="fmtInput(37)" (focus)="onInputFocus($event, 37)"
-                  (blur)="onInputBlur($event, 37)" (input)="setValorPanel(37, $any($event.target).value)"
+                <input class="eg-input-manual" type="text" [value]="fmtInput(45)" (focus)="onInputFocus($event, 45)"
+                  (blur)="onInputBlur($event, 45)" (input)="setValorPanel(45, $any($event.target).value)"
                   placeholder="0.00" />
               </div>
               <div class="eg-panel-total" style="margin-top:6px">
                 <span>Total Compras</span>
-                <strong>{{ fmt(valoresPanel[38] ?? 0) }}</strong>
+                <strong>{{ fmt(valoresPanel[46] ?? 0) }}</strong>
               </div>
               <div class="eg-manual-row calculado" style="margin-top:6px">
-                <label class="eg-manual-label">IGV Compras (18%)
-                  <span class="eg-badge-auto">AUTO</span>
-                </label>
-                <input class="eg-input-manual eg-input-readonly" type="text" [value]="fmtInput(40)" readonly
+                <label class="eg-manual-label">IGV Compras (18%) <span class="eg-badge-auto">AUTO</span></label>
+                <input class="eg-input-manual eg-input-readonly" type="text" [value]="fmtInput(48)" readonly
                   placeholder="—" />
               </div>
             </div>
@@ -288,7 +294,7 @@
           <!-- IGV POR PAGAR -->
           <div class="eg-panel-total" style="margin-bottom:16px; background:#fef3f2; border-color:#fca5a5">
             <span>IGV por Pagar <span class="eg-badge-auto">AUTO</span></span>
-            <strong style="color:#dc2626">{{ fmt(valoresPanel[41] ?? 0) }}</strong>
+            <strong style="color:#dc2626">{{ fmt(valoresPanel[49] ?? 0) }}</strong>
           </div>
 
           <!-- RENTA -->
@@ -299,40 +305,42 @@
             </div>
             <div class="eg-manual-row">
               <label class="eg-manual-label">Crédito de Rta Anual</label>
-              <input class="eg-input-manual" type="text" [value]="fmtInput(43)" (focus)="onInputFocus($event, 43)"
-                (blur)="onInputBlur($event, 43)" (input)="setValorPanel(43, $any($event.target).value)"
+              <input class="eg-input-manual" type="text" [value]="fmtInput(51)" (focus)="onInputFocus($event, 51)"
+                (blur)="onInputBlur($event, 51)" (input)="setValorPanel(51, $any($event.target).value)"
                 placeholder="0.00" />
             </div>
             <div class="eg-manual-row calculado">
-              <label class="eg-manual-label">Renta Preliquidación
-                <span class="eg-badge-auto">AUTO</span>
-              </label>
-              <input class="eg-input-manual eg-input-readonly" type="text" [value]="fmtInput(44)" readonly
+              <label class="eg-manual-label">Renta Preliquidación <span class="eg-badge-auto">AUTO</span></label>
+              <input class="eg-input-manual eg-input-readonly" type="text" [value]="fmtInput(52)" readonly
                 placeholder="—" />
             </div>
             <div class="eg-manual-row calculado">
-              <label class="eg-manual-label">IGV Preliquidación
-                <span class="eg-badge-auto">AUTO</span>
-              </label>
-              <input class="eg-input-manual eg-input-readonly" type="text" [value]="fmtInput(45)" readonly
+              <label class="eg-manual-label">IGV Preliquidación <span class="eg-badge-auto">AUTO</span></label>
+              <input class="eg-input-manual eg-input-readonly" type="text" [value]="fmtInput(53)" readonly
                 placeholder="—" />
             </div>
             <div class="eg-manual-row">
               <label class="eg-manual-label">ITAN 6/9</label>
-              <input class="eg-input-manual" type="text" [value]="fmtInput(46)" (focus)="onInputFocus($event, 46)"
-                (blur)="onInputBlur($event, 46)" (input)="setValorPanel(46, $any($event.target).value)"
+              <input class="eg-input-manual" type="text" [value]="fmtInput(54)" (focus)="onInputFocus($event, 54)"
+                (blur)="onInputBlur($event, 54)" (input)="setValorPanel(54, $any($event.target).value)"
                 placeholder="0.00" />
             </div>
             <div class="eg-manual-row">
               <label class="eg-manual-label">Percepciones por Pagar</label>
-              <input class="eg-input-manual" type="text" [value]="fmtInput(47)" (focus)="onInputFocus($event, 47)"
-                (blur)="onInputBlur($event, 47)" (input)="setValorPanel(47, $any($event.target).value)"
+              <input class="eg-input-manual" type="text" [value]="fmtInput(55)" (focus)="onInputFocus($event, 55)"
+                (blur)="onInputBlur($event, 55)" (input)="setValorPanel(55, $any($event.target).value)"
                 placeholder="0.00" />
             </div>
             <div class="eg-manual-row">
               <label class="eg-manual-label">RTA de 2da</label>
-              <input class="eg-input-manual" type="text" [value]="fmtInput(48)" (focus)="onInputFocus($event, 48)"
-                (blur)="onInputBlur($event, 48)" (input)="setValorPanel(48, $any($event.target).value)"
+              <input class="eg-input-manual" type="text" [value]="fmtInput(56)" (focus)="onInputFocus($event, 56)"
+                (blur)="onInputBlur($event, 56)" (input)="setValorPanel(56, $any($event.target).value)"
+                placeholder="0.00" />
+            </div>
+            <div class="eg-manual-row">
+              <label class="eg-manual-label">Pago a Cuenta Renta</label>
+              <input class="eg-input-manual" type="text" [value]="fmtInput(58)" (focus)="onInputFocus($event, 58)"
+                (blur)="onInputBlur($event, 58)" (input)="setValorPanel(58, $any($event.target).value)"
                 placeholder="0.00" />
             </div>
           </div>
@@ -340,7 +348,7 @@
           <!-- TOTAL A PAGAR -->
           <div class="eg-total-pagar">
             <span>TOTAL A PAGAR</span>
-            <strong>{{ fmt(valoresPanel[49] ?? 0) }}</strong>
+            <strong>{{ fmt(valoresPanel[57] ?? 0) }}</strong>
           </div>
 
         </div>
