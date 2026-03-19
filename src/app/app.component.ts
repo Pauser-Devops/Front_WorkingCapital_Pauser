@@ -24,6 +24,8 @@ import { UsuariosComponent } from './views/configuracion/usuarios/usuarios.compo
 import { SimuladorTradeSpendComponent } from './views/trade-spend/simulador-trade-spend/simulador-trade-spend.component';
 import { ConciliacionProsegurComponent } from './views/prosegur/conciliacion-prosegur/conciliacion-prosegur.component';
 import { FlujoCajaComponent } from './views/flujo-de-caja/flujo-caja.component';
+import { CargaTradeSpendComponent } from './views/trade-spend/carga-trade/carga-trade-spend.component';
+
 const VISTA_NOMBRES: Record<string, string> = {
   semanal: 'WK Semanal 2026',
   mensual: 'WK Mensual 2026',
@@ -43,7 +45,8 @@ const VISTA_NOMBRES: Record<string, string> = {
   usuarios: 'Usuarios',
   simuladorTS: 'Simulador Trade Spend',
   conciliacionProsegur: 'Traking Prosegur - Bancos',
-  flujoCaja: 'Flujo de Caja'
+  flujoCaja: 'Flujo de Caja',
+  cargaTS: 'Carga de Archivos Trade Spend'
 };
 
 @Component({
@@ -73,7 +76,8 @@ const VISTA_NOMBRES: Record<string, string> = {
     ComparadorBancarioComponent, UsuariosComponent,
     SimuladorTradeSpendComponent,
     FlujoCajaComponent,
-    ConciliacionProsegurComponent
+    ConciliacionProsegurComponent,
+    CargaTradeSpendComponent,
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']

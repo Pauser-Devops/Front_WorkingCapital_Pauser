@@ -4,228 +4,140 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 
-// ── Interfaces ──────────────────────────────────────────────────────────────
+// ── Interfaces ───────────────────────────────────────────────────────────────
 
-export interface Simulacion {
-  id?: number;
-  nombre: string;
-  agencia: string;
-  mes: string;
-  canal: string;
-  negocio: string;
-  estado: 'borrador' | 'aprobado' | 'excede_limite';
-  fecha: string;
-  skus: SkuSimulado[];
-  ttv_estimado?: number;
-  costo_ts?: number;
-  pct_ts?: number;
-  gap?: number;
+export interface ResumenTS {
+  ttv_real: number;
+  ttv_teorico: number;
+  ts_soles: number;
+  ts_pct: number;
+  skus_count: number;
+  skus_exceden: number;
 }
 
-export interface SkuSimulado {
-  cod_sku: number;
-  nombre: string;
+export interface NegocioTS {
   negocio: string;
-  precio_base: number;
-  und_pqt: number;
-  rango_seleccionado: string;
-  accion: string;
-  tipo_accion: 'Boni' | 'Descuento' | 'Sin Acción';
+  skus_count: number;
+  paquetes: number;
+  paquetes_bonif: number;
+  pct_bonif: number;
+  ttv_real: number;
+  ttv_teorico: number;
+  ts_soles: number;
+  ts_pct: number;
+  gap: number;
+  supera_limite: boolean;
+  semaforo: 'verde' | 'amarillo' | 'rojo';
+}
+
+export interface SkuTS {
+  cod_sku: number;
+  sku: string;
+  sku_gerencial: string;
+  negocio: string;
+  canal: string;
+  paquetes_total: number;
+  paquetes_bonif: number;
+  pct_bonif: number;
+  precio_lista: number;
+  precio_real: number;
+  ttv_real: number;
+  ttv_teorico: number;
+  gap: number;
+  ts_pct: number;
+  ts_soles: number;
+  supera_limite: boolean;
+  // proyección
+  politica_id?: number;
+  tipo_accion?: string;
+  accion_texto?: string;
+  rango_texto?: string;
+  margen_pct?: number;
+  paquetes?: number;
+}
+
+export interface ResultadoTS {
+  agencia: string;
+  agencia_codigo: string;
+  anio: number;
+  mes: number;
+  modo: 'cierre_real' | 'proyeccion';
+  limite_ts_pct: number;
+  supera_limite: boolean;
+  resumen: ResumenTS;
+  negocios: NegocioTS[];
+  skus: SkuTS[];
+  nombre?: string;
+  canal?: string;
+}
+
+export interface RangoPolitica {
+  politica_id: number;
+  rango_min: number;
+  rango_max: number | null;
+  rango_texto: string;
+  tipo_accion: string;
+  accion_texto: string;
+  precio_lista: number;
+  precio_final: number;
+  descuento_pct: number;
   bonif_und: number;
   venta_paq: number;
-  dscto: number;
-  precio_final: number;
-  mg_pct: number;
-  pqts_estimados: number;
-  ttv: number;
-  costo_ts: number;
-  pct_ts: number;
-  gap: number;
+  und_x_pqt: number;
+  margen_pct: number;
 }
 
-export interface ResumenAgencia {
+export interface SkuPolitica {
+  cd_pauser: number;
+  sku_gerencial: string;
+  nombre_completo: string;
+  marca: string;
+  negocio: string;
+  rangos: RangoPolitica[];
+  // estado local para proyección
+  seleccionado?: boolean;
+  rangoElegido?: RangoPolitica | null;
+  paqEstimados?: number;
+}
+
+export interface SimulacionGuardada {
+  id: number;
+  nombre: string;
   agencia: string;
-  ttv_simulado: number;
-  pct_ts: number;
-  excede_limite: boolean;
-  negocios: {
-    negocio: string;
-    pqts: number;
-    ttv: number;
-    pct_ts: number;
-    gap: number;
-  }[];
+  mes: number;
+  anio: number;
+  canal: string;
+  modo: string;
+  ts_pct_total: number;
+  ttv_total: number;
+  supera_limite: boolean;
+  estado: string;
+  created_at: string;
 }
 
-// ── Datos mock (se reemplazarán por llamadas HTTP al backend) ────────────────
+export interface ResumenAgenciaTS {
+  agencia: string;
+  agencia_codigo: string;
+  anio: number;
+  mes: number;
+  limite_ts_pct: number;
+  supera_limite: boolean;
+  ts_pct_total: number;
+  ttv_real_total: number;
+  ts_soles_total: number;
+  negocios: NegocioTS[];
+}
 
-const SIMULACIONES_MOCK: Simulacion[] = [
-  {
-    id: 1,
-    nombre: 'Enero CHM – Pepsi + CC',
-    agencia: 'Chimbote',
-    mes: 'Enero 2026',
-    canal: 'OFF + TELSELL',
-    negocio: 'Todas',
-    estado: 'aprobado',
-    fecha: '08 Ene 2026',
-    skus: [],
-    ttv_estimado: 34210,
-    costo_ts: 3147,
-    pct_ts: 9.2,
-    gap: 2340,
-  },
-  {
-    id: 2,
-    nombre: 'Enero CHM – Gatorade',
-    agencia: 'Chimbote',
-    mes: 'Enero 2026',
-    canal: 'OFF',
-    negocio: 'Gatorade',
-    estado: 'aprobado',
-    fecha: '08 Ene 2026',
-    skus: [],
-    ttv_estimado: 21800,
-    costo_ts: 1700,
-    pct_ts: 7.8,
-    gap: 980,
-  },
-  {
-    id: 3,
-    nombre: 'Enero HRZ – Agua SC',
-    agencia: 'Huaraz',
-    mes: 'Enero 2026',
-    canal: 'OFF + MAYO',
-    negocio: 'Agua',
-    estado: 'excede_limite',
-    fecha: '09 Ene 2026',
-    skus: [],
-    ttv_estimado: 18420,
-    costo_ts: 1860,
-    pct_ts: 10.1,
-    gap: -420,
-  },
-  {
-    id: 4,
-    nombre: 'Enero HRZ – Red Bull',
-    agencia: 'Huaraz',
-    mes: 'Enero 2026',
-    canal: 'OFF TOP',
-    negocio: 'Licores',
-    estado: 'borrador',
-    fecha: '10 Ene 2026',
-    skus: [],
-    ttv_estimado: 13000,
-    costo_ts: 923,
-    pct_ts: 7.1,
-    gap: 340,
-  },
-];
 
-const SKUS_MOCK: SkuSimulado[] = [
-  {
-    cod_sku: 21738,
-    nombre: 'PEPSI CSD 355ml',
-    negocio: 'CSD',
-    precio_base: 12.5,
-    und_pqt: 15,
-    rango_seleccionado: '6 a 29 PAQ',
-    accion: '6 PAQ + 10 BOT',
-    tipo_accion: 'Boni',
-    bonif_und: 10,
-    venta_paq: 6,
-    dscto: 0,
-    precio_final: 11.25,
-    mg_pct: 33.3,
-    pqts_estimados: 686,
-    ttv: 7716,
-    costo_ts: 428,
-    pct_ts: 5.5,
-    gap: 312,
-  },
-  {
-    cod_sku: 21741,
-    nombre: 'PEPSI 750ml',
-    negocio: 'CSD',
-    precio_base: 26.18,
-    und_pqt: 12,
-    rango_seleccionado: '2 a 29 PAQ',
-    accion: '2 PAQ + 2 BOT',
-    tipo_accion: 'Boni',
-    bonif_und: 2,
-    venta_paq: 2,
-    dscto: 0,
-    precio_final: 24.17,
-    mg_pct: 24.1,
-    pqts_estimados: 1129,
-    ttv: 9589,
-    costo_ts: 1021,
-    pct_ts: 10.6,
-    gap: -456,
-  },
-  {
-    cod_sku: 3724,
-    nombre: 'CC 500ml (Fresa/Piña)',
-    negocio: 'CSD',
-    precio_base: 22.55,
-    und_pqt: 15,
-    rango_seleccionado: '6 a 29 PAQ',
-    accion: '6 PAQ + 12 BOT',
-    tipo_accion: 'Boni',
-    bonif_und: 12,
-    venta_paq: 6,
-    dscto: 0,
-    precio_final: 19.9,
-    mg_pct: 35.7,
-    pqts_estimados: 490,
-    ttv: 9751,
-    costo_ts: 892,
-    pct_ts: 9.1,
-    gap: 198,
-  },
-  {
-    cod_sku: 22500,
-    nombre: 'GATORADE 500ml',
-    negocio: 'Isotónico',
-    precio_base: 22.44,
-    und_pqt: 12,
-    rango_seleccionado: '6 a 49 PAQ',
-    accion: '6 PAQ + 12 BOT',
-    tipo_accion: 'Boni',
-    bonif_und: 12,
-    venta_paq: 6,
-    dscto: 0,
-    precio_final: 19.23,
-    mg_pct: 37.3,
-    pqts_estimados: 2282,
-    ttv: 5274,
-    costo_ts: 622,
-    pct_ts: 11.8,
-    gap: -140,
-  },
-  {
-    cod_sku: 21746,
-    nombre: 'PEPSI 3Lts',
-    negocio: 'CSD',
-    precio_base: 28.2,
-    und_pqt: 4,
-    rango_seleccionado: '60 a Más',
-    accion: 'Dscto 12%',
-    tipo_accion: 'Descuento',
-    bonif_und: 0,
-    venta_paq: 60,
-    dscto: 0.12,
-    precio_final: 24.5,
-    mg_pct: 30.6,
-    pqts_estimados: 956,
-    ttv: 1880,
-    costo_ts: 184,
-    pct_ts: 9.8,
-    gap: 89,
-  },
-];
+type Vista = 'lista' | 'nueva' | 'resultado' | 'resumen';
+type Paso = 1 | 2 | 3;
 
-// ── Componente ───────────────────────────────────────────────────────────────
+const MESES: Record<number, string> = {
+  1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril', 5: 'Mayo', 6: 'Junio',
+  7: 'Julio', 8: 'Agosto', 9: 'Setiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre',
+};
+
+// ── Componente ────────────────────────────────────────────────────────────────
 
 @Component({
   selector: 'app-simulador-trade-spend',
@@ -236,208 +148,274 @@ const SKUS_MOCK: SkuSimulado[] = [
 })
 export class SimuladorTradeSpendComponent implements OnInit {
 
-  // ── Navegación entre pantallas ─────────────────────────────────────────────
-  vistaActual: 'lista' | 'nueva' | 'resultado' | 'resumen' = 'lista';
-  pasoActual = 2; // wizard: 1=contexto, 2=skus, 3=volumen, 4=resultado
+  // ── Navegación ─────────────────────────────────────────────────────────────
+  vistaActual: Vista = 'lista';
+  pasoActual: Paso = 1;
 
-  // ── Lista de simulaciones ──────────────────────────────────────────────────
-  simulaciones: Simulacion[] = [];
-  filtroAgencia = 'Todas las agencias';
-  cargando = false;
+  // ── Lista ──────────────────────────────────────────────────────────────────
+  simulaciones: SimulacionGuardada[] = [];
+  cargandoLista = false;
+  filtroAgenciaLista = '';
 
-  // ── Formulario nueva simulación ────────────────────────────────────────────
-  formSimulacion: Simulacion = this.getSimulacionVacia();
-  skusSimulados: SkuSimulado[] = [];
+  // ── Formulario nueva / proyección ──────────────────────────────────────────
+  // Paso 1 — Contexto
+  formNombre = '';
+  formAgencia = 'CHM';
+  formAnio = new Date().getFullYear();
+  formMes = new Date().getMonth() + 1;
+  formCanal = 'OFF';
+  formModo: 'cierre_real' | 'proyeccion' = 'cierre_real';
 
-  // ── Resultado de la simulación activa ─────────────────────────────────────
-  simulacionActiva: Simulacion | null = null;
-  ttvBase = 37357;
-  bonificaciones = 2441;
-  descuentos = 706;
+  // Paso 2 — SKUs (solo para proyección)
+  skusPolitica: SkuPolitica[] = [];
+  cargandoPolitica = false;
+  filtroNegocio = '';
+
+  // Paso 3 — Volumen (proyección: confirmar paquetes)
+  // Los paqEstimados se editan directo en skusPolitica
+
+  // ── Resultado activo ───────────────────────────────────────────────────────
+  resultado: ResultadoTS | null = null;
+  cargandoResultado = false;
+  errorResultado: string | null = null;
+  vistaResultado: 'negocios' | 'skus' = 'negocios';
+  filtroSkuNegocio = '';
 
   // ── Resumen por agencia ────────────────────────────────────────────────────
-  resumenAgencias: ResumenAgencia[] = [];
+  resumenCHM: ResumenAgenciaTS | null = null;
+  resumenHRZ: ResumenAgenciaTS | null = null;
+  cargandoResumen = false;
+  resumenAnio = new Date().getFullYear();
+  resumenMes = new Date().getMonth() + 1;
 
-  // ── Opciones para selects ──────────────────────────────────────────────────
-  readonly agencias = ['Chimbote', 'Huaraz'];
-  readonly meses = ['Enero 2026', 'Febrero 2026', 'Marzo 2026'];
-  readonly canales = ['OFF', 'TELSELL', 'OFF TOP', 'MAYO', 'SUB/DISTRIBUIDOR'];
-  readonly negocios = ['Todas', 'CSD', 'Agua', 'Gatorade', 'Licores'];
+  // ── Opciones ───────────────────────────────────────────────────────────────
+  readonly agencias = [{ codigo: 'CHM', nombre: 'Chimbote' }, { codigo: 'HRZ', nombre: 'Huaraz' }];
+  readonly canales = ['OFF', 'TELSELL', 'OFF TOP', 'MAYO', 'SUB/DISTRIBUIDOR', 'OFF+TELSELL'];
+  readonly mesesOpciones = Object.entries(MESES).map(([n, l]) => ({ num: Number(n), label: l }));
+  readonly aniosOpciones = [new Date().getFullYear(), new Date().getFullYear() - 1];
+  readonly mesesLabels = MESES;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   ngOnInit(): void {
-    this.cargarSimulaciones();
-    this.cargarResumenAgencias();
+    this.cargarLista();
   }
 
-  // ── Navegación ─────────────────────────────────────────────────────────────
+  // ── Lista ──────────────────────────────────────────────────────────────────
 
-  irA(vista: 'lista' | 'nueva' | 'resultado' | 'resumen'): void {
-    this.vistaActual = vista;
+  cargarLista(): void {
+    // Por ahora mock — conectar a endpoint de simulaciones guardadas cuando exista
+    this.simulaciones = [];
+    this.cargandoLista = false;
   }
 
-  verSimulacion(sim: Simulacion): void {
-    this.simulacionActiva = sim;
-    this.skusSimulados = [...SKUS_MOCK]; // TODO: cargar desde API por sim.id
-    this.irA('resultado');
+  get simulacionesFiltradas(): SimulacionGuardada[] {
+    if (!this.filtroAgenciaLista) return this.simulaciones;
+    return this.simulaciones.filter(s => s.agencia === this.filtroAgenciaLista);
   }
+
+  // ── Nueva simulación ───────────────────────────────────────────────────────
 
   nuevaSimulacion(): void {
-    this.formSimulacion = this.getSimulacionVacia();
-    this.skusSimulados = [...SKUS_MOCK];
-    this.pasoActual = 2;
-    this.irA('nueva');
+    this.formNombre = '';
+    this.formAgencia = 'CHM';
+    this.formAnio = new Date().getFullYear();
+    this.formMes = new Date().getMonth() + 1;
+    this.formCanal = 'OFF';
+    this.formModo = 'cierre_real';
+    this.skusPolitica = [];
+    this.resultado = null;
+    this.pasoActual = 1;
+    this.vistaActual = 'nueva';
   }
 
-  // ── Carga de datos (se conectará al backend) ───────────────────────────────
+  // ── Paso 1 → 2 ────────────────────────────────────────────────────────────
 
-  cargarSimulaciones(): void {
-    this.cargando = true;
-    // TODO: reemplazar por llamada real:
-    // this.http.get<Simulacion[]>(`${environment.apiUrl}/trade-spend/simulaciones`)
-    //   .subscribe(data => { this.simulaciones = data; this.cargando = false; });
-    setTimeout(() => {
-      this.simulaciones = [...SIMULACIONES_MOCK];
-      this.cargando = false;
-    }, 0);
+  avanzarPaso1(): void {
+    if (!this.formNombre.trim()) return;
+
+    if (this.formModo === 'cierre_real') {
+      // Cierre real: calcular directo sin pasar por SKUs
+      this.calcularCierreReal();
+    } else {
+      // Proyección: cargar política del mes para elegir SKUs
+      this.pasoActual = 2;
+      this.cargarPolitica();
+    }
   }
 
-  cargarResumenAgencias(): void {
-    // TODO: this.http.get<ResumenAgencia[]>(`${environment.apiUrl}/trade-spend/resumen`)
-    this.resumenAgencias = [
-      {
-        agencia: 'Chimbote',
-        ttv_simulado: 56010,
-        pct_ts: 8.47,
-        excede_limite: false,
-        negocios: [
-          { negocio: 'Agua',    pqts: 3338, ttv: 22280, pct_ts: 8.7,  gap: 890  },
-          { negocio: 'CSD',     pqts: 2900, ttv: 19450, pct_ts: 8.2,  gap: 440  },
-          { negocio: 'Gatorade',pqts: 1050, ttv: 9280,  pct_ts: 9.1,  gap: -320 },
-          { negocio: 'Licores', pqts: 420,  ttv: 5000,  pct_ts: 7.1,  gap: 210  },
-        ],
+  cargarPolitica(): void {
+    this.cargandoPolitica = true;
+    const url = `${environment.apiUrl}/trade-spend/politica/${this.formAgencia}/${this.formAnio}/${this.formMes}`;
+    this.http.get<{ skus: SkuPolitica[] }>(url).subscribe({
+      next: res => {
+        this.skusPolitica = res.skus.map(s => ({
+          ...s,
+          seleccionado: false,
+          rangoElegido: s.rangos[0] ?? null,
+          paqEstimados: 0,
+        }));
+        this.cargandoPolitica = false;
       },
-      {
-        agencia: 'Huaraz',
-        ttv_simulado: 31420,
-        pct_ts: 10.1,
-        excede_limite: true,
-        negocios: [
-          { negocio: 'Agua',    pqts: 6906, ttv: 14360, pct_ts: 12.1, gap: -1200 },
-          { negocio: 'CSD',     pqts: 1830, ttv: 8960,  pct_ts: 9.8,  gap: -180  },
-          { negocio: 'Gatorade',pqts: 900,  ttv: 5100,  pct_ts: 8.2,  gap: 80    },
-          { negocio: 'Licores', pqts: 200,  ttv: 3000,  pct_ts: 7.0,  gap: 95    },
-        ],
+      error: () => { this.cargandoPolitica = false; },
+    });
+  }
+
+  get skusFiltrados(): SkuPolitica[] {
+    if (!this.filtroNegocio) return this.skusPolitica;
+    return this.skusPolitica.filter(s => s.negocio === this.filtroNegocio);
+  }
+
+  get skusSeleccionados(): SkuPolitica[] {
+    return this.skusPolitica.filter(s => s.seleccionado);
+  }
+
+  get negociosDisponibles(): string[] {
+    return [...new Set(this.skusPolitica.map(s => s.negocio).filter(Boolean))];
+  }
+
+  toggleSku(sku: SkuPolitica): void {
+    sku.seleccionado = !sku.seleccionado;
+    if (sku.seleccionado && !sku.paqEstimados) sku.paqEstimados = 0;
+  }
+
+  onRangoChange(sku: SkuPolitica, politicaId: number): void {
+    sku.rangoElegido = sku.rangos.find(r => r.politica_id === politicaId) ?? null;
+  }
+
+  // ── Paso 2 → 3 ────────────────────────────────────────────────────────────
+
+  avanzarPaso2(): void {
+    if (this.skusSeleccionados.length === 0) return;
+    this.pasoActual = 3;
+  }
+
+  // ── Calcular ──────────────────────────────────────────────────────────────
+
+  calcularCierreReal(): void {
+    this.cargandoResultado = true;
+    this.errorResultado = null;
+    const url = `${environment.apiUrl}/trade-spend/resultado/${this.formAgencia}/${this.formAnio}/${this.formMes}`;
+    this.http.get<ResultadoTS>(url).subscribe({
+      next: res => {
+        this.resultado = { ...res, nombre: this.formNombre };
+        this.cargandoResultado = false;
+        this.vistaActual = 'resultado';
+        this.vistaResultado = 'negocios';
       },
-    ];
+      error: err => {
+        this.errorResultado = err.error?.detail ?? 'Error al calcular';
+        this.cargandoResultado = false;
+      },
+    });
   }
 
-  // ── Acciones del formulario ────────────────────────────────────────────────
+  calcularProyeccion(): void {
+    const skusPayload = this.skusSeleccionados
+      .filter(s => s.rangoElegido)
+      .map(s => ({
+        politica_id: s.rangoElegido!.politica_id,
+        cd_pauser: s.cd_pauser,
+        paquetes: s.paqEstimados ?? 0,
+      }));
 
-  calcularResultado(): void {
-    // Calcula TTV neto, costo TS y % TS sobre los skusSimulados
-    const ttvNeto = this.skusSimulados.reduce((s, sku) => s + sku.ttv, 0);
-    const costoTs = this.skusSimulados.reduce((s, sku) => s + sku.costo_ts, 0);
-    this.formSimulacion.ttv_estimado = ttvNeto;
-    this.formSimulacion.costo_ts = costoTs;
-    this.formSimulacion.pct_ts = ttvNeto > 0 ? (costoTs / ttvNeto) * 100 : 0;
-    this.simulacionActiva = { ...this.formSimulacion, skus: this.skusSimulados };
-    this.irA('resultado');
+    if (!skusPayload.length) return;
+
+    this.cargandoResultado = true;
+    this.errorResultado = null;
+
+    const url = `${environment.apiUrl}/trade-spend/proyeccion/${this.formAgencia}/${this.formAnio}/${this.formMes}`;
+    this.http.post<ResultadoTS>(url, {
+      nombre: this.formNombre,
+      canal: this.formCanal,
+      skus: skusPayload,
+    }).subscribe({
+      next: res => {
+        this.resultado = res;
+        this.cargandoResultado = false;
+        this.vistaActual = 'resultado';
+        this.vistaResultado = 'negocios';
+      },
+      error: err => {
+        this.errorResultado = err.error?.detail ?? 'Error al calcular';
+        this.cargandoResultado = false;
+      },
+    });
   }
 
-  guardarBorrador(): void {
-    const payload = { ...this.formSimulacion, skus: this.skusSimulados, estado: 'borrador' };
-    // TODO: this.http.post(`${environment.apiUrl}/trade-spend/simulaciones`, payload).subscribe(...)
-    console.log('Guardar borrador:', payload);
-  }
+  // ── Resumen por agencia ────────────────────────────────────────────────────
 
-  aprobarSimulacion(): void {
-    if (!this.simulacionActiva?.id) return;
-    // TODO: this.http.patch(`${environment.apiUrl}/trade-spend/simulaciones/${this.simulacionActiva.id}/aprobar`, {}).subscribe(...)
-    if (this.simulacionActiva) {
-      this.simulacionActiva.estado = 'aprobado';
+  verResumen(): void {
+    this.vistaActual = 'resumen';
+    this.cargandoResumen = true;
+    this.resumenCHM = null;
+    this.resumenHRZ = null;
+
+    let pendiente = 2;
+    const done = () => { if (--pendiente === 0) this.cargandoResumen = false; };
+
+    for (const ag of ['CHM', 'HRZ'] as const) {
+      const url = `${environment.apiUrl}/trade-spend/resultado/${ag}/${this.resumenAnio}/${this.resumenMes}/negocios`;
+      this.http.get<any>(url).subscribe({
+        next: res => {
+          if (ag === 'CHM') this.resumenCHM = res as ResumenAgenciaTS;
+          else this.resumenHRZ = res as ResumenAgenciaTS;
+          done();
+        },
+        error: () => done(),
+      });
     }
   }
 
   // ── Helpers de vista ───────────────────────────────────────────────────────
 
-  get simulacionesFiltradas(): Simulacion[] {
-    if (this.filtroAgencia === 'Todas las agencias') return this.simulaciones;
-    return this.simulaciones.filter(s => s.agencia === this.filtroAgencia);
+  get periodoLabel(): string {
+    return `${MESES[this.formMes]} ${this.formAnio}`;
   }
 
-  get totalTTV(): number {
-    return this.simulaciones.reduce((s, sim) => s + (sim.ttv_estimado ?? 0), 0);
+  get agenciaNombre(): string {
+    return this.agencias.find(a => a.codigo === this.formAgencia)?.nombre ?? '';
   }
 
-  get promPctTS(): number {
-    const total = this.simulaciones.reduce((s, sim) => s + (sim.pct_ts ?? 0), 0);
-    return this.simulaciones.length > 0 ? total / this.simulaciones.length : 0;
+  get skusExceden(): SkuTS[] {
+    return (this.resultado?.skus ?? []).filter(s => s.supera_limite);
   }
 
-  get ttvNeto(): number {
-    return this.ttvBase - this.bonificaciones - this.descuentos;
+  get skusMostrados(): SkuTS[] {
+    const skus = this.resultado?.skus ?? [];
+    if (!this.filtroSkuNegocio) return skus;
+    return skus.filter(s => s.negocio === this.filtroSkuNegocio);
   }
 
-  get cantBonificaciones(): number {
-    return this.skusSimulados.filter(s => s.tipo_accion === 'Boni').length;
+  get negociosResultado(): string[] {
+    return [...new Set((this.resultado?.skus ?? []).map(s => s.negocio).filter(Boolean))];
   }
 
-  get cantDescuentos(): number {
-    return this.skusSimulados.filter(s => s.tipo_accion === 'Descuento').length;
+  colorSemaforo(semaforo: string): string {
+    return semaforo === 'rojo' ? 'ts-rojo' : semaforo === 'amarillo' ? 'ts-amarillo' : 'ts-verde';
   }
 
-  get skusConProblema(): SkuSimulado[] {
-    return this.skusSimulados.filter(s => s.pct_ts > 10);
+  badgeAccion(tipo: string): string {
+    return tipo === 'bonificacion' ? 'badge-boni' : tipo === 'descuento' ? 'badge-dscto' : 'badge-sin';
   }
 
-  badgeEstado(estado: string): string {
-    const map: Record<string, string> = {
-      aprobado: 'badge-pos',
-      excede_limite: 'badge-neg',
-      borrador: 'badge-sin',
-    };
-    return map[estado] ?? 'badge-sin';
+  pctFill(pct: number, limite: number): number {
+    return Math.min((pct / limite) * 100, 100);
   }
 
-  labelEstado(estado: string): string {
-    const map: Record<string, string> = {
-      aprobado: 'Aprobado',
-      excede_limite: 'Excede límite',
-      borrador: 'Borrador',
-    };
-    return map[estado] ?? estado;
+  fmt(n: number): string {
+    return n?.toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) ?? '0';
   }
 
-  badgeGap(gap: number): string {
-    return gap >= 0 ? 'badge-pos' : 'badge-neg';
+  fmtDec(n: number, d = 2): string {
+    return n?.toLocaleString('es-PE', { minimumFractionDigits: d, maximumFractionDigits: d }) ?? '0';
   }
 
-  labelGap(gap: number): string {
-    return (gap >= 0 ? '+' : '') + 'S/ ' + Math.abs(gap).toLocaleString('es-PE');
+  fmtPct(n: number): string {
+    return (n ?? 0).toFixed(2) + '%';
   }
 
-  pctFill(pct: number, max = 15): number {
-    return Math.min((pct / max) * 100, 100);
-  }
-
-  formatCurrency(val: number): string {
-    return 'S/ ' + val.toLocaleString('es-PE', { minimumFractionDigits: 0 });
-  }
-
-  // ── Private helpers ────────────────────────────────────────────────────────
-
-  private getSimulacionVacia(): Simulacion {
-    return {
-      nombre: '',
-      agencia: 'Chimbote',
-      mes: 'Enero 2026',
-      canal: 'OFF',
-      negocio: 'Todas',
-      estado: 'borrador',
-      fecha: new Date().toLocaleDateString('es-PE'),
-      skus: [],
-    };
+  fmtFecha(iso: string): string {
+    return new Date(iso).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 }

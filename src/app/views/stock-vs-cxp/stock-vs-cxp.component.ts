@@ -55,7 +55,7 @@ export class StockVsCxpComponent implements OnInit, OnDestroy {
 
   private VM_DEFAULT: Record<string, number> = {
     'CBC': 2652546,
-    'SNACKS TRUX': 1124019,
+    'TRUJILLO': 1124019,
     'SNACKS CHIMBOTE': 856272,
     'BACKUS': 7277433,
     'MONDELEZ': 5164709,

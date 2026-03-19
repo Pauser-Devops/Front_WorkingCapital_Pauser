@@ -315,10 +315,16 @@ export class ReportesBancariosComponent implements OnInit, OnDestroy, AfterViewI
         const mapa: Record<string, { count: number, monto: number }> = {};
         // Solo bancos de conciliación
         for (const r of this.filasFiltradas.filter(f => !TABLAS_SOLO_MONTO.includes(f.tabla))) {
-            if (!r.id_pop || r.id_pop === 'null' || r.id_pop === 'None' || r.id_pop === '') continue;
-            if (!mapa[r.id_pop]) mapa[r.id_pop] = { count: 0, monto: 0 };
-            mapa[r.id_pop].count++;
-            mapa[r.id_pop].monto += r.ingreso;
+
+            const id = (r.id_pop || '').toString().trim();
+
+            // ❌ descartar basura (como sede)
+            if (!/^\d+$/.test(id)) continue;
+
+            if (!mapa[id]) mapa[id] = { count: 0, monto: 0 };
+
+            mapa[id].count++;
+            mapa[id].monto += r.ingreso;
         }
         this.topDuplicados = Object.entries(mapa)
             .filter(([, v]) => v.count > 1)
