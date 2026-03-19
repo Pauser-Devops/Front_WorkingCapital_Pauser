@@ -280,4 +280,35 @@ export class StockVsCxpComponent implements OnInit, OnDestroy {
 
   trackByFecha(_: number, col: Columna) { return col.fecha; }
   trackByProv(_: number, p: string) { return p; }
+
+  mostrarModalEliminar = false;
+  fechaAEliminar = '';
+  eliminando = false;
+
+  confirmarEliminar(fecha: string) {
+    this.fechaAEliminar = fecha;
+    this.mostrarModalEliminar = true;
+  }
+
+  cancelarEliminar() {
+    this.mostrarModalEliminar = false;
+    this.fechaAEliminar = '';
+  }
+
+  eliminarFecha() {
+    if (!this.fechaAEliminar) return;
+    this.eliminando = true;
+    this.http.delete<any>(`${API}/stock-cxp/eliminar/${this.fechaAEliminar}`).subscribe({
+      next: r => {
+        this.eliminando = false;
+        if (r.estado === 'OK') {
+          this.mostrarModalEliminar = false;
+          this.columnas = this.columnas.filter(c => c.fecha !== this.fechaAEliminar);
+          delete this.datos[this.fechaAEliminar];
+          this.fechaAEliminar = '';
+        }
+      },
+      error: () => { this.eliminando = false; }
+    });
+  }
 }

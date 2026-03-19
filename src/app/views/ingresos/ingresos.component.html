@@ -93,6 +93,15 @@
           <th class="ing-th-concepto ing-col-sticky">Concepto</th>
           <th class="ing-th-fecha" *ngFor="let col of columnasFiltradas; trackBy: trackByFecha">
             {{ col.label }}
+            <button class="ing-btn-eliminar-col" (click)="confirmarEliminar(col.fecha)" title="Eliminar fecha">
+              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6l-1 14H6L5 6" />
+                <path d="M10 11v6M14 11v6" />
+                <path d="M9 6V4h6v2" />
+              </svg>
+            </button>
           </th>
         </tr>
       </thead>
@@ -292,6 +301,32 @@
         Recalcular PROSEGUR
       </button>
 
+      <!-- VENTAS CONTADO REPARTO -->
+      <div class="ing-panel-seccion">VENTAS CONTADO REPARTO</div>
+      <div class="ing-fields-grid" style="margin-bottom:8px">
+        <div class="ing-field-item" *ngFor="let c of conceptosVentasContadoAuto">
+          <label class="ing-manual-label">
+            {{ c.nombre }}
+            <span class="ing-badge-auto" style="margin-left:6px">PBI</span>
+          </label>
+          <div class="ing-prosegur-box" [class.cargando]="calculandoVentasContado">
+            <div class="ing-spinner-sm" *ngIf="calculandoVentasContado"></div>
+            <input *ngIf="!calculandoVentasContado" class="ing-input-manual" type="text" [value]="fmtPanel(c.id)"
+              (input)="setValorManualPanel(c.id, $any($event.target).value)" (focus)="onFocusManualPanel(c.id, $event)"
+              (blur)="onBlurManualPanel(c.id, $event)" placeholder="—" />
+          </div>
+        </div>
+      </div>
+      <button class="ing-btn-calcular" style="margin-bottom:24px" (click)="calcularVentasContado()"
+        [disabled]="!nuevaFecha || calculandoVentasContado">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10" />
+          <polyline points="1 20 1 14 7 14" />
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+        </svg>
+        Recalcular desde Power BI
+      </button>
       <!-- SECCIONES MANUALES -->
       <ng-container *ngFor="let grupo of manualesAgrupados">
         <ng-container *ngIf="grupo[0] !== 'PROSEGUR'">
@@ -317,6 +352,27 @@
     <button class="ing-btn-guardar" (click)="guardarFecha()" [disabled]="!nuevaFecha || guardandoFecha">
       <div class="ing-spinner-sm" *ngIf="guardandoFecha"></div>
       {{ guardandoFecha ? 'Guardando...' : (fechaExistente ? 'Actualizar' : 'Guardar fecha') }}
+    </button>
+  </div>
+</div>
+
+
+<!-- MODAL ELIMINAR FECHA -->
+<div class="ing-modal-overlay" *ngIf="mostrarModalEliminar" (click)="cancelarEliminar()"></div>
+<div class="ing-modal-confirmar" *ngIf="mostrarModalEliminar">
+  <div class="ing-modal-confirmar-icon">
+    <span class="material-icons" style="font-size:40px; color:#ef4444">delete_forever</span>
+  </div>
+  <div class="ing-modal-confirmar-titulo">Eliminar fecha</div>
+  <div class="ing-modal-confirmar-msg">
+    ¿Eliminar todos los registros del <strong>{{ formatFechaCorta(fechaAEliminar) }}</strong>?
+    Esta acción no se puede deshacer.
+  </div>
+  <div class="ing-modal-confirmar-btns">
+    <button class="ing-btn-cancelar" (click)="cancelarEliminar()">Cancelar</button>
+    <button class="ing-btn-eliminar-confirm" (click)="eliminarFecha()" [disabled]="eliminando">
+      <div class="ing-spinner-sm" *ngIf="eliminando"></div>
+      {{ eliminando ? 'Eliminando...' : 'Sí, eliminar' }}
     </button>
   </div>
 </div>

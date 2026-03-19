@@ -18,8 +18,8 @@
       <input class="eg-filtro-input" type="date" [(ngModel)]="filtroDesde" />
       <label class="eg-filtro-label">Hasta</label>
       <input class="eg-filtro-input" type="date" [(ngModel)]="filtroHasta" />
-      <button class="eg-filtro-clear" (click)="filtroDesde=''; filtroHasta=''"
-        *ngIf="filtroDesde || filtroHasta">✕ Limpiar</button>
+      <button class="eg-filtro-clear" (click)="filtroDesde=''; filtroHasta=''" *ngIf="filtroDesde || filtroHasta">✕
+        Limpiar</button>
     </div>
     <button class="btn-export" (click)="exportar()">
       <span class="material-icons">download</span>
@@ -34,9 +34,13 @@
 
         <div class="fecha-header-bar">
           <span class="fecha-titulo">{{ col.label }}</span>
-          <button class="btn-cfg-inline" (click)="abrirConfig(col.fecha)">
-            ⚙ Editar parámetros
-          </button>
+          <div style="display:flex; gap:8px; align-items:center">
+            <button class="btn-cfg-inline" (click)="abrirConfig(col.fecha)">⚙ Editar parámetros</button>
+            <button class="ing-btn-eliminar-col" (click)="confirmarEliminar(col.fecha)" title="Eliminar fecha"
+              style="opacity:1; color:#ef4444">
+              <span class="material-icons" style="font-size:16px">delete</span>
+            </button>
+          </div>
         </div>
 
         <table class="tabla-stock">
@@ -80,7 +84,7 @@
               <td class="num" [ngClass]="colorDif(getTotal(col.fecha, 'exceso'))">
                 {{ fmt(getTotal(col.fecha, 'exceso')) }}
               </td>
-             <td class="num">{{ fmt(getTotal(col.fecha, 'loQueDeberiamostener')) }}</td>
+              <td class="num">{{ fmt(getTotal(col.fecha, 'loQueDeberiamostener')) }}</td>
             </tr>
           </tbody>
         </table>
@@ -117,8 +121,7 @@
               <tr *ngFor="let cfg of configFilas">
                 <td class="prov-name">{{ cfg.proveedor }}</td>
                 <td>
-                  <input type="text" inputmode="numeric" class="input-num"
-                    [value]="fmtInput(cfg.ventasMensuales)"
+                  <input type="text" inputmode="numeric" class="input-num" [value]="fmtInput(cfg.ventasMensuales)"
                     (input)="onInputVentas(cfg, $event)" placeholder="0" />
                 </td>
                 <td>
@@ -194,8 +197,7 @@
           <tr *ngFor="let cfg of configExistente">
             <td class="prov-name">{{ cfg.proveedor }}</td>
             <td>
-              <input type="text" inputmode="numeric" class="input-num"
-                [value]="fmtInput(cfg.ventasMensuales)"
+              <input type="text" inputmode="numeric" class="input-num" [value]="fmtInput(cfg.ventasMensuales)"
                 (input)="onInputVentasExistente(cfg, $event)" placeholder="0" />
             </td>
             <td>
@@ -213,4 +215,23 @@
     </div>
   </div>
 
+</div>
+
+<div class="modal-overlay" *ngIf="mostrarModalEliminar" (click)="cancelarEliminar()"></div>
+<div class="ing-modal-confirmar" *ngIf="mostrarModalEliminar">
+  <div class="ing-modal-confirmar-icon">
+    <span class="material-icons" style="font-size:40px; color:#ef4444">delete_forever</span>
+  </div>
+  <div class="ing-modal-confirmar-titulo">Eliminar fecha</div>
+  <div class="ing-modal-confirmar-msg">
+    ¿Eliminar todos los registros del <strong>{{ formatFecha(fechaAEliminar) }}</strong>?
+    Esta acción no se puede deshacer.
+  </div>
+  <div class="ing-modal-confirmar-btns">
+    <button class="btn-cancelar" (click)="cancelarEliminar()">Cancelar</button>
+    <button class="ing-btn-eliminar-confirm" (click)="eliminarFecha()" [disabled]="eliminando">
+      <div class="eg-spinner-sm" *ngIf="eliminando"></div>
+      {{ eliminando ? 'Eliminando...' : 'Sí, eliminar' }}
+    </button>
+  </div>
 </div>

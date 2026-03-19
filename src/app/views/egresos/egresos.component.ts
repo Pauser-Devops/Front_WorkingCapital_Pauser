@@ -14,32 +14,32 @@ const ID_ENVASES = 9;
 const ID_SALARIOS = 19;
 const ID_MOVILIDADES = 20;
 // IMPUESTOS
-const ID_IMP_ITAN        = 33;
-const ID_IMP_IGV         = 34;
-const ID_IMP_RENTA       = 35;
-const ID_IMP_PERCEPCIONES= 36;
-const ID_IMP_ESSALUD     = 37;
-const ID_IMP_AFP         = 38;
+const ID_IMP_ITAN = 33;
+const ID_IMP_IGV = 34;
+const ID_IMP_RENTA = 35;
+const ID_IMP_PERCEPCIONES = 36;
+const ID_IMP_ESSALUD = 37;
+const ID_IMP_AFP = 38;
 // IMP TOTAL = 39
 
 // RENTA
-const ID_VENTA_MES_CERRADO  = 41;
-const ID_VENTA_MES_CURSO    = 42;
-const ID_TOTAL_VENTAS       = 43;
-const ID_COMPRAS_MES_CERRADO= 44;
-const ID_COMPRAS_MES_CURSO  = 45;
-const ID_TOTAL_COMPRAS      = 46;
-const ID_IGV_VENTAS         = 47;
-const ID_IGV_COMPRAS        = 48;
-const ID_IGV_POR_PAGAR      = 49;
-const ID_RENTA_3RA          = 50;
-const ID_CRED_RTA           = 51;
-const ID_RENTA_PRELIQ       = 52;
-const ID_IGV_PRELIQ         = 53;
-const ID_ITAN_RENTA         = 54;
+const ID_VENTA_MES_CERRADO = 41;
+const ID_VENTA_MES_CURSO = 42;
+const ID_TOTAL_VENTAS = 43;
+const ID_COMPRAS_MES_CERRADO = 44;
+const ID_COMPRAS_MES_CURSO = 45;
+const ID_TOTAL_COMPRAS = 46;
+const ID_IGV_VENTAS = 47;
+const ID_IGV_COMPRAS = 48;
+const ID_IGV_POR_PAGAR = 49;
+const ID_RENTA_3RA = 50;
+const ID_CRED_RTA = 51;
+const ID_RENTA_PRELIQ = 52;
+const ID_IGV_PRELIQ = 53;
+const ID_ITAN_RENTA = 54;
 const ID_PERCEPCIONES_RENTA = 55;
-const ID_RTA_2DA            = 56;
-const ID_TOTAL_PAGAR        = 57;
+const ID_RTA_2DA = 56;
+const ID_TOTAL_PAGAR = 57;
 
 const IDS_CALCULADOS = new Set([
   ID_BACKUS,
@@ -261,7 +261,7 @@ export class EgresosComponent implements OnInit {
           this.fechaExistente = true;
           for (const d of r.datos) this.valoresPanel[d.concepto_id] = d.valor;
           this.recalcularBackus();
-        this.recalcularRenta();
+          this.recalcularRenta();
         } else {
           this.aplicarDefaults();
         }
@@ -384,10 +384,10 @@ export class EgresosComponent implements OnInit {
     return suma;
   }
   getTotalPagar(fecha: string): number {
-  const v = (id: number) => this.getValor(id, fecha) || 0;
-  return v(ID_IGV_PRELIQ) + v(ID_RENTA_PRELIQ) + v(ID_ITAN_RENTA) +
-         v(ID_PERCEPCIONES_RENTA) + v(ID_RTA_2DA);
-}
+    const v = (id: number) => this.getValor(id, fecha) || 0;
+    return v(ID_IGV_PRELIQ) + v(ID_RENTA_PRELIQ) + v(ID_ITAN_RENTA) +
+      v(ID_PERCEPCIONES_RENTA) + v(ID_RTA_2DA);
+  }
   esSeccion(c: Concepto) { return c.tipo_fila === 'seccion'; }
   esTotal(c: Concepto) { return c.tipo_fila === 'total'; }
   esItem(c: Concepto) { return c.tipo_fila === 'item'; }
@@ -486,7 +486,38 @@ export class EgresosComponent implements OnInit {
       }, 0),
       igvPorPagar: suma(ID_IGV_POR_PAGAR),
       rentaPreliq: suma(ID_RENTA_PRELIQ),
-      totalPagar:suma(57),
+      totalPagar: suma(57),
     };
+  }
+
+
+  mostrarModalEliminar = false;
+  fechaAEliminar = '';
+  eliminando = false;
+
+  confirmarEliminar(fecha: string) {
+    this.fechaAEliminar = fecha;
+    this.mostrarModalEliminar = true;
+  }
+
+  cancelarEliminar() {
+    this.mostrarModalEliminar = false;
+    this.fechaAEliminar = '';
+  }
+
+  eliminarFecha() {
+    if (!this.fechaAEliminar) return;
+    this.eliminando = true;
+    this.http.delete<any>(`${API}/egresos/eliminar/${this.fechaAEliminar}`).subscribe({
+      next: r => {
+        this.eliminando = false;
+        if (r.estado === 'OK') {
+          this.mostrarModalEliminar = false;
+          this.fechaAEliminar = '';
+          this.cargarDatos();
+        }
+      },
+      error: () => { this.eliminando = false; }
+    });
   }
 }

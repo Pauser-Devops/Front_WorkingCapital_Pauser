@@ -10,9 +10,8 @@ import { catchError } from 'rxjs/operators';
 const API = environment.apiUrl;
 
 const IDS_AUTO = new Set([2, 3, 4, 5, 6, 7, 8, 9, 10]);
-
-// IDs de PROSEGUR que se calculan automáticamente desde BD
 const IDS_PROSEGUR_AUTO = new Set([13, 14, 15, 16]);
+const IDS_VENTAS_CONTADO_AUTO = new Set([28, 29, 30, 31, 32, 33, 34]);
 
 const BANCO_KEY: Record<number, string> = {
   2: 'BCP LN', 3: 'BCP TRU', 4: 'BCP SEDES', 5: 'BCP',
@@ -39,7 +38,6 @@ interface Columna {
   guardado: boolean;
 }
 
-// Resultado de cada endpoint PROSEGUR
 interface ProsegurResult {
   estado: string;
   total_puno?: number;
@@ -68,6 +66,7 @@ export class IngresosComponent implements OnInit {
   cargandoFecha = false;
   calculandoBancos = false;
   calculandoProsegur = false;
+  calculandoVentasContado = false;
   bancosCalculados: Record<string, number> = {};
   guardandoFecha = false;
 
@@ -81,20 +80,18 @@ export class IngresosComponent implements OnInit {
   tipoCambio = 0;
   readonly IDS_USD = IDS_USD;
   readonly BANCO_KEY = BANCO_KEY;
-  //Prosegur sincronización botón 
+
   sincronizando = false;
   syncMensaje = '';
   syncTipo: 'ok' | 'info' | '' = '';
-  // Saldo original en dólares por concepto
+
   saldosUsdOriginal: Record<number, number> = {};
   ibkUsdSoles = 0;
   ibkUsdOriginal = 0;
   filtroDesde = '';
   filtroHasta = '';
   private readonly IDS_SUBCUENTAS_BCP = new Set([2, 3, 4]);
-
   readonly IDS_SNACKS_ING = new Set([20, 29, 40]);
-
 
   prosegurDetalle: {
     puno: number | null;
@@ -135,7 +132,6 @@ export class IngresosComponent implements OnInit {
           this.columnas = Array.from(fechasSet).sort().map(f => ({
             fecha: f, label: this.formatFechaCorta(f), guardado: true,
           }));
-
           this.datos = {};
           for (const d of r.datos) {
             if (!this.datos[d.concepto_id]) this.datos[d.concepto_id] = {};
@@ -146,6 +142,7 @@ export class IngresosComponent implements OnInit {
       error: () => { this.cargando = false; this.error = 'Error al cargar datos'; }
     });
   }
+
   get columnasFiltradas(): Columna[] {
     if (!this.filtroDesde && !this.filtroHasta) return this.columnas;
     return this.columnas.filter(col => {
@@ -161,7 +158,6 @@ export class IngresosComponent implements OnInit {
     window.open(`${API}/exportar/ingresos?fechas=${fechas}`, '_blank');
   }
 
-
   get conceptosBancoAuto(): Concepto[] {
     return this.conceptos.filter(c => IDS_AUTO.has(c.id));
   }
@@ -170,10 +166,15 @@ export class IngresosComponent implements OnInit {
     return this.conceptos.filter(c => IDS_PROSEGUR_AUTO.has(c.id));
   }
 
+  get conceptosVentasContadoAuto(): Concepto[] {
+    return this.conceptos.filter(c => IDS_VENTAS_CONTADO_AUTO.has(c.id));
+  }
+
   get conceptosManuales(): Concepto[] {
     return this.conceptos.filter(c =>
       !IDS_AUTO.has(c.id) &&
       !IDS_PROSEGUR_AUTO.has(c.id) &&
+      !IDS_VENTAS_CONTADO_AUTO.has(c.id) &&
       c.tipo_fila !== 'seccion' &&
       c.tipo_fila !== 'total'
     );
@@ -216,15 +217,17 @@ export class IngresosComponent implements OnInit {
             }
           }
         } else {
-          // Fecha nueva → calcula bancos y prosegur automáticamente
+          // Fecha nueva → calcula todo automáticamente
           this.calcularBancos();
           this.calcularProsegur();
+          this.calcularVentasContado();
         }
       },
       error: () => {
         this.cargandoFecha = false;
         this.calcularBancos();
         this.calcularProsegur();
+        this.calcularVentasContado();
       }
     });
   }
@@ -240,30 +243,24 @@ export class IngresosComponent implements OnInit {
         this.calculandoBancos = false;
         if (r.estado === 'OK') {
           this.tipoCambio = r.tipo_cambio || 0;
-
-          // Guardar todos los saldos incluyendo IBK USD
           this.bancosCalculados = r.bancos;
-
-          // Saldo original en USD
           const ibkUsdSoles = r.bancos['INTERBANK USD'] || 0;
           this.ibkUsdSoles = ibkUsdSoles;
           this.ibkUsdOriginal = this.tipoCambio > 0
             ? Math.round((ibkUsdSoles / this.tipoCambio) * 100) / 100
             : 0;
-
-          // Sumar USD convertido a INTERBANK soles
           this.bancosCalculados['INTERBANK'] = (r.bancos['INTERBANK'] || 0) + ibkUsdSoles;
         }
       },
       error: () => { this.calculandoBancos = false; }
     });
   }
+
   calcularProsegur() {
     if (!this.nuevaFecha) return;
     this.calculandoProsegur = true;
     this.prosegurDetalle = { puno: null, huaraz: null, trujillo: null, ingresos_dia: null };
 
-    // Llama los 4 endpoints en paralelo
     forkJoin({
       puno: this.http.get<ProsegurResult>(`${API}/wk/prosegur-puno?fecha=${this.nuevaFecha}`)
         .pipe(catchError(() => of({ estado: 'ERROR' } as ProsegurResult))),
@@ -282,8 +279,6 @@ export class IngresosComponent implements OnInit {
       const ingresos_dia = results.ingresos_dia.estado === 'OK' ? (results.ingresos_dia.total_ingresos_dia ?? 0) : null;
 
       this.prosegurDetalle = { puno, huaraz, trujillo, ingresos_dia };
-
-      // Setea en el panel como valores editables (pueden corregirse antes de guardar)
       this.valoresManualesPanel[13] = puno;
       this.valoresManualesPanel[14] = huaraz;
       this.valoresManualesPanel[15] = trujillo;
@@ -291,7 +286,22 @@ export class IngresosComponent implements OnInit {
     });
   }
 
-  // Setea el detalle cuando se carga fecha existente
+  calcularVentasContado() {
+    if (!this.nuevaFecha) return;
+    this.calculandoVentasContado = true;
+    this.http.get<any>(`${API}/wk/ventas-contado-powerbi?fecha=${this.nuevaFecha}`).subscribe({
+      next: r => {
+        this.calculandoVentasContado = false;
+        if (r.estado === 'OK') {
+          for (const [idStr, valor] of Object.entries(r.ventas)) {
+            this.valoresManualesPanel[parseInt(idStr)] = valor as number;
+          }
+        }
+      },
+      error: () => { this.calculandoVentasContado = false; }
+    });
+  }
+
   private _setProsegurById(id: number, valor: number) {
     if (id === 13) this.prosegurDetalle.puno = valor;
     if (id === 14) this.prosegurDetalle.huaraz = valor;
@@ -321,8 +331,8 @@ export class IngresosComponent implements OnInit {
     if (this.editandoManualId === concepto_id) return v.toString();
     return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
+
   setValorManualPanel(concepto_id: number, val: string) {
-    // Acepta punto como decimal, elimina todo lo que no sea número o punto
     const clean = val.replace(/[^0-9.]/g, '');
     this.valoresManualesPanel[concepto_id] = clean === '' ? null : parseFloat(clean);
   }
@@ -331,7 +341,6 @@ export class IngresosComponent implements OnInit {
     this.editandoManualId = concepto_id;
     const v = this.valoresManualesPanel[concepto_id];
     const input = event.target as HTMLInputElement;
-    // Al enfocar muestra el número crudo con punto decimal
     input.value = v !== null && v !== undefined ? v.toString() : '';
     setTimeout(() => input.select(), 0);
   }
@@ -340,7 +349,6 @@ export class IngresosComponent implements OnInit {
     this.editandoManualId = null;
     const input = event.target as HTMLInputElement;
     const v = this.valoresManualesPanel[concepto_id];
-    // Al salir formatea: miles con coma, decimales con punto
     input.value = v !== null && v !== undefined && !isNaN(v)
       ? v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
       : '';
@@ -351,7 +359,7 @@ export class IngresosComponent implements OnInit {
   private buildManualesAgrupados() {
     const grupos: Record<string, Concepto[]> = {};
     this.conceptos.forEach(c => {
-      if (this.esItem(c) && !this.esAuto(c) && !IDS_PROSEGUR_AUTO.has(c.id)) {
+      if (this.esItem(c) && !this.esAuto(c) && !IDS_PROSEGUR_AUTO.has(c.id) && !IDS_VENTAS_CONTADO_AUTO.has(c.id)) {
         if (!grupos[c.seccion]) grupos[c.seccion] = [];
         grupos[c.seccion].push(c);
       }
@@ -364,15 +372,15 @@ export class IngresosComponent implements OnInit {
     this.guardandoFecha = true;
     const payload: { concepto_id: number; valor: number | null }[] = [];
 
-    for (const c of this.conceptosBancoAuto) {
+    for (const c of this.conceptosBancoAuto)
       payload.push({ concepto_id: c.id, valor: this.valorBancoCalculado(c.id) });
-    }
 
-    // PROSEGUR automáticos (editables en el panel por si necesitan corrección)
     for (const c of this.conceptosProsegurAuto)
       payload.push({ concepto_id: c.id, valor: this.valoresManualesPanel[c.id] ?? null });
 
-    // Manuales
+    for (const c of this.conceptosVentasContadoAuto)
+      payload.push({ concepto_id: c.id, valor: this.valoresManualesPanel[c.id] ?? null });
+
     for (const c of this.conceptosManuales)
       payload.push({ concepto_id: c.id, valor: this.valoresManualesPanel[c.id] ?? null });
 
@@ -416,6 +424,7 @@ export class IngresosComponent implements OnInit {
   esItem(c: Concepto) { return c.tipo_fila === 'item'; }
   esAuto(c: Concepto) { return IDS_AUTO.has(c.id); }
   esProsegurAuto(c: Concepto) { return IDS_PROSEGUR_AUTO.has(c.id); }
+  esVentasContadoAuto(c: Concepto) { return IDS_VENTAS_CONTADO_AUTO.has(c.id); }
 
   iniciarEdicion(concepto_id: number, fecha: string) {
     if (this.editandoCelda) this.confirmarEdicion();
@@ -463,7 +472,6 @@ export class IngresosComponent implements OnInit {
   trackById(_: number, c: Concepto) { return c.id; }
   trackByFecha(_: number, col: Columna) { return col.fecha; }
 
-  // PROSEGUR SINCRONIZACIÓN
   sincronizarProsegur() {
     this.sincronizando = true;
     this.syncMensaje = '';
@@ -485,7 +493,6 @@ export class IngresosComponent implements OnInit {
           this.syncMensaje = 'Error al sincronizar';
           this.syncTipo = 'info';
         }
-        // Oculta el mensaje después de 4 segundos
         setTimeout(() => { this.syncMensaje = ''; this.syncTipo = ''; }, 4000);
       },
       error: () => {
@@ -496,7 +503,6 @@ export class IngresosComponent implements OnInit {
       }
     });
   }
-
 
   conceptoAplicaEnFecha(concepto_id: number, fecha: string): boolean {
     if (!fecha) return true;
@@ -510,19 +516,9 @@ export class IngresosComponent implements OnInit {
     return this.columnasFiltradas.some(col => this.conceptoAplicaEnFecha(concepto_id, col.fecha));
   }
 
-
   get kpisIng() {
-    const sumaConceptos = (ids: number[]) =>
-      this.columnasFiltradas.reduce((acc, col) =>
-        acc + ids.reduce((s, id) => s + (this.getValor(id, col.fecha) || 0), 0), 0);
-
-    // IDs de bancos consolidados únicamente (sin BCP LN=2, BCP TRUX=3, BCP SEDES=4)
-    const ID_BCP = 5;
-    const ID_INTERBANK = 6;
-    const ID_BBVA = 7;
-    const ID_CAJA_ARQ = 8;
-    const ID_PICHINCHA = 9;
-    const ID_BNACION = 10;
+    const ID_BCP = 5, ID_INTERBANK = 6, ID_BBVA = 7,
+      ID_CAJA_ARQ = 8, ID_PICHINCHA = 9, ID_BNACION = 10;
 
     const totalBancos = this.columnasFiltradas.reduce((acc, col) =>
       acc + [ID_BCP, ID_INTERBANK, ID_BBVA, ID_CAJA_ARQ, ID_PICHINCHA, ID_BNACION]
@@ -542,5 +538,34 @@ export class IngresosComponent implements OnInit {
       ventasContado: totalSeccion('VENTAS CONTADO REPARTO'),
       ventasCredito: totalSeccion('VENTAS CRÉDITO 3-10 DÍAS'),
     };
+  }
+  mostrarModalEliminar = false;
+  fechaAEliminar = '';
+  eliminando = false;
+
+  confirmarEliminar(fecha: string) {
+    this.fechaAEliminar = fecha;
+    this.mostrarModalEliminar = true;
+  }
+
+  cancelarEliminar() {
+    this.mostrarModalEliminar = false;
+    this.fechaAEliminar = '';
+  }
+
+  eliminarFecha() {
+    if (!this.fechaAEliminar) return;
+    this.eliminando = true;
+    this.http.delete<any>(`${API}/wk/ingresos-eliminar/${this.fechaAEliminar}`).subscribe({
+      next: r => {
+        this.eliminando = false;
+        if (r.estado === 'OK') {
+          this.mostrarModalEliminar = false;
+          this.fechaAEliminar = '';
+          this.cargarDatos();
+        }
+      },
+      error: () => { this.eliminando = false; }
+    });
   }
 }

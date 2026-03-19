@@ -78,6 +78,9 @@
           <th class="eg-th-concepto eg-col-sticky">Concepto</th>
           <th class="eg-th-fecha" *ngFor="let col of columnasFiltradas; trackBy: trackByFecha">
             {{ col.label }}
+            <button class="ing-btn-eliminar-col" (click)="confirmarEliminar(col.fecha)" title="Eliminar fecha">
+              <span class="material-icons" style="font-size:13px">delete</span>
+            </button>
           </th>
         </tr>
       </thead>
@@ -365,4 +368,23 @@
     </button>
   </div>
 
+</div>
+
+<div class="ing-modal-overlay" *ngIf="mostrarModalEliminar" (click)="cancelarEliminar()"></div>
+<div class="ing-modal-confirmar" *ngIf="mostrarModalEliminar">
+  <div class="ing-modal-confirmar-icon">
+    <span class="material-icons" style="font-size:40px; color:#ef4444">delete_forever</span>
+  </div>
+  <div class="ing-modal-confirmar-titulo">Eliminar fecha</div>
+  <div class="ing-modal-confirmar-msg">
+    ¿Eliminar todos los registros del <strong>{{ formatFechaCorta(fechaAEliminar) }}</strong>?
+    Esta acción no se puede deshacer.
+  </div>
+  <div class="ing-modal-confirmar-btns">
+    <button class="eg-btn-cancelar" (click)="cancelarEliminar()">Cancelar</button>
+    <button class="ing-btn-eliminar-confirm" (click)="eliminarFecha()" [disabled]="eliminando">
+      <div class="eg-spinner-sm" *ngIf="eliminando"></div>
+      {{ eliminando ? 'Eliminando...' : 'Sí, eliminar' }}
+    </button>
+  </div>
 </div>
