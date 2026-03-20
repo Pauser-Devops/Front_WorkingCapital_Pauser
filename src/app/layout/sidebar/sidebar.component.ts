@@ -80,7 +80,7 @@ export class SidebarComponent {
       icono: 'account_balance_wallet',
       abierto: true,
       modulos: [
-        { id: 'simuladorTS', label: 'Simulador' ,roles: ['admin', 'gerencia']},
+        { id: 'simuladorTS', label: 'Simulador CBC' ,roles: ['admin', 'gerencia']},
         { id: 'cargaTS', label: 'Carga de Archivos CBC' ,roles: ['admin', 'gerencia']},
        
       ]
