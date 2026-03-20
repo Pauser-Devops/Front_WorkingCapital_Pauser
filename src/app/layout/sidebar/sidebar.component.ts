@@ -72,6 +72,7 @@ export class SidebarComponent {
       modulos: [
         { id: 'maes', label: 'MAEs' },
         { id: 'pga',  label: 'PGA'  },
+        { id: 'ebitda',  label: 'EBITDA' },
       ]
     },
     {

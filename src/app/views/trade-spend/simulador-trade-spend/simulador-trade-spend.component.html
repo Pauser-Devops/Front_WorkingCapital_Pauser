@@ -2,14 +2,11 @@
 
   <!-- ── Tabs de navegación ──────────────────────────────────────────────── -->
   <div class="nav-tabs">
-    <div class="nav-tab" [class.active]="vistaActual==='lista'"
-         (click)="vistaActual='lista'; cargarLista()">Simulaciones</div>
-    <div class="nav-tab" [class.active]="vistaActual==='nueva'"
-         (click)="nuevaSimulacion()">Nueva simulación</div>
-    <div class="nav-tab" [class.active]="vistaActual==='resultado'"
-         [class.disabled]="!resultado">Resultado</div>
-    <div class="nav-tab" [class.active]="vistaActual==='resumen'"
-         (click)="verResumen()">Resumen por agencia</div>
+    <div class="nav-tab" [class.active]="vistaActual==='lista'" (click)="vistaActual='lista'; cargarLista()">
+      Simulaciones</div>
+    <div class="nav-tab" [class.active]="vistaActual==='nueva'" (click)="nuevaSimulacion()">Nueva simulación</div>
+    <div class="nav-tab" [class.active]="vistaActual==='resultado'" [class.disabled]="!resultado">Resultado</div>
+    <div class="nav-tab" [class.active]="vistaActual==='resumen'" (click)="verResumen()">Resumen por agencia</div>
   </div>
 
   <!-- ════════════════════════════════════════════════════════════
@@ -42,30 +39,36 @@
         <table>
           <thead>
             <tr>
-              <th>Nombre</th><th>Agencia</th><th>Periodo</th>
-              <th>Modo</th><th>TTV</th><th>% TS</th>
-              <th>Estado</th><th></th>
+              <th>Nombre</th>
+              <th>Agencia</th>
+              <th>Periodo</th>
+              <th>Modo</th>
+              <th>TTV</th>
+              <th>% TS</th>
+              <th>Estado</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let s of simulacionesFiltradas">
               <td><span style="font-weight:500">{{ s.nombre }}</span><br>
-                  <span class="row-range">{{ s.canal }}</span></td>
+                <span class="row-range">{{ s.canal }}</span>
+              </td>
               <td>{{ s.agencia }}</td>
               <td>{{ mesesLabels[s.mes] }} {{ s.anio }}</td>
               <td><span class="badge" [ngClass]="s.modo==='cierre_real'?'badge-blue':'badge-boni'">
-                {{ s.modo === 'cierre_real' ? 'Cierre' : 'Proyección' }}</span></td>
+                  {{ s.modo === 'cierre_real' ? 'Cierre' : 'Proyección' }}</span></td>
               <td>S/ {{ fmt(s.ttv_total) }}</td>
               <td>
                 <span class="ts-pct-label">{{ fmtPct(s.ts_pct_total) }}</span>
                 <div class="progress-bar">
                   <div class="progress-fill"
-                       [style.width.%]="pctFill(s.ts_pct_total, s.supera_limite ? s.ts_pct_total : 15)"
-                       [class.fill-danger]="s.supera_limite"></div>
+                    [style.width.%]="pctFill(s.ts_pct_total, s.supera_limite ? s.ts_pct_total : 15)"
+                    [class.fill-danger]="s.supera_limite"></div>
                 </div>
               </td>
               <td><span class="badge" [ngClass]="s.supera_limite?'badge-neg':'badge-pos'">
-                {{ s.supera_limite ? 'Excede' : 'OK' }}</span></td>
+                  {{ s.supera_limite ? 'Excede' : 'OK' }}</span></td>
               <td><button class="btn btn-ghost" (click)="resultado=null; vistaActual='resultado'">Ver</button></td>
             </tr>
           </tbody>
@@ -94,8 +97,7 @@
         Configuración
       </div>
       <div class="step-line" [class.done]="pasoActual>1"></div>
-      <div class="step" [class.active]="pasoActual===2" [class.done]="pasoActual>2"
-           [class.disabled]="pasoActual<2">
+      <div class="step" [class.active]="pasoActual===2" [class.done]="pasoActual>2" [class.disabled]="pasoActual<2">
         <div class="step-num"><span *ngIf="pasoActual<=2">2</span><span *ngIf="pasoActual>2">✓</span></div>
         SKUs y acciones
       </div>
@@ -113,8 +115,7 @@
       <div class="form-row">
         <div class="form-group">
           <label>Nombre</label>
-          <input type="text" [(ngModel)]="formNombre"
-                 placeholder="Ej: Marzo CHM – Pepsi + Agua" />
+          <input type="text" [(ngModel)]="formNombre" placeholder="Ej: Marzo CHM – Pepsi + Agua" />
         </div>
         <div class="form-group">
           <label>Modo</label>
@@ -165,9 +166,7 @@
       <div *ngIf="errorResultado" class="alert alert-warn">{{ errorResultado }}</div>
 
       <div style="display:flex;justify-content:flex-end;margin-top:1rem">
-        <button class="btn btn-primary"
-                [disabled]="!formNombre.trim() || cargandoResultado"
-                (click)="avanzarPaso1()">
+        <button class="btn btn-primary" [disabled]="!formNombre.trim() || cargandoResultado" (click)="avanzarPaso1()">
           <span *ngIf="!cargandoResultado">
             {{ formModo==='cierre_real' ? 'Calcular →' : 'Siguiente →' }}
           </span>
@@ -211,9 +210,8 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let sku of skusFiltrados"
-                  [class.fila-sel]="sku.seleccionado"
-                  (click)="toggleSku(sku)" style="cursor:pointer">
+              <tr *ngFor="let sku of skusFiltrados" [class.fila-sel]="sku.seleccionado" (click)="toggleSku(sku)"
+                style="cursor:pointer">
                 <td>
                   <div class="ts-checkbox" [class.checked]="sku.seleccionado">
                     <span *ngIf="sku.seleccionado">✓</span>
@@ -226,10 +224,8 @@
                 <td>{{ sku.negocio }}</td>
                 <td>S/ {{ fmtDec(sku.rangoElegido?.precio_lista ?? 0, 4) }}</td>
                 <td>
-                  <select [(ngModel)]="sku.rangoElegido"
-                          (ngModelChange)="onRangoChange(sku, $event?.politica_id)"
-                          (click)="$event.stopPropagation()"
-                          style="font-size:12px;padding:3px 6px">
+                  <select [(ngModel)]="sku.rangoElegido" (ngModelChange)="onRangoChange(sku, $event?.politica_id)"
+                    (click)="$event.stopPropagation()" style="font-size:12px;padding:3px 6px">
                     <option *ngFor="let r of sku.rangos" [ngValue]="r">{{ r.rango_texto }}</option>
                   </select>
                 </td>
@@ -241,7 +237,8 @@
                 <td><strong>S/ {{ fmtDec(sku.rangoElegido?.precio_final ?? 0, 4) }}</strong></td>
                 <td>
                   <span *ngIf="sku.rangoElegido?.precio_lista">
-                    {{ fmtPct(((sku.rangoElegido!.precio_lista - sku.rangoElegido!.precio_final) / sku.rangoElegido!.precio_lista) * 100) }}
+                    {{ fmtPct(((sku.rangoElegido!.precio_lista - sku.rangoElegido!.precio_final) /
+                    sku.rangoElegido!.precio_lista) * 100) }}
                   </span>
                 </td>
                 <td>{{ fmtPct((sku.rangoElegido?.margen_pct ?? 0) * 100) }}</td>
@@ -253,9 +250,7 @@
 
       <div style="display:flex;justify-content:space-between;margin-top:0.5rem">
         <button class="btn btn-ghost" (click)="pasoActual=1">← Atrás</button>
-        <button class="btn btn-primary"
-                [disabled]="skusSeleccionados.length===0"
-                (click)="avanzarPaso2()">
+        <button class="btn btn-primary" [disabled]="skusSeleccionados.length===0" (click)="avanzarPaso2()">
           Siguiente → ({{ skusSeleccionados.length }} SKUs)
         </button>
       </div>
@@ -271,10 +266,14 @@
           <table>
             <thead>
               <tr>
-                <th>SKU</th><th>Negocio</th><th>Acción</th>
-                <th>Precio lista</th><th>Precio final</th>
+                <th>SKU</th>
+                <th>Negocio</th>
+                <th>Acción</th>
+                <th>Precio lista</th>
+                <th>Precio final</th>
                 <th style="width:130px">Paquetes est.</th>
-                <th>TTV est.</th><th>% TS est.</th>
+                <th>TTV est.</th>
+                <th>% TS est.</th>
               </tr>
             </thead>
             <tbody>
@@ -292,9 +291,7 @@
                 <td>S/ {{ fmtDec(sku.rangoElegido?.precio_lista ?? 0, 2) }}</td>
                 <td><strong>S/ {{ fmtDec(sku.rangoElegido?.precio_final ?? 0, 2) }}</strong></td>
                 <td>
-                  <input type="number" min="0" [(ngModel)]="sku.paqEstimados"
-                         (click)="$event.stopPropagation()"
-                         style="width:100%;padding:5px 8px;font-size:13px;
+                  <input type="number" min="0" [(ngModel)]="sku.paqEstimados" (click)="$event.stopPropagation()" style="width:100%;padding:5px 8px;font-size:13px;
                                 border:0.5px solid var(--color-border-secondary);
                                 border-radius:6px;background:var(--color-background-primary);
                                 color:var(--color-text-primary)">
@@ -304,7 +301,8 @@
                 </td>
                 <td>
                   <span *ngIf="sku.rangoElegido?.precio_lista">
-                    {{ fmtPct(((sku.rangoElegido!.precio_lista - sku.rangoElegido!.precio_final) / sku.rangoElegido!.precio_lista) * 100) }}
+                    {{ fmtPct(((sku.rangoElegido!.precio_lista - sku.rangoElegido!.precio_final) /
+                    sku.rangoElegido!.precio_lista) * 100) }}
                   </span>
                 </td>
               </tr>
@@ -317,9 +315,7 @@
 
       <div style="display:flex;justify-content:space-between">
         <button class="btn btn-ghost" (click)="pasoActual=2">← Atrás</button>
-        <button class="btn btn-primary"
-                [disabled]="cargandoResultado"
-                (click)="calcularProyeccion()">
+        <button class="btn btn-primary" [disabled]="cargandoResultado" (click)="calcularProyeccion()">
           <span *ngIf="!cargandoResultado">Calcular proyección →</span>
           <span *ngIf="cargandoResultado">Calculando…</span>
         </button>
@@ -372,9 +368,8 @@
             {{ fmtPct(r.resumen.ts_pct) }}
           </div>
           <div class="progress-bar" style="margin-top:6px">
-            <div class="progress-fill"
-                 [style.width.%]="pctFill(r.resumen.ts_pct, r.limite_ts_pct)"
-                 [class.fill-danger]="r.supera_limite"></div>
+            <div class="progress-fill" [style.width.%]="pctFill(r.resumen.ts_pct, r.limite_ts_pct)"
+              [class.fill-danger]="r.supera_limite"></div>
           </div>
           <div class="metric-sub">Límite: {{ fmtPct(r.limite_ts_pct) }}</div>
         </div>
@@ -388,15 +383,14 @@
 
       <!-- Alerta si excede -->
       <div *ngIf="r.supera_limite" class="alert alert-warn" style="margin-bottom:1rem">
-        ⚠ El % TS total ({{ fmtPct(r.resumen.ts_pct) }}) supera el límite de {{ fmtPct(r.limite_ts_pct) }} para {{ r.agencia }}.
+        ⚠ El % TS total ({{ fmtPct(r.resumen.ts_pct) }}) supera el límite de {{ fmtPct(r.limite_ts_pct) }} para {{
+        r.agencia }}.
       </div>
 
       <!-- Toggle negocios / SKUs -->
       <div class="ts-vista-toggle">
-        <button [class.active]="vistaResultado==='negocios'"
-                (click)="vistaResultado='negocios'">Por negocio</button>
-        <button [class.active]="vistaResultado==='skus'"
-                (click)="vistaResultado='skus'">Por SKU</button>
+        <button [class.active]="vistaResultado==='negocios'" (click)="vistaResultado='negocios'">Por negocio</button>
+        <button [class.active]="vistaResultado==='skus'" (click)="vistaResultado='skus'">Por SKU</button>
       </div>
 
       <!-- Vista por negocio -->
@@ -405,9 +399,14 @@
           <table>
             <thead>
               <tr>
-                <th>Negocio</th><th>SKUs</th><th>Paquetes</th>
-                <th>TTV real</th><th>Costo TS</th><th>% TS</th>
-                <th>GAP vs teórico</th><th>Estado</th>
+                <th>Negocio</th>
+                <th>SKUs</th>
+                <th>Paquetes</th>
+                <th>TTV real</th>
+                <th>Costo TS</th>
+                <th>% TS</th>
+                <th>GAP vs teórico</th>
+                <th>Estado</th>
               </tr>
             </thead>
             <tbody>
@@ -423,9 +422,8 @@
                     <span>{{ fmtPct(n.ts_pct) }}</span>
                   </div>
                   <div class="progress-bar" style="margin-top:3px">
-                    <div class="progress-fill"
-                         [style.width.%]="pctFill(n.ts_pct, r.limite_ts_pct)"
-                         [class.fill-danger]="n.supera_limite"></div>
+                    <div class="progress-fill" [style.width.%]="pctFill(n.ts_pct, r.limite_ts_pct)"
+                      [class.fill-danger]="n.supera_limite"></div>
                   </div>
                 </td>
                 <td>
@@ -458,15 +456,20 @@
             <table>
               <thead>
                 <tr>
-                  <th>SKU</th><th>Negocio</th><th>Canal</th>
-                  <th>Pqts</th><th>Bonif.</th>
-                  <th>Precio lista</th><th>Precio real</th>
-                  <th>TTV real</th><th>% TS</th><th>Estado</th>
+                  <th>SKU</th>
+                  <th>Negocio</th>
+                  <th>Canal</th>
+                  <th>Pqts</th>
+                  <th>Bonif.</th>
+                  <th>Precio lista</th>
+                  <th>Precio real</th>
+                  <th>TTV real</th>
+                  <th>% TS</th>
+                  <th>Estado</th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let s of skusMostrados"
-                    [class.fila-warn]="s.supera_limite">
+                <tr *ngFor="let s of skusMostrados" [class.fila-warn]="s.supera_limite">
                   <td>
                     <span style="font-weight:500">{{ s.sku_gerencial }}</span><br>
                     <span class="row-range">{{ s.sku | slice:0:35 }}</span>
@@ -478,12 +481,11 @@
                     {{ fmt(s.paquetes_bonif) }}
                     <span class="row-range">({{ fmtDec(s.pct_bonif, 1) }}%)</span>
                   </td>
-                  <td class="num-cell">S/ {{ fmtDec(s.precio_lista, 4) }}</td>
-                  <td class="num-cell">S/ {{ fmtDec(s.precio_real, 4) }}</td>
+                  <td>S/ {{ fmtDec(s.ttv_paquete, 4) }}</td>
+                  <td>S/ {{ fmtDec(s.ttv_real / s.paquetes_pagados, 4) }}</td>
                   <td class="num-cell">S/ {{ fmt(s.ttv_real) }}</td>
                   <td>
-                    <span [class.ts-pct-ok]="!s.supera_limite"
-                          [class.ts-pct-bad]="s.supera_limite">
+                    <span [class.ts-pct-ok]="!s.supera_limite" [class.ts-pct-bad]="s.supera_limite">
                       {{ fmtPct(s.ts_pct) }}
                     </span>
                   </td>
@@ -537,9 +539,8 @@
             </div>
             <div class="metric-card">
               <div class="metric-label">% TS</div>
-              <div class="metric-val" style="font-size:17px"
-                   [class.pos]="!resumenCHM.supera_limite"
-                   [class.neg]="resumenCHM.supera_limite">
+              <div class="metric-val" style="font-size:17px" [class.pos]="!resumenCHM.supera_limite"
+                [class.neg]="resumenCHM.supera_limite">
                 {{ fmtPct(resumenCHM.ts_pct_total) }}
               </div>
             </div>
@@ -550,7 +551,15 @@
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Negocio</th><th>Pqts</th><th>TTV</th><th>% TS</th><th>GAP</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Negocio</th>
+                <th>Pqts</th>
+                <th>TTV</th>
+                <th>% TS</th>
+                <th>GAP</th>
+              </tr>
+            </thead>
             <tbody>
               <tr *ngFor="let n of resumenCHM.negocios">
                 <td>{{ n.negocio }}</td>
@@ -584,9 +593,8 @@
             </div>
             <div class="metric-card">
               <div class="metric-label">% TS</div>
-              <div class="metric-val" style="font-size:17px"
-                   [class.pos]="!resumenHRZ.supera_limite"
-                   [class.neg]="resumenHRZ.supera_limite">
+              <div class="metric-val" style="font-size:17px" [class.pos]="!resumenHRZ.supera_limite"
+                [class.neg]="resumenHRZ.supera_limite">
                 {{ fmtPct(resumenHRZ.ts_pct_total) }}
               </div>
             </div>
@@ -597,7 +605,15 @@
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Negocio</th><th>Pqts</th><th>TTV</th><th>% TS</th><th>GAP</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Negocio</th>
+                <th>Pqts</th>
+                <th>TTV</th>
+                <th>% TS</th>
+                <th>GAP</th>
+              </tr>
+            </thead>
             <tbody>
               <tr *ngFor="let n of resumenHRZ.negocios">
                 <td>{{ n.negocio }}</td>

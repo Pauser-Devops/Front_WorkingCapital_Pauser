@@ -54,6 +54,8 @@ export interface SkuTS {
   rango_texto?: string;
   margen_pct?: number;
   paquetes?: number;
+  ttv_paquete: number;
+  paquetes_pagados:number;
 }
 
 export interface ResultadoTS {

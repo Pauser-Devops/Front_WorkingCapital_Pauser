@@ -25,7 +25,7 @@ import { SimuladorTradeSpendComponent } from './views/trade-spend/simulador-trad
 import { ConciliacionProsegurComponent } from './views/prosegur/conciliacion-prosegur/conciliacion-prosegur.component';
 import { FlujoCajaComponent } from './views/flujo-de-caja/flujo-caja.component';
 import { CargaTradeSpendComponent } from './views/trade-spend/carga-trade/carga-trade-spend.component';
-
+import { EbitdaComponent } from './views/powerbi/ebitda.component';
 const VISTA_NOMBRES: Record<string, string> = {
   semanal: 'WK Semanal 2026',
   mensual: 'WK Mensual 2026',
@@ -46,7 +46,9 @@ const VISTA_NOMBRES: Record<string, string> = {
   simuladorTS: 'Simulador Trade Spend',
   conciliacionProsegur: 'Traking Prosegur - Bancos',
   flujoCaja: 'Flujo de Caja',
-  cargaTS: 'Carga de Archivos Trade Spend'
+  cargaTS: 'Carga de Archivos Trade Spend',
+  ebitda: 'EBITDA'
+
 };
 
 @Component({
@@ -78,6 +80,7 @@ const VISTA_NOMBRES: Record<string, string> = {
     FlujoCajaComponent,
     ConciliacionProsegurComponent,
     CargaTradeSpendComponent,
+    EbitdaComponent,
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']

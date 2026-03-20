@@ -127,11 +127,12 @@
   font-size: 13px;
 }
 
+/* ── Cabeceras de tabla ── */
 .ing-th-concepto {
   position: sticky;
   left: 0;
   z-index: 2;
-  background: #1e3a5f;
+  background: #0d1f3c;           /* navy oscuro */
   color: white;
   padding: 12px 16px;
   text-align: left;
@@ -142,7 +143,7 @@
 }
 
 .ing-th-fecha {
-  background: #1e3a5f;
+  background: #0d1f3c;           /* navy oscuro */
   color: white;
   padding: 12px 14px;
   text-align: right;
@@ -152,9 +153,10 @@
   white-space: nowrap;
 }
 
+/* ── Filas de sección ── */
 .ing-row-seccion td {
-  background: #1e3a5f;
-  color: #93c5fd;
+  background: #1a3260;           /* navy medio */
+  color: #93c5fd;                /* azul claro */
   font-size: 11px;
   font-weight: 700;
   letter-spacing: .06em;
@@ -162,6 +164,14 @@
   text-transform: uppercase;
 }
 
+/* evita que la celda sticky quede blanca en filas de sección */
+.ing-row-seccion .ing-col-sticky,
+.ing-row-seccion .ing-td-label {
+  background: #1a3260 !important;
+  color: #93c5fd !important;
+}
+
+/* ── Filas de total ── */
 .ing-row-total td {
   background: #f1f5f9;
   font-weight: 700;
@@ -170,6 +180,7 @@
   border-bottom: 2px solid #e2e8f0;
 }
 
+/* ── Filas de item ── */
 .ing-row-item:hover td {
   background: #f8fafc;
 }
@@ -182,6 +193,7 @@
   background: #dcfce7;
 }
 
+/* ── TD label (columna sticky) ── */
 .ing-td-label {
   position: sticky;
   left: 0;
@@ -203,7 +215,7 @@
 }
 
 .ing-td-label.seccion {
-  background: #1e3a5f !important;
+  background: #1a3260 !important; /* navy medio */
 }
 
 .ing-td-label.total {
@@ -259,7 +271,7 @@
 }
 
 .ing-td-val.editable:hover {
-  background: #eff6ff !important;
+  background: #eff6ff !important; /* hover azul suave */
 }
 
 .ing-td-val.vacio {
@@ -384,11 +396,11 @@
   font-size: 14px;
   font-weight: 700;
   letter-spacing: .08em;
-  color: #090150;
+  color: #1e3a5f;               /* navy */
   text-transform: uppercase;
   margin-bottom: 12px;
   padding-bottom: 6px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 2px solid #dbeafe; /* línea azul suave */
 }
 
 .ing-field {
@@ -459,7 +471,7 @@
   width: 100%;
   justify-content: center;
   padding: 9px;
-  background: #eff6ff;
+  background: #eff6ff;           /* azul muy suave */
   color: #2563eb;
   border: 1.5px solid #bfdbfe;
   border-radius: 8px;
@@ -566,7 +578,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: #1e3a5f;
+  background: #1e3a5f;           /* navy */
   color: white;
   border: none;
   border-radius: 8px;
@@ -593,7 +605,6 @@
   flex-wrap: wrap;
 }
 
-/* Grid de campos 2 columnas dentro de cada sección */
 .ing-fields-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -684,7 +695,7 @@
   font-size: 16px;
 }
 
-/* ── Nav de fechas ─────────────────────────────────── */
+/* ── Nav de fechas ── */
 .ing-nav-bar {
   display: flex;
   align-items: center;
@@ -702,7 +713,7 @@
   border-radius: 8px;
   border: 1.5px solid #d1d5db;
   background: #fff;
-  color: #1a2b4a;
+  color: #1e3a5f;                /* navy */
   font-size: 20px;
   cursor: pointer;
   display: flex;
@@ -713,9 +724,9 @@
 }
 
 .btn-nav:hover:not(:disabled) {
-  background: #1a2b4a;
+  background: #1e3a5f;           /* navy */
   color: #fff;
-  border-color: #1a2b4a;
+  border-color: #1e3a5f;
 }
 
 .btn-nav:disabled {
@@ -744,150 +755,17 @@
 }
 
 .ing-chip:hover {
-  border-color: #1a2b4a;
-  color: #1a2b4a;
+  border-color: #1e3a5f;
+  color: #1e3a5f;
 }
 
 .ing-chip-activo {
-  background: #1a2b4a !important;
+  background: #1e3a5f !important;  /* navy */
   color: #fff !important;
-  border-color: #1a2b4a !important;
+  border-color: #1e3a5f !important;
 }
 
-.btn-export {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
-  border-radius: 8px;
-  border: 1.5px solid #d1d5db;
-  background: #fff;
-  color: #374151;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all .15s;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.btn-export:hover:not(:disabled) {
-  background: #15803d;
-  color: #fff;
-  border-color: #15803d;
-}
-
-.btn-export:disabled {
-  opacity: .4;
-  cursor: not-allowed;
-}
-
-.btn-export .material-icons {
-  font-size: 16px;
-}
-
-/*PROSEGUR BOTÓN
-<div class="ing-header">
-    <div class="ing-header-left">
-      <div class="ing-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="12" y1="1" x2="12" y2="23" />
-          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-        </svg>
-      </div>
-      <div>
-        <div class="ing-title">Ingresos</div>
-        <div class="ing-subtitle">Working Capital · Vista por fecha</div>
-      </div>
-    </div>
-    <button (click)="sincronizarProsegur()" [disabled]="sincronizando">
-      {{ sincronizando ? 'Sincronizando...' : 'Actualizar datos PROSEGUR' }}
-    </button>
-    <button class="ing-btn-nueva" (click)="abrirPanel()">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="12" y1="5" x2="12" y2="19" />
-        <line x1="5" y1="12" x2="19" y2="12" />
-      </svg>
-      Nueva fecha
-    </button>
-  </div>
-
-
-*/
-
-.ing-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.ing-btn-nueva {
-  white-space: nowrap;
-}
-
-.ing-sync-msg {
-  font-size: 12px;
-  color: #64748b;
-  background: #f1f5f9;
-  padding: 5px 10px;
-  border-radius: 6px;
-  white-space: nowrap;
-  animation: fadeIn 0.2s ease;
-}
-.ing-sync-msg.ok {
-  color: #16a34a;
-  background: #f0fdf4;
-}
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.ing-tabla-wrap {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-.ing-tabla {
-  min-width: 100%;
-  width: max-content;
-}
-
-.ing-col-sticky {
-  position: sticky;
-  left: 0;
-  z-index: 2;
-  background: var(--bg-card, #fff);
-}
-
-.ing-row-seccion .ing-col-sticky {
-  background: inherit;
-}
-
-.ing-th-concepto {
-  min-width: 240px;
-  width: 240px;
-}
-
-.ing-th-fecha {
-  min-width: 130px;
-  text-align: right;
-  white-space: nowrap;
-}
-
-.ing-td-seccion-fill {
-  background: inherit;
-}
-
-.ing-tabla thead th {
-  position: sticky;
-  top: 0;
-  z-index: 3;
-}
-
-.ing-tabla thead .ing-col-sticky {
-  z-index: 4;
-}
+/* ── KPIs ── */
 .eg-filtro-rango {
   display: flex;
   align-items: center;
@@ -897,23 +775,23 @@
 
 .eg-filtro-label {
   font-size: 12px;
-  color: var(--text-muted, #64748b);
+  color: #64748b;
   font-weight: 500;
 }
 
 .eg-filtro-input {
-  border: 1px solid var(--border, #e2e8f0);
+  border: 1px solid #e2e8f0;
   border-radius: 6px;
   padding: 5px 10px;
   font-size: 13px;
-  color: var(--text, #1e293b);
-  background: var(--bg-card, #fff);
+  color: #1e293b;
+  background: #fff;
   cursor: pointer;
 }
 
 .eg-filtro-input:focus {
   outline: none;
-  border-color: var(--primary, #1d4ed8);
+  border-color: #1d4ed8;
 }
 
 .eg-filtro-clear {
@@ -935,12 +813,12 @@
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
   padding: 16px 24px;
-  border-bottom: 1px solid var(--border, #e2e8f0);
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .eg-kpi {
-  background: var(--bg-card, #fff);
-  border: 1px solid var(--border, #e2e8f0);
+  background: #fff;
+  border: 1px solid #e2e8f0;
   border-radius: 10px;
   padding: 14px 18px;
   display: flex;
@@ -953,13 +831,13 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--text-muted, #64748b);
+  color: #64748b;
 }
 
 .eg-kpi-val {
   font-size: 20px;
   font-weight: 700;
-  color: var(--text, #1e293b);
+  color: #1e293b;
   letter-spacing: -0.02em;
 }
 
@@ -987,6 +865,7 @@
   }
 }
 
+/* ── Botón eliminar columna ── */
 .ing-btn-eliminar-col {
   background: none;
   border: none;
@@ -999,13 +878,16 @@
   opacity: 0;
   transition: opacity 0.15s, color 0.15s;
 }
+
 .ing-th-fecha:hover .ing-btn-eliminar-col {
   opacity: 1;
 }
+
 .ing-btn-eliminar-col:hover {
   color: #ef4444;
 }
 
+/* ── Modal confirmar eliminar ── */
 .ing-modal-confirmar {
   position: fixed;
   top: 50%;
@@ -1019,13 +901,111 @@
   text-align: center;
   box-shadow: 0 20px 60px rgba(0,0,0,0.2);
 }
+
 .ing-modal-confirmar-icon { font-size: 36px; margin-bottom: 12px; }
 .ing-modal-confirmar-titulo { font-size: 18px; font-weight: 700; color: #1e293b; margin-bottom: 8px; }
 .ing-modal-confirmar-msg { font-size: 14px; color: #64748b; margin-bottom: 24px; line-height: 1.5; }
 .ing-modal-confirmar-btns { display: flex; gap: 12px; justify-content: center; }
+
 .ing-btn-eliminar-confirm {
-  background: #ef4444; color: white; border: none;
-  padding: 10px 24px; border-radius: 8px; font-weight: 600;
-  cursor: pointer; display: flex; align-items: center; gap: 8px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
+
 .ing-btn-eliminar-confirm:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── Sticky helpers ── */
+.ing-tabla-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ing-tabla {
+  min-width: 100%;
+  width: max-content;
+}
+
+.ing-col-sticky {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: #ffffff;
+}
+
+.ing-row-seccion .ing-col-sticky {
+  background: inherit;
+}
+
+.ing-th-concepto {
+  min-width: 240px;
+  width: 240px;
+  background: #0d1f3c;           /* navy oscuro — sticky override */
+}
+
+.ing-th-fecha {
+  min-width: 130px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ing-td-seccion-fill {
+  background: inherit;
+}
+
+.ing-tabla thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+.ing-tabla thead .ing-col-sticky {
+  z-index: 4;
+}
+
+/* ── Header actions ── */
+.ing-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ing-btn-nueva {
+  white-space: nowrap;
+}
+
+.ing-sync-msg {
+  font-size: 12px;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 5px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  animation: fadeIn 0.2s ease;
+}
+
+.ing-sync-msg.ok {
+  color: #16a34a;
+  background: #f0fdf4;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Botón PROSEGUR (header) ── */
+.ing-btn-calcular.prosegur-header {
+  width: auto;
+  padding: 9px 16px;
+  background: #eff6ff;
+  color: #1e3a5f;
+  border-color: #bfdbfe;
+}

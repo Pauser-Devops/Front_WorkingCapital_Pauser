@@ -271,3 +271,14 @@
   from { opacity: 0; transform: translateY(-4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+.cp-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Quita el margin-right que ya no hace falta */
+.ing-btn-calcular {
+  margin-right: 0; /* eliminar el margin-right: 10px anterior */
+}

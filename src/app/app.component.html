@@ -46,6 +46,7 @@
       <app-simulador-trade-spend *ngIf="vista === 'simuladorTS'"></app-simulador-trade-spend>
       <app-flujo-caja *ngIf="vista === 'flujoCaja'"></app-flujo-caja>
       <app-pga *ngIf="vista === 'pga'"></app-pga>
+       <app-ebitda *ngIf="vista === 'ebitda'"></app-ebitda>
       <app-conciliacion-prosegur *ngIf="vista === 'conciliacionProsegur'"></app-conciliacion-prosegur>
       <app-usuarios *ngIf="vista === 'usuarios'"></app-usuarios>
       <app-carga-trade-spend *ngIf="vista === 'cargaTS'"></app-carga-trade-spend>
@@ -57,7 +58,8 @@
              && vista !== 'reportes-bancarios' && vista !== 'registroIB' && vista !== 'compBancario' && vista !== 'analisisBancarios' 
              && vista !== 'comparadorIngresos' && vista !== 'dashwk' && vista !== 'maes' && vista !== 'pga' 
              && vista !== 'renta' && vista !== 'usuarios' && vista !== 'simuladorTS' && vista !== 'flujoCaja'
-             && vista !== 'conciliacionProsegur' && vista !== 'cargaTS'">
+             && vista !== 'conciliacionProsegur' && vista !== 'cargaTS'
+             && vista !== 'ebitda'">
         <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
           <circle cx="26" cy="26" r="23" stroke="#0070C0" stroke-width="2" fill="#EBF3FB" />
           <path d="M26 15v11l7 4" stroke="#0070C0" stroke-width="2.5" stroke-linecap="round" />
