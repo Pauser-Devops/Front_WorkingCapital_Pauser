@@ -44,6 +44,11 @@ interface ProsegurResult {
   total_huaraz?: number;
   total_trujillo?: number;
   total_ingresos_dia?: number;
+  sedes?: {
+    puno_billetes?: { total: number };
+    lima_olivos?: { total: number };
+    chimbote?: { total: number };
+  };
   [key: string]: any;
 }
 
@@ -94,12 +99,12 @@ export class IngresosComponent implements OnInit {
   readonly IDS_SNACKS_ING = new Set([20, 29, 40]);
 
   prosegurDetalle: {
-    puno: number | null;
-    huaraz: number | null;
-    trujillo: number | null;
+    punoBilletes: number | null;
+    limaOlivos: number | null;
+    chimbote: number | null;
     ingresos_dia: number | null;
     error?: string;
-  } = { puno: null, huaraz: null, trujillo: null, ingresos_dia: null };
+  } = { punoBilletes: null, limaOlivos: null, chimbote: null, ingresos_dia: null };
 
   constructor(private http: HttpClient, private wkRefresh: WkRefreshService) { }
 
@@ -186,7 +191,7 @@ export class IngresosComponent implements OnInit {
     this.fechaExistente = false;
     this.cargandoFecha = false;
     this.bancosCalculados = {};
-    this.prosegurDetalle = { puno: null, huaraz: null, trujillo: null, ingresos_dia: null };
+    this.prosegurDetalle = { punoBilletes: null, limaOlivos: null, chimbote: null, ingresos_dia: null };
     this.valoresManualesPanel = { ...VALORES_DEFAULT };
   }
 
@@ -197,7 +202,7 @@ export class IngresosComponent implements OnInit {
     this.cargandoFecha = true;
     this.fechaExistente = false;
     this.bancosCalculados = {};
-    this.prosegurDetalle = { puno: null, huaraz: null, trujillo: null, ingresos_dia: null };
+    this.prosegurDetalle = { punoBilletes: null, limaOlivos: null, chimbote: null, ingresos_dia: null };
     this.valoresManualesPanel = { ...VALORES_DEFAULT };
 
     this.http.get<any>(`${API}/wk/ingresos-datos?fecha_corte=${this.nuevaFecha}`).subscribe({
@@ -216,8 +221,9 @@ export class IngresosComponent implements OnInit {
               this.valoresManualesPanel[id] = valor as number;
             }
           }
+          // Al editar fecha existente, recalcular ingresos_dia para obtener el desglose de sedes
+          this.calcularIngresosdiaSedes();
         } else {
-          // Fecha nueva → calcula todo automáticamente
           this.calcularBancos();
           this.calcularProsegur();
           this.calcularVentasContado();
@@ -256,10 +262,27 @@ export class IngresosComponent implements OnInit {
     });
   }
 
+  // Llama solo al endpoint de ingresos_dia para refrescar el desglose de sedes
+  // sin tocar los valores de PUNO/HUARAZ/TRUJILLO ya cargados desde BD
+  calcularIngresosdiaSedes() {
+    if (!this.nuevaFecha) return;
+    this.http.get<ProsegurResult>(`${API}/wk/prosegur-ingresos-dia?fecha=${this.nuevaFecha}`)
+      .pipe(catchError(() => of({ estado: 'ERROR' } as ProsegurResult)))
+      .subscribe(r => {
+        if (r.estado === 'OK') {
+          const sedes = r.sedes;
+          this.prosegurDetalle.punoBilletes = sedes?.puno_billetes?.total ?? null;
+          this.prosegurDetalle.limaOlivos   = sedes?.lima_olivos?.total  ?? null;
+          this.prosegurDetalle.chimbote     = sedes?.chimbote?.total     ?? null;
+          this.prosegurDetalle.ingresos_dia = r.total_ingresos_dia ?? null;
+        }
+      });
+  }
+
   calcularProsegur() {
     if (!this.nuevaFecha) return;
     this.calculandoProsegur = true;
-    this.prosegurDetalle = { puno: null, huaraz: null, trujillo: null, ingresos_dia: null };
+    this.prosegurDetalle = { punoBilletes: null, limaOlivos: null, chimbote: null, ingresos_dia: null };
 
     forkJoin({
       puno: this.http.get<ProsegurResult>(`${API}/wk/prosegur-puno?fecha=${this.nuevaFecha}`)
@@ -273,12 +296,22 @@ export class IngresosComponent implements OnInit {
     }).subscribe(results => {
       this.calculandoProsegur = false;
 
-      const puno = results.puno.estado === 'OK' ? (results.puno.total_puno ?? 0) : null;
-      const huaraz = results.huaraz.estado === 'OK' ? (results.huaraz.total_huaraz ?? 0) : null;
+      const puno     = results.puno.estado     === 'OK' ? (results.puno.total_puno         ?? 0) : null;
+      const huaraz   = results.huaraz.estado   === 'OK' ? (results.huaraz.total_huaraz     ?? 0) : null;
       const trujillo = results.trujillo.estado === 'OK' ? (results.trujillo.total_trujillo ?? 0) : null;
-      const ingresos_dia = results.ingresos_dia.estado === 'OK' ? (results.ingresos_dia.total_ingresos_dia ?? 0) : null;
 
-      this.prosegurDetalle = { puno, huaraz, trujillo, ingresos_dia };
+      const ingresosDiaRes = results.ingresos_dia;
+      const ingresos_dia   = ingresosDiaRes.estado === 'OK' ? (ingresosDiaRes.total_ingresos_dia ?? 0) : null;
+
+      // Desglose de sedes viene del propio endpoint ingresos_dia, no de puno/huaraz/trujillo
+      const sedes = ingresosDiaRes.sedes;
+      this.prosegurDetalle = {
+        punoBilletes: sedes?.puno_billetes?.total ?? null,
+        limaOlivos:   sedes?.lima_olivos?.total   ?? null,
+        chimbote:     sedes?.chimbote?.total       ?? null,
+        ingresos_dia,
+      };
+
       this.valoresManualesPanel[13] = puno;
       this.valoresManualesPanel[14] = huaraz;
       this.valoresManualesPanel[15] = trujillo;
@@ -303,9 +336,9 @@ export class IngresosComponent implements OnInit {
   }
 
   private _setProsegurById(id: number, valor: number) {
-    if (id === 13) this.prosegurDetalle.puno = valor;
-    if (id === 14) this.prosegurDetalle.huaraz = valor;
-    if (id === 15) this.prosegurDetalle.trujillo = valor;
+    // Solo actualiza el valor del panel (lo que se guarda en BD)
+    // El desglose de sedes (punoBilletes/limaOlivos/chimbote) se obtiene
+    // via calcularIngresosdiaSedes(), no desde BD
     if (id === 16) this.prosegurDetalle.ingresos_dia = valor;
     this.valoresManualesPanel[id] = valor;
   }
@@ -316,9 +349,9 @@ export class IngresosComponent implements OnInit {
   }
 
   valorProsegurCalculado(concepto_id: number): number | null {
-    if (concepto_id === 13) return this.prosegurDetalle.puno;
-    if (concepto_id === 14) return this.prosegurDetalle.huaraz;
-    if (concepto_id === 15) return this.prosegurDetalle.trujillo;
+    if (concepto_id === 13) return this.valoresManualesPanel[13] ?? null;
+    if (concepto_id === 14) return this.valoresManualesPanel[14] ?? null;
+    if (concepto_id === 15) return this.valoresManualesPanel[15] ?? null;
     if (concepto_id === 16) return this.prosegurDetalle.ingresos_dia;
     return null;
   }
@@ -539,6 +572,7 @@ export class IngresosComponent implements OnInit {
       ventasCredito: totalSeccion('VENTAS CRÉDITO 3-10 DÍAS'),
     };
   }
+
   mostrarModalEliminar = false;
   fechaAEliminar = '';
   eliminando = false;
