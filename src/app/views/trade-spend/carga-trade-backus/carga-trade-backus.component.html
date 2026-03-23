@@ -1,0 +1,298 @@
+<div class="btb-wrapper">
+
+  <!-- ── Cabecera ──────────────────────────────────────────────────────────── -->
+  <div class="btb-header">
+    <div class="btb-header-left">
+      <div class="btb-title">Descuentos Backus</div>
+      <div class="btb-subtitle">Sincronización desde OneDrive · sede Backus</div>
+    </div>
+    <div class="btb-header-actions">
+      <button class="btb-btn" (click)="cambiarVista('estado')">Estado en BD</button>
+      <button class="btb-btn" (click)="cambiarVista('historial')">Historial</button>
+      <button class="btb-btn btb-btn--primary" (click)="listarArchivos()" [disabled]="cargandoArchivos">
+        <span class="btb-icon-spin" *ngIf="cargandoArchivos"></span>
+        <span *ngIf="!cargandoArchivos">↻</span>
+        Actualizar lista
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Tabs ───────────────────────────────────────────────────────────────── -->
+  <div class="btb-tabs">
+    <button class="btb-tab" [class.btb-tab--active]="vistaActual === 'listar'"
+      (click)="cambiarVista('listar')">Seleccionar y cargar</button>
+    <button class="btb-tab" [class.btb-tab--active]="vistaActual === 'estado'"
+      (click)="cambiarVista('estado')">Períodos en BD</button>
+    <button class="btb-tab" [class.btb-tab--active]="vistaActual === 'historial'"
+      (click)="cambiarVista('historial')">Historial de cargas</button>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       VISTA: SELECCIONAR Y CARGAR
+  ════════════════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="vistaActual === 'listar'" class="btb-content">
+
+    <div class="btb-card">
+      <div class="btb-card-header">
+        <div>
+          <div class="btb-card-title">Archivos disponibles en OneDrive</div>
+          <div class="btb-card-hint">Ordenados por fecha de modificación · más reciente primero</div>
+        </div>
+        <span class="btb-badge btb-badge--gray" *ngIf="archivos.length > 0">
+          {{ archivos.length }} archivos
+        </span>
+      </div>
+
+      <!-- Loading -->
+      <div class="btb-loading" *ngIf="cargandoArchivos">
+        <span class="btb-icon-spin"></span>
+        Conectando con OneDrive…
+      </div>
+
+      <!-- Error listado -->
+      <div class="btb-alert btb-alert--error" *ngIf="errorListado && !cargandoArchivos">
+        <span>⚠</span> {{ errorListado }}
+        <button class="btb-btn btb-btn--sm" (click)="listarArchivos()">Reintentar</button>
+      </div>
+
+      <!-- Buscador -->
+      <div class="btb-search-wrap" *ngIf="!cargandoArchivos && !errorListado && archivos.length > 0">
+        <span class="btb-search-icon">&#9906;</span>
+        <input
+          type="text"
+          class="btb-search"
+          [(ngModel)]="busqueda"
+          placeholder="Buscar archivo..."
+          autocomplete="off"
+        />
+        <button class="btb-search-clear" *ngIf="busqueda" (click)="busqueda = ''">✕</button>
+      </div>
+
+      <!-- Lista de archivos -->
+      <div class="btb-file-list" *ngIf="!cargandoArchivos && !errorListado">
+        <div
+          class="btb-file-row"
+          *ngFor="let arch of archivosFiltrados"
+          [class.btb-file-row--selected]="archivoSeleccionado?.nombre === arch.nombre"
+          (click)="seleccionar(arch)"
+        >
+          <div class="btb-file-icon">XLS</div>
+          <div class="btb-file-info">
+            <div class="btb-file-name">{{ arch.nombre }}</div>
+            <div class="btb-file-meta">{{ arch.tamanio_mb }} MB</div>
+          </div>
+          <div class="btb-file-right">
+            <div class="btb-file-date">{{ formatFecha(arch.modificado) }}</div>
+            <span class="btb-badge btb-badge--blue" *ngIf="esMasReciente(arch)">Más reciente</span>
+          </div>
+        </div>
+
+        <div class="btb-empty" *ngIf="archivos.length === 0">
+          {{ mensajeVacio }}
+        </div>
+      </div>
+
+      <!-- Action bar -->
+      <div class="btb-action-bar" *ngIf="!cargandoArchivos && archivos.length > 0">
+        <div class="btb-action-label">
+          Seleccionado:
+          <strong>{{ archivoSeleccionado?.nombre ?? '—' }}</strong>
+        </div>
+        <button
+          class="btb-btn btb-btn--primary"
+          [disabled]="!archivoSeleccionado || sincronizando"
+          (click)="sincronizar()"
+        >
+          <span class="btb-icon-spin" *ngIf="sincronizando"></span>
+          <span *ngIf="!sincronizando">↻</span>
+          {{ sincronizando ? 'Cargando…' : 'Cargar a BD' }}
+        </button>
+      </div>
+
+      <!-- Barra de progreso -->
+      <div class="btb-progress-wrap" *ngIf="sincronizando">
+        <div class="btb-progress-label">
+          Procesando <strong>{{ archivoSeleccionado?.nombre }}</strong>…
+        </div>
+        <div class="btb-progress-bar">
+          <div class="btb-progress-fill" [style.width.%]="progreso"></div>
+        </div>
+      </div>
+
+      <!-- Error sync -->
+      <div class="btb-alert btb-alert--error" *ngIf="errorSync">
+        <span>⚠</span> {{ errorSync }}
+      </div>
+
+      <!-- Resultado sync -->
+      <div class="btb-result" *ngIf="resultadoSync && !sincronizando"
+        [class.btb-result--ok]="syncExitoso"
+        [class.btb-result--err]="!syncExitoso">
+        <div class="btb-result-title">
+          <span class="btb-result-icon">{{ syncExitoso ? '✓' : '✕' }}</span>
+          {{ labelEstado }}
+        </div>
+        <div class="btb-result-grid">
+          <div class="btb-mini-stat">
+            <div class="btb-mini-label">Filas insertadas</div>
+            <div class="btb-mini-val btb-mini-val--green">
+              {{ formatNum(resultadoSync.total_insertados ?? 0) }}
+            </div>
+          </div>
+          <div class="btb-mini-stat">
+            <div class="btb-mini-label">Ya existían (omitidas)</div>
+            <div class="btb-mini-val btb-mini-val--muted">
+              {{ formatNum(omitidas) }}
+            </div>
+          </div>
+          <div class="btb-mini-stat">
+            <div class="btb-mini-label">Período detectado</div>
+            <div class="btb-mini-val btb-mini-val--blue">
+              {{ resultadoSync.mes ? mesLabel(resultadoSync.mes) : '—' }}
+              {{ resultadoSync.anio ?? '' }}
+            </div>
+          </div>
+          <div class="btb-mini-stat">
+            <div class="btb-mini-label">Agencia</div>
+            <div class="btb-mini-val">BACKUS</div>
+          </div>
+        </div>
+        <div class="btb-result-note" *ngIf="syncExitoso">
+          Los datos quedan almacenados en BD y estarán disponibles al filtrar por mes/año en el dashboard.
+        </div>
+        <div class="btb-result-note btb-result-note--err" *ngIf="!syncExitoso && resultadoSync.detalle">
+          {{ resultadoSync.detalle }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       VISTA: PERÍODOS EN BD
+  ════════════════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="vistaActual === 'estado'" class="btb-content">
+
+    <!-- Stats -->
+    <div class="btb-stat-grid">
+      <div class="btb-stat-card">
+        <div class="btb-stat-label">Total registros en BD</div>
+        <div class="btb-stat-num btb-stat-num--blue">{{ formatNum(totalRegistros) }}</div>
+      </div>
+      <div class="btb-stat-card">
+        <div class="btb-stat-label">Períodos cargados</div>
+        <div class="btb-stat-num">{{ periodos.length }}</div>
+      </div>
+      <div class="btb-stat-card">
+        <div class="btb-stat-label">Agencia</div>
+        <div class="btb-stat-num btb-stat-num--sm">BACKUS</div>
+      </div>
+      <div class="btb-stat-card">
+        <div class="btb-stat-label">Último sync</div>
+        <div class="btb-stat-num btb-stat-num--sm">
+          {{ periodos.length > 0 ? formatFecha(periodos[0].ultimo_sync) : '—' }}
+        </div>
+      </div>
+    </div>
+
+    <div class="btb-card">
+      <div class="btb-card-header">
+        <div>
+          <div class="btb-card-title">Todos los períodos cargados</div>
+          <div class="btb-card-hint">
+            Cada período estará disponible al filtrar por mes/año en el dashboard
+          </div>
+        </div>
+        <button class="btb-btn" (click)="cargarEstado()" [disabled]="cargandoPeriodos">
+          <span class="btb-icon-spin" *ngIf="cargandoPeriodos"></span>
+          <span *ngIf="!cargandoPeriodos">↻</span>
+          Refrescar
+        </button>
+      </div>
+
+      <div class="btb-loading" *ngIf="cargandoPeriodos">
+        <span class="btb-icon-spin"></span> Cargando…
+      </div>
+
+      <div class="btb-table-wrap" *ngIf="!cargandoPeriodos">
+        <table class="btb-table">
+          <thead>
+            <tr>
+              <th>Año</th>
+              <th>Mes</th>
+              <th>Filas en BD</th>
+              <th>Última fila (source_row)</th>
+              <th>Último sync</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of periodos">
+              <td>{{ p.anio }}</td>
+              <td>{{ mesLabel(p.mes) }}</td>
+              <td>{{ formatNum(p.total_filas) }}</td>
+              <td>{{ formatNum(p.ultima_fila) }}</td>
+              <td>{{ formatFecha(p.ultimo_sync) }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="btb-empty" *ngIf="periodos.length === 0">
+          No hay períodos cargados aún.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       VISTA: HISTORIAL
+  ════════════════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="vistaActual === 'historial'" class="btb-content">
+    <div class="btb-card">
+      <div class="btb-card-header">
+        <div class="btb-card-title">Historial de cargas</div>
+        <button class="btb-btn" (click)="cargarHistorial()" [disabled]="cargandoHistorial">
+          <span class="btb-icon-spin" *ngIf="cargandoHistorial"></span>
+          <span *ngIf="!cargandoHistorial">↻</span>
+          Refrescar
+        </button>
+      </div>
+
+      <div class="btb-loading" *ngIf="cargandoHistorial">
+        <span class="btb-icon-spin"></span> Cargando…
+      </div>
+
+      <div class="btb-table-wrap" *ngIf="!cargandoHistorial">
+        <table class="btb-table">
+          <thead>
+            <tr>
+              <th>Archivo</th>
+              <th>Período</th>
+              <th>Filas insertadas</th>
+              <th>Omitidas</th>
+              <th>Estado</th>
+              <th>Fecha de carga</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let h of historial">
+              <td class="btb-td-file">{{ h.archivo }}</td>
+              <td>{{ h.periodo }}</td>
+              <td>{{ formatNum(h.insertadas) }}</td>
+              <td class="btb-td-muted">{{ formatNum(h.omitidas) }}</td>
+              <td>
+                <span class="btb-chip"
+                  [class.btb-chip--ok]="h.estado === 'ok' || h.estado === 'sin_cambios'"
+                  [class.btb-chip--err]="h.estado !== 'ok' && h.estado !== 'sin_cambios'">
+                  {{ h.estado === 'sin_cambios' ? 'sin cambios' : h.estado }}
+                </span>
+              </td>
+              <td class="btb-td-muted">{{ formatFecha(h.fecha_carga) }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="btb-empty" *ngIf="historial.length === 0">
+          Aún no hay cargas registradas.
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

@@ -11,9 +11,20 @@
 :host {
   display: block;
   height: 100%;
-  overflow-y: auto;
+  
 }
 
+.sim-wrap {
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
+}
+
+/* Y el contenedor padre del router */
+.content-area, .main-content, .router-outlet-container {
+  overflow-y: auto !important;
+  height: 100% !important;
+}
 .sim-wrap, .sim-wrap * { box-sizing: border-box; }
 
 .sim-wrap {
@@ -36,7 +47,7 @@
   padding: 0 1.5rem;
   gap: 0;
   box-shadow: 0 1px 0 rgba(0,0,0,.18);
-  position: sticky;
+  
   top: 0;
   z-index: 50;
 }

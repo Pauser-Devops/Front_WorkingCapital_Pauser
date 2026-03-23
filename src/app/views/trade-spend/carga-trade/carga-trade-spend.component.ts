@@ -6,6 +6,12 @@ import { environment } from '../../../../environments/environment';
 
 // ── Interfaces ───────────────────────────────────────────────────────────────
 
+export interface ArchivoOneDrive {
+  nombre: string;
+  tamanio_mb: number;
+  modificado: string;
+}
+
 export interface EstadoPeriodo {
   existe: boolean;
   periodo_id?: number;
@@ -15,9 +21,41 @@ export interface EstadoPeriodo {
 }
 
 export interface ResultadoCarga {
-  insertados: number;
+  insertados?: number;
   reemplazados?: number;
   errores: string[];
+}
+
+export interface ResultadoSyncPrecios {
+  archivo: string;
+  estado: string;
+  anio?: number;
+  mes?: number;
+  total_insertados?: number;
+  total_skus?: number;
+  errores_parser?: number;
+  errores_detalle?: string[];
+  detalle?: string;
+}
+
+export interface ResultadoSyncChess {
+  archivo: string;
+  estado: string;
+  total_insertados?: number;
+  detalle?: any[];
+}
+
+export interface CargaLog {
+  id: number;
+  agencia: string;
+  tipo: string;
+  nombre_archivo: string;
+  estado: string;
+  filas_cargadas: number;
+  filas_error: number;
+  anio: number;
+  mes: number;
+  fecha_carga: string;
 }
 
 export interface PrecioProducto {
@@ -40,60 +78,14 @@ export interface PrecioProducto {
   tiene_diferencia: boolean;
 }
 
-export interface CargaLog {
-  id: number;
-  agencia: string;
-  tipo: string;
-  nombre_archivo: string;
-  estado: string;
-  filas_cargadas: number;
-  filas_error: number;
-  anio: number;
-  mes: number;
-  fecha_carga: string;
-}
-
-type TipoArchivo = 'precios' | 'politica' | 'chess_base';
-type VistaActual = 'carga' | 'productos' | 'historial';
-
 const MESES_LABELS: Record<number, string> = {
   1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril',
   5: 'Mayo', 6: 'Junio', 7: 'Julio', 8: 'Agosto',
   9: 'Setiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre',
 };
 
-export interface PasoCarga {
-  tipo: TipoArchivo;
-  numero: number;
-  titulo: string;
-  descripcion: string;
-  detalle: string;
-  icono: string;
-}
-
-const PASOS: PasoCarga[] = [
-  {
-    tipo: 'precios', numero: 1,
-    titulo: 'Tabla de precios',
-    descripcion: 'Precios CBC · Chimbote y Huaraz',
-    detalle: 'Bebidas_Mes.xlsx — ambas agencias en un solo archivo',
-    icono: '₡',
-  },
-  {
-    tipo: 'politica', numero: 2,
-    titulo: 'Política comercial',
-    descripcion: 'Bonificaciones y descuentos por SKU',
-    detalle: 'Política_Comercial_Pauser.xlsx — hojas Chimbote / Huaraz',
-    icono: '%',
-  },
-  {
-    tipo: 'chess_base', numero: 3,
-    titulo: 'Chess Base',
-    descripcion: 'Ventas reales del mes',
-    detalle: 'Chess_Base.xlsx — para el cierre de Trade Spend',
-    icono: '▦',
-  },
-];
+type VistaActual = 'carga' | 'productos' | 'historial';
+type PasoActivo = 'precios' | 'politica' | 'chess';
 
 @Component({
   selector: 'app-carga-trade-spend',
@@ -106,68 +98,105 @@ export class CargaTradeSpendComponent implements OnInit {
 
   vistaActual: VistaActual = 'carga';
 
-  // Periodo — sin selector de agencia (el Excel trae ambas)
+  // ── Período ───────────────────────────────────────────────────────────────
   anioSeleccionado = new Date().getFullYear();
   mesSeleccionado  = new Date().getMonth() + 1;
-
   readonly mesesOpciones = Object.entries(MESES_LABELS).map(([n, l]) => ({ num: Number(n), label: l }));
   readonly aniosOpciones = [new Date().getFullYear(), new Date().getFullYear() - 1];
 
-  // Estado por agencia
+  // ── Estado por agencia ────────────────────────────────────────────────────
   estadoCHM: EstadoPeriodo = { existe: false, precios: false, politica: false, chess_base: false };
   estadoHRZ: EstadoPeriodo = { existe: false, precios: false, politica: false, chess_base: false };
   cargandoEstado = false;
 
-  readonly pasos = PASOS;
-  pasoActivo = 1;
+  // ── Paso activo ───────────────────────────────────────────────────────────
+  pasoExpandido: PasoActivo | null = 'precios';
 
-  archivos:     Record<TipoArchivo, File | null>         = { precios: null, politica: null, chess_base: null };
-  subiendo:     Record<TipoArchivo, boolean>             = { precios: false, politica: false, chess_base: false };
-  resultados:   Record<TipoArchivo, ResultadoCarga|null> = { precios: null, politica: null, chess_base: null };
-  erroresCarga: Record<TipoArchivo, string|null>         = { precios: null, politica: null, chess_base: null };
+  // ── PASO 1: Precios CBC desde OneDrive ────────────────────────────────────
+  conflictoPrecios = false;
+  archivosPrecios: ArchivoOneDrive[] = [];
+  cargandoListaPrecios = false;
+  errorListaPrecios: string | null = null;
+  precioSeleccionado: ArchivoOneDrive | null = null;
+  busquedaPrecios = '';
+  sincronizandoPrecios = false;
+  progresoPrecios = 0;
+  intervaloPrecios: any = null;
+  resultadoPrecios: ResultadoSyncPrecios | null = null;
+  errorPrecios: string | null = null;
 
-  tipoConflicto: TipoArchivo | null = null;
-  mensajeConflicto = '';
+  // ── PASO 2: Política comercial (subida manual) ────────────────────────────
+  archivoPolitica: File | null = null;
+  subiendoPolitica = false;
+  resultadoPolitica: ResultadoCarga | null = null;
+  errorPolitica: string | null = null;
+  tipoConflictoPolitica = false;
 
-  // Productos
+  // ── PASO 3: Chess Base desde OneDrive ─────────────────────────────────────
+  archivosChess: ArchivoOneDrive[] = [];
+  cargandoListaChess = false;
+  errorListaChess: string | null = null;
+  chessSeleccionado: ArchivoOneDrive | null = null;
+  busquedaChess = '';
+  sincronizandoChess = false;
+  progresoChess = 0;
+  intervaloChess: any = null;
+  resultadoChess: ResultadoSyncChess | null = null;
+  errorChess: string | null = null;
+
+  // ── Productos ─────────────────────────────────────────────────────────────
   productos: PrecioProducto[] = [];
   agenciaProductos: 'CHM' | 'HRZ' = 'CHM';
   cargandoProductos = false;
   filtroNegocio = '';
   readonly negocios = ['Agua', 'CSD', 'Gatorade', 'Licores', 'Energizantes'];
 
-  // Historial
+  // ── Historial ─────────────────────────────────────────────────────────────
   historial: CargaLog[] = [];
   cargandoHistorial = false;
-
-  // Chess Sync desde OneDrive
-  archivosOneDrive: { nombre: string; tamanio_mb: number; modificado: string }[] = [];
-  cargandoArchivos  = false;
-  archivoSeleccionado: string | null = null;
-  sincronizando     = false;
-  resultadoSync: any = null;
-  errorSync: string | null = null;
 
   readonly mesesLabels = MESES_LABELS;
 
   constructor(private http: HttpClient) {}
 
-  ngOnInit(): void { this.consultarEstado(); }
+  ngOnInit(): void {
+    this.consultarEstado();
+  }
+
+  // ── Normalización para búsqueda ───────────────────────────────────────────
+
+  private _norm(s: string): string {
+    return s.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ').trim();
+  }
+
+  get archivosPreciosFiltrados(): ArchivoOneDrive[] {
+    if (!this.busquedaPrecios.trim()) return this.archivosPrecios;
+    const q = this._norm(this.busquedaPrecios);
+    return this.archivosPrecios.filter(a => this._norm(a.nombre).includes(q));
+  }
+
+  get archivosChessFiltrados(): ArchivoOneDrive[] {
+    if (!this.busquedaChess.trim()) return this.archivosChess;
+    const q = this._norm(this.busquedaChess);
+    return this.archivosChess.filter(a => this._norm(a.nombre).includes(q));
+  }
+
+  // ── Período ───────────────────────────────────────────────────────────────
 
   onCambioPeriodo(): void {
-    this.pasos.forEach(p => {
-      this.archivos[p.tipo] = null;
-      this.resultados[p.tipo] = null;
-      this.erroresCarga[p.tipo] = null;
-    });
-    this.tipoConflicto = null;
+    this.resultadoPrecios = null;
+    this.resultadoPolitica = null;
+    this.resultadoChess = null;
+    this.archivoPolitica = null;
     this.consultarEstado();
   }
 
   consultarEstado(): void {
     this.cargandoEstado = true;
     let pendiente = 2;
-    const done = () => { if (--pendiente === 0) { this.cargandoEstado = false; this._actualizarPaso(); } };
+    const done = () => { if (--pendiente === 0) { this.cargandoEstado = false; this._actualizarPasoExpandido(); } };
     const vacio = (): EstadoPeriodo => ({ existe: false, precios: false, politica: false, chess_base: false });
 
     for (const ag of ['CHM', 'HRZ'] as const) {
@@ -179,74 +208,230 @@ export class CargaTradeSpendComponent implements OnInit {
     }
   }
 
-  onArchivoSeleccionado(event: Event, tipo: TipoArchivo): void {
+  private _actualizarPasoExpandido(): void {
+    if (!this.estadoCHM.precios && !this.estadoHRZ.precios) { this.pasoExpandido = 'precios'; return; }
+    if (!this.estadoCHM.politica && !this.estadoHRZ.politica) { this.pasoExpandido = 'politica'; return; }
+    if (!this.estadoCHM.chess_base && !this.estadoHRZ.chess_base) { this.pasoExpandido = 'chess'; return; }
+    this.pasoExpandido = null;
+  }
+
+  togglePaso(paso: PasoActivo): void {
+    this.pasoExpandido = this.pasoExpandido === paso ? null : paso;
+  }
+
+  estadoPaso(tipo: 'precios' | 'politica' | 'chess_base'): 'ok' | 'activo' | 'pendiente' {
+    if (this.estadoCHM[tipo] || this.estadoHRZ[tipo]) return 'ok';
+    const mapa: Record<string, PasoActivo> = { precios: 'precios', politica: 'politica', chess_base: 'chess' };
+    if (this.pasoExpandido === mapa[tipo]) return 'activo';
+    return 'pendiente';
+  }
+
+  get todoCargado(): boolean {
+    return this.estadoCHM.precios && this.estadoCHM.politica;
+  }
+
+  get periodoLabel(): string {
+    return `${MESES_LABELS[this.mesSeleccionado]} ${this.anioSeleccionado}`;
+  }
+
+  // ── PASO 1: Precios ───────────────────────────────────────────────────────
+
+  listarPrecios(): void {
+    this.cargandoListaPrecios = true;
+    this.errorListaPrecios = null;
+    this.archivosPrecios = [];
+    this.precioSeleccionado = null;
+    this.resultadoPrecios = null;
+    this.busquedaPrecios = '';
+
+    this.http.get<{ estado: string; archivos: ArchivoOneDrive[] }>(
+      `${environment.apiUrl}/trade-spend/cbc-listar`
+    ).subscribe({
+      next: res => {
+        this.archivosPrecios = (res.archivos ?? []).sort(
+          (a, b) => new Date(b.modificado).getTime() - new Date(a.modificado).getTime()
+        );
+        this.cargandoListaPrecios = false;
+        if (this.archivosPrecios.length > 0) this.precioSeleccionado = this.archivosPrecios[0];
+      },
+      error: err => {
+        this.errorListaPrecios = err.error?.detalle ?? 'Error al conectar con OneDrive';
+        this.cargandoListaPrecios = false;
+      },
+    });
+  }
+
+  seleccionarPrecio(a: ArchivoOneDrive): void {
+    this.precioSeleccionado = a;
+    this.resultadoPrecios = null;
+    this.errorPrecios = null;
+  }
+
+  sincronizarPrecios(forzar = false): void {
+    if (!this.precioSeleccionado || this.sincronizandoPrecios) return;
+    // Si ya hay precios cargados y no se fuerza, mostrar aviso
+    if ((this.estadoCHM.precios || this.estadoHRZ.precios) && !forzar) {
+      this.conflictoPrecios = true;
+      return;
+    }
+    this.conflictoPrecios = false;
+    this.sincronizandoPrecios = true;
+    this.progresoPrecios = 0;
+    this.resultadoPrecios = null;
+    this.errorPrecios = null;
+
+    this.intervaloPrecios = setInterval(() => {
+      if (this.progresoPrecios < 85) this.progresoPrecios += Math.random() * 12 + 4;
+      if (this.progresoPrecios > 85) this.progresoPrecios = 85;
+    }, 250);
+
+    const url = `${environment.apiUrl}/trade-spend/cbc-sync?filename=${encodeURIComponent(this.precioSeleccionado.nombre)}`;
+    this.http.post<ResultadoSyncPrecios>(url, {}).subscribe({
+      next: res => {
+        this._detener(this.intervaloPrecios);
+        this.progresoPrecios = 100;
+        this.resultadoPrecios = res;
+        this.sincronizandoPrecios = false;
+        if (res.estado === 'ok') {
+          this.estadoCHM.precios = true; this.estadoHRZ.precios = true;
+          this.estadoCHM.existe = true;  this.estadoHRZ.existe = true;
+          this._actualizarPasoExpandido();
+        }
+      },
+      error: err => {
+        this._detener(this.intervaloPrecios);
+        this.errorPrecios = err.error?.detalle ?? 'Error al sincronizar';
+        this.sincronizandoPrecios = false;
+      },
+    });
+  }
+
+  // ── PASO 2: Política ──────────────────────────────────────────────────────
+
+  onArchivoPolitica(event: Event): void {
     const input = event.target as HTMLInputElement;
-    this.archivos[tipo]     = input.files?.[0] ?? null;
-    this.resultados[tipo]   = null;
-    this.erroresCarga[tipo] = null;
+    this.archivoPolitica = input.files?.[0] ?? null;
+    this.resultadoPolitica = null;
+    this.errorPolitica = null;
+    this.tipoConflictoPolitica = false;
     input.value = '';
   }
 
-  subirArchivo(tipo: TipoArchivo, forzar = false): void {
-    const archivo = this.archivos[tipo];
-    if (!archivo) return;
+  subirPolitica(forzar = false): void {
+    if (!this.archivoPolitica) return;
+    const yaExiste = this.estadoCHM.politica || this.estadoHRZ.politica;
+    if (yaExiste && !forzar) { this.tipoConflictoPolitica = true; return; }
 
-    const yaExiste = this.estadoCHM[tipo] || this.estadoHRZ[tipo];
-    if (yaExiste && !forzar) {
-      this.tipoConflicto    = tipo;
-      this.mensajeConflicto =
-        `Ya existe data de "${this.pasos.find(p => p.tipo === tipo)?.titulo}" ` +
-        `para ${MESES_LABELS[this.mesSeleccionado]} ${this.anioSeleccionado}. ` +
-        `Si continúas se reemplazará la información de ambas agencias.`;
-      return;
-    }
-
-    this.tipoConflicto      = null;
-    this.subiendo[tipo]     = true;
-    this.erroresCarga[tipo] = null;
+    this.tipoConflictoPolitica = false;
+    this.subiendoPolitica = true;
+    this.errorPolitica = null;
 
     const form = new FormData();
-    form.append('archivo',    archivo);
+    form.append('archivo', this.archivoPolitica);
     form.append('reemplazar', String(forzar));
-    if (tipo === 'chess_base') {
-      form.append('anio', String(this.anioSeleccionado));
-      form.append('mes',  String(this.mesSeleccionado));
-    }
 
-    const ep = `${environment.apiUrl}/trade-spend/cargas/${tipo === 'chess_base' ? 'chess' : tipo}`;
-    this.http.post<ResultadoCarga>(ep, form).subscribe({
+    this.http.post<ResultadoCarga>(`${environment.apiUrl}/trade-spend/cargas/politica`, form).subscribe({
       next: res => {
-        this.resultados[tipo] = res;
-        this.subiendo[tipo]   = false;
-        this.archivos[tipo]   = null;
-        this.estadoCHM[tipo]  = true;
-        this.estadoHRZ[tipo]  = true;
-        this.estadoCHM.existe = true;
-        this.estadoHRZ.existe = true;
-        this._actualizarPaso();
+        this.resultadoPolitica = res;
+        this.subiendoPolitica = false;
+        this.archivoPolitica = null;
+        this.estadoCHM.politica = true; this.estadoHRZ.politica = true;
+        this.estadoCHM.existe = true;   this.estadoHRZ.existe = true;
+        this._actualizarPasoExpandido();
       },
       error: err => {
-        this.subiendo[tipo] = false;
+        this.subiendoPolitica = false;
         if (err.status === 409) {
-          this.tipoConflicto    = tipo;
-          this.mensajeConflicto = err.error?.detail?.mensaje ?? 'Ya existe data para este mes.';
+          this.tipoConflictoPolitica = true;
         } else {
-          this.erroresCarga[tipo] = err.error?.detail ?? err.message ?? 'Error al subir el archivo.';
+          this.errorPolitica = err.error?.detail?.mensaje ?? err.error?.detail ?? err.message ?? 'Error al subir';
         }
       },
     });
   }
 
-  confirmarReemplazo(): void {
-    if (!this.tipoConflicto) return;
-    const t = this.tipoConflicto;
-    this.tipoConflicto = null;
-    this.subirArchivo(t, true);
+  // ── PASO 3: Chess ─────────────────────────────────────────────────────────
+
+  listarChess(): void {
+    this.cargandoListaChess = true;
+    this.errorListaChess = null;
+    this.archivosChess = [];
+    this.chessSeleccionado = null;
+    this.resultadoChess = null;
+    this.busquedaChess = '';
+
+    this.http.get<{ estado: string; archivos: ArchivoOneDrive[] }>(
+      `${environment.apiUrl}/trade-spend/chess-listar`
+    ).subscribe({
+      next: res => {
+        this.archivosChess = (res.archivos ?? []).sort(
+          (a, b) => new Date(b.modificado).getTime() - new Date(a.modificado).getTime()
+        );
+        this.cargandoListaChess = false;
+        if (this.archivosChess.length > 0) this.chessSeleccionado = this.archivosChess[0];
+      },
+      error: err => {
+        this.errorListaChess = err.error?.detalle ?? 'Error al conectar con OneDrive';
+        this.cargandoListaChess = false;
+      },
+    });
   }
 
-  cancelarReemplazo(): void { this.tipoConflicto = null; }
+  seleccionarChess(a: ArchivoOneDrive): void {
+    this.chessSeleccionado = a;
+    this.resultadoChess = null;
+    this.errorChess = null;
+  }
 
-  verProductos(): void { this.vistaActual = 'productos'; this.cargarProductos(); }
+  conflictoChess = false;
+
+  sincronizarChess(forzar = false): void {
+    if (!this.chessSeleccionado || this.sincronizandoChess) return;
+    if ((this.estadoCHM.chess_base || this.estadoHRZ.chess_base) && !forzar) {
+      this.conflictoChess = true;
+      return;
+    }
+    this.conflictoChess = false;
+    this.sincronizandoChess = true;
+    this.progresoChess = 0;
+    this.resultadoChess = null;
+    this.errorChess = null;
+
+    this.intervaloChess = setInterval(() => {
+      if (this.progresoChess < 85) this.progresoChess += Math.random() * 10 + 3;
+      if (this.progresoChess > 85) this.progresoChess = 85;
+    }, 300);
+
+    const url = `${environment.apiUrl}/trade-spend/chess-sync?filename=${encodeURIComponent(this.chessSeleccionado.nombre)}`;
+    this.http.post<ResultadoSyncChess>(url, {}).subscribe({
+      next: res => {
+        this._detener(this.intervaloChess);
+        this.progresoChess = 100;
+        this.resultadoChess = res;
+        this.sincronizandoChess = false;
+        if ((res.total_insertados ?? 0) > 0) {
+          this.estadoCHM.chess_base = true; this.estadoHRZ.chess_base = true;
+          this._actualizarPasoExpandido();
+        }
+      },
+      error: err => {
+        this._detener(this.intervaloChess);
+        if (err.status === 409) {
+          this.conflictoChess = true;
+        } else {
+          this.errorChess = err.error?.detalle ?? 'Error al sincronizar';
+        }
+        this.sincronizandoChess = false;
+      },
+    });
+  }
+
+  // ── Productos ─────────────────────────────────────────────────────────────
+
+  verProductos(): void {
+    this.vistaActual = 'productos';
+    this.cargarProductos();
+  }
 
   cargarProductos(): void {
     this.cargandoProductos = true;
@@ -258,67 +443,7 @@ export class CargaTradeSpendComponent implements OnInit {
     });
   }
 
-  // ── Chess Sync ────────────────────────────────────────────────────────────
-
-  listarArchivosOneDrive(): void {
-    this.cargandoArchivos   = true;
-    this.archivosOneDrive   = [];
-    this.archivoSeleccionado = null;
-    this.resultadoSync      = null;
-    this.errorSync          = null;
-
-    this.http.get<{ estado: string; archivos: any[] }>(
-      `${environment.apiUrl}/trade-spend/chess-listar`
-    ).subscribe({
-      next: res => {
-        this.archivosOneDrive = res.archivos ?? [];
-        this.cargandoArchivos = false;
-      },
-      error: err => {
-        this.errorSync        = err.error?.detalle ?? 'Error al conectar con OneDrive';
-        this.cargandoArchivos = false;
-      },
-    });
-  }
-
-  seleccionarArchivo(nombre: string): void {
-    this.archivoSeleccionado = nombre;
-    this.resultadoSync       = null;
-    this.errorSync           = null;
-  }
-
-  sincronizarChess(): void {
-    if (!this.archivoSeleccionado) return;
-    this.sincronizando = true;
-    this.resultadoSync = null;
-    this.errorSync     = null;
-
-    const url = `${environment.apiUrl}/trade-spend/chess-sync?filename=${encodeURIComponent(this.archivoSeleccionado)}`;
-    this.http.post<any>(url, {}).subscribe({
-      next: res => {
-        this.resultadoSync = res;
-        this.sincronizando = false;
-        // Actualizar estado del periodo si insertó filas
-        if (res.total_insertados > 0) {
-          this.estadoCHM.chess_base = true;
-          this.estadoHRZ.chess_base = true;
-        }
-      },
-      error: err => {
-        this.errorSync     = err.error?.detalle ?? err.message ?? 'Error al sincronizar';
-        this.sincronizando = false;
-      },
-    });
-  }
-
-  formatModificado(iso: string): string {
-    if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('es-PE', {
-      day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
-    });
-  }
-
-  // ── Historial ──────────────────────────────────────────────────────────────
+  // ── Historial ─────────────────────────────────────────────────────────────
 
   verHistorial(): void {
     this.vistaActual = 'historial';
@@ -329,31 +454,33 @@ export class CargaTradeSpendComponent implements OnInit {
     });
   }
 
-  // ── Getters de vista ───────────────────────────────────────────────────────
+  // ── Helpers ───────────────────────────────────────────────────────────────
 
-  get periodoLabel(): string { return `${MESES_LABELS[this.mesSeleccionado]} ${this.anioSeleccionado}`; }
-  get productosConDiferencia(): number { return this.productos.filter(p => p.tiene_diferencia).length; }
-  get todoCargado(): boolean { return this.estadoCHM.precios && this.estadoCHM.politica; }
-
-  estadoPaso(tipo: TipoArchivo): 'ok' | 'activo' | 'pendiente' {
-    if (this.estadoCHM[tipo] || this.resultados[tipo]) return 'ok';
-    if (this.pasos.find(p => p.tipo === tipo)?.numero === this.pasoActivo) return 'activo';
-    return 'pendiente';
+  private _detener(intervalo: any): void {
+    clearInterval(intervalo);
   }
+
+  esMasReciente(arch: ArchivoOneDrive, lista: ArchivoOneDrive[]): boolean {
+    return lista.length > 0 && lista[0].nombre === arch.nombre;
+  }
+
+  formatFecha(iso: string): string {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleDateString('es-PE', {
+      day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    });
+  }
+
+  formatNum(n: number): string { return (n ?? 0).toLocaleString('es-PE'); }
+
+  get productosConDiferencia(): number { return this.productos.filter(p => p.tiene_diferencia).length; }
 
   badgeTipo(tipo: string): string {
-    return ({ precios: 'badge-blue', politica: 'badge-boni', chess_base: 'badge-sin' } as any)[tipo] ?? 'badge-sin';
+    return ({ precios: 'ts-badge-blue', politica: 'ts-badge-amber', chess_base: 'ts-badge-gray' } as any)[tipo] ?? 'ts-badge-gray';
   }
-  badgeEstadoCarga(e: string): string { return e === 'ok' ? 'badge-pos' : e === 'error' ? 'badge-neg' : 'badge-sin'; }
-  labelEstadoCarga(e: string): string { return ({ ok: 'OK', error: 'Error', procesando: '…' } as any)[e] ?? e; }
-  labelTipo(t: string): string { return ({ precios: 'Tabla de precios', politica: 'Política comercial', chess_base: 'Chess Base' } as any)[t] ?? t; }
-  formatFecha(iso: string): string { return iso ? new Date(iso).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'; }
-  formatNum(n: number): string { return n?.toLocaleString('es-PE') ?? '0'; }
-
-  private _actualizarPaso(): void {
-    for (const p of this.pasos) {
-      if (!this.estadoCHM[p.tipo] && !this.resultados[p.tipo]) { this.pasoActivo = p.numero; return; }
-    }
-    this.pasoActivo = 4; // completo
-  }
+  badgeEstadoCarga(e: string): string { return e === 'ok' ? 'ts-badge-green' : 'ts-badge-red'; }
+  labelTipo(t: string): string { return ({ precios: 'Precios', politica: 'Política', chess_base: 'Chess Base' } as any)[t] ?? t; }
+  labelEstadoCarga(e: string): string { return ({ ok: 'OK', error: 'Error' } as any)[e] ?? e; }
+  formatFechaCorta(iso: string): string { return iso ? new Date(iso).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'; }
 }

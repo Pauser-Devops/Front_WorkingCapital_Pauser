@@ -378,10 +378,10 @@
 
       <!-- Por negocio -->
       <div *ngIf="vistaResultado==='negocios'" class="sim-card">
-        <div *ngIf="r.negocios.length===0" class="sim-empty" style="padding:1.5rem">
+        <div *ngIf="negociosSummary.length==0 " class="sim-empty" style="padding:1.5rem">
           <div class="sim-empty-sub">No hay datos de negocios para este periodo.</div>
         </div>
-        <div *ngIf="r.negocios.length>0" class="sim-table-wrap">
+        <div *ngIf="negociosSummary.length>0" class="sim-table-wrap">
           <table class="sim-table">
             <thead>
               <tr>
@@ -397,7 +397,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let n of r.negocios">
+              <tr *ngFor="let n of negociosSummary">
                 <td><strong>{{ n.negocio }}</strong></td>
                 <td class="sim-num">{{ n.skus_count }}</td>
                 <td class="sim-num">{{ fmt(n.paquetes) }}</td>

@@ -1,0 +1,374 @@
+<div class="mdlz-wrapper">
+
+  <!-- ── Cabecera ──────────────────────────────────────────────────────────── -->
+  <div class="mdlz-header">
+    <div class="mdlz-header-left">
+      <div class="mdlz-title">Carga Mondelez · Lima</div>
+      <div class="mdlz-subtitle">Sincronización desde OneDrive · Ventas y Lista de Precios</div>
+    </div>
+    <div class="mdlz-header-actions">
+      <button class="mdlz-btn" (click)="cambiarVista('estado')">Estado en BD</button>
+      <button class="mdlz-btn mdlz-btn--primary"
+        (click)="vistaActual === 'ventas' ? listarVentas() : listarPrecios()"
+        [disabled]="cargandoVentas || cargandoPrecios">
+        <span class="mdlz-spin" *ngIf="cargandoVentas || cargandoPrecios"></span>
+        <span *ngIf="!cargandoVentas && !cargandoPrecios">↻</span>
+        Actualizar lista
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Tabs ───────────────────────────────────────────────────────────────── -->
+  <div class="mdlz-tabs">
+    <button class="mdlz-tab" [class.mdlz-tab--active]="vistaActual === 'ventas'"
+      (click)="cambiarVista('ventas')">Ventas (Histórico)</button>
+    <button class="mdlz-tab" [class.mdlz-tab--active]="vistaActual === 'precios'"
+      (click)="cambiarVista('precios')">Lista de Precios</button>
+    <button class="mdlz-tab" [class.mdlz-tab--active]="vistaActual === 'estado'"
+      (click)="cambiarVista('estado')">Períodos en BD</button>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       VISTA: VENTAS
+  ════════════════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="vistaActual === 'ventas'" class="mdlz-content">
+    <div class="mdlz-card">
+
+      <div class="mdlz-card-header">
+        <div>
+          <div class="mdlz-card-title">Archivos disponibles en OneDrive</div>
+          <div class="mdlz-card-hint">03. HISTORICO MONDELEZ · más reciente primero</div>
+        </div>
+        <span class="mdlz-badge mdlz-badge--gray" *ngIf="archivosVentas.length > 0">
+          {{ archivosVentas.length }} archivos
+        </span>
+      </div>
+
+      <!-- Loading -->
+      <div class="mdlz-loading" *ngIf="cargandoVentas">
+        <span class="mdlz-spin"></span> Conectando con OneDrive…
+      </div>
+
+      <!-- Error -->
+      <div class="mdlz-alert mdlz-alert--err" *ngIf="errorListaVentas && !cargandoVentas">
+        <span>⚠</span> {{ errorListaVentas }}
+        <button class="mdlz-btn mdlz-btn--sm" (click)="listarVentas()">Reintentar</button>
+      </div>
+
+      <!-- Buscador -->
+      <div class="mdlz-search-wrap" *ngIf="!cargandoVentas && archivosVentas.length > 0">
+        <span class="mdlz-search-icon">⌕</span>
+        <input type="text" class="mdlz-search" [(ngModel)]="busquedaVentas"
+          placeholder="Buscar archivo… (ignora tildes, mayúsculas)" autocomplete="off" />
+        <button class="mdlz-search-clear" *ngIf="busquedaVentas" (click)="busquedaVentas=''">✕</button>
+      </div>
+
+      <!-- Lista -->
+      <div class="mdlz-file-list" *ngIf="!cargandoVentas && !errorListaVentas">
+        <div class="mdlz-file-row"
+          *ngFor="let a of ventasFiltradas"
+          [class.mdlz-file-row--selected]="ventaSeleccionada?.nombre === a.nombre"
+          (click)="seleccionarVenta(a)">
+          <div class="mdlz-file-icon mdlz-file-icon--green">XLS</div>
+          <div class="mdlz-file-info">
+            <div class="mdlz-file-name">{{ a.nombre }}</div>
+            <div class="mdlz-file-meta">{{ a.tamanio_mb }} MB</div>
+          </div>
+          <div class="mdlz-file-right">
+            <div class="mdlz-file-date">{{ formatFecha(a.modificado) }}</div>
+            <span class="mdlz-badge mdlz-badge--blue" *ngIf="esMasReciente(a, archivosVentas)">Más reciente</span>
+          </div>
+        </div>
+        <div class="mdlz-empty" *ngIf="ventasFiltradas.length === 0">{{ mensajeVacioVentas }}</div>
+      </div>
+
+      <!-- Conflicto -->
+      <div class="mdlz-conflicto" *ngIf="conflictoVentas">
+        <div class="mdlz-conflicto-body">
+          <span class="mdlz-conflicto-icon">⚠</span>
+          <div>
+            <div class="mdlz-conflicto-titulo">Ya existe data cargada para este período</div>
+            <div class="mdlz-conflicto-msg">
+              Solo se agregarán las filas nuevas (source_row mayor al último guardado).
+            </div>
+          </div>
+        </div>
+        <div class="mdlz-conflicto-actions">
+          <button class="mdlz-btn mdlz-btn--warn" (click)="sincronizarVentas(true)">Continuar</button>
+          <button class="mdlz-btn" (click)="conflictoVentas = false">Cancelar</button>
+        </div>
+      </div>
+
+      <!-- Action bar -->
+      <div class="mdlz-action-bar" *ngIf="!cargandoVentas && archivosVentas.length > 0">
+        <span class="mdlz-action-label">
+          Seleccionado: <strong>{{ ventaSeleccionada?.nombre ?? '—' }}</strong>
+        </span>
+        <button class="mdlz-btn mdlz-btn--primary"
+          [disabled]="!ventaSeleccionada || sincronizandoVentas"
+          (click)="sincronizarVentas()">
+          <span class="mdlz-spin" *ngIf="sincronizandoVentas"></span>
+          <span *ngIf="!sincronizandoVentas">↻</span>
+          {{ sincronizandoVentas ? 'Cargando…' : 'Cargar a BD' }}
+        </button>
+      </div>
+
+      <!-- Progreso -->
+      <div class="mdlz-progress-wrap" *ngIf="sincronizandoVentas">
+        <div class="mdlz-progress-label">
+          Procesando <strong>{{ ventaSeleccionada?.nombre }}</strong>…
+          <span class="mdlz-progress-hint">puede tardar varios minutos (archivo grande)</span>
+        </div>
+        <div class="mdlz-progress-bar">
+          <div class="mdlz-progress-fill" [style.width.%]="progresoVentas"></div>
+        </div>
+      </div>
+
+      <!-- Error sync -->
+      <div class="mdlz-alert mdlz-alert--err" *ngIf="errorVentas">⚠ {{ errorVentas }}</div>
+
+      <!-- Resultado -->
+      <div class="mdlz-result" *ngIf="resultadoVentas && !sincronizandoVentas"
+        [class.mdlz-result--ok]="resultadoVentas.estado === 'ok'"
+        [class.mdlz-result--err]="resultadoVentas.estado !== 'ok'">
+        <div class="mdlz-result-title">
+          {{ resultadoVentas.estado === 'ok' ? '✓' : '✕' }} {{ labelEstadoVentas() }}
+        </div>
+        <div class="mdlz-mini-grid" *ngIf="resultadoVentas.estado === 'ok'">
+          <div class="mdlz-mini-stat">
+            <div class="mdlz-mini-label">Filas insertadas</div>
+            <div class="mdlz-mini-val mdlz-mini-val--green">{{ formatNum(resultadoVentas.insertados ?? 0) }}</div>
+          </div>
+          <div class="mdlz-mini-stat">
+            <div class="mdlz-mini-label">Ya existían</div>
+            <div class="mdlz-mini-val mdlz-mini-val--muted">{{ formatNum(resultadoVentas.omitidas ?? 0) }}</div>
+          </div>
+          <div class="mdlz-mini-stat">
+            <div class="mdlz-mini-label">Total en Excel</div>
+            <div class="mdlz-mini-val">{{ formatNum(resultadoVentas.total_excel ?? 0) }}</div>
+          </div>
+          <div class="mdlz-mini-stat">
+            <div class="mdlz-mini-label">Período</div>
+            <div class="mdlz-mini-val mdlz-mini-val--blue">
+              {{ resultadoVentas.mes ? mesLabel(resultadoVentas.mes) : '—' }} {{ resultadoVentas.anio ?? '' }}
+            </div>
+          </div>
+        </div>
+        <div class="mdlz-result-note" *ngIf="resultadoVentas.detalle">{{ resultadoVentas.detalle }}</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       VISTA: PRECIOS
+  ════════════════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="vistaActual === 'precios'" class="mdlz-content">
+    <div class="mdlz-card">
+
+      <div class="mdlz-card-header">
+        <div>
+          <div class="mdlz-card-title">Lista de Precios en OneDrive</div>
+          <div class="mdlz-card-hint">LP Mondelez Historico · más reciente primero</div>
+        </div>
+        <span class="mdlz-badge mdlz-badge--gray" *ngIf="archivosPrecios.length > 0">
+          {{ archivosPrecios.length }} archivos
+        </span>
+      </div>
+
+      <!-- Loading -->
+      <div class="mdlz-loading" *ngIf="cargandoPrecios">
+        <span class="mdlz-spin"></span> Conectando con OneDrive…
+      </div>
+
+      <!-- Error -->
+      <div class="mdlz-alert mdlz-alert--err" *ngIf="errorListaPrecios && !cargandoPrecios">
+        <span>⚠</span> {{ errorListaPrecios }}
+        <button class="mdlz-btn mdlz-btn--sm" (click)="listarPrecios()">Reintentar</button>
+      </div>
+
+      <!-- Buscador -->
+      <div class="mdlz-search-wrap" *ngIf="!cargandoPrecios && archivosPrecios.length > 0">
+        <span class="mdlz-search-icon">⌕</span>
+        <input type="text" class="mdlz-search" [(ngModel)]="busquedaPrecios"
+          placeholder="Buscar archivo… (ignora tildes, mayúsculas)" autocomplete="off" />
+        <button class="mdlz-search-clear" *ngIf="busquedaPrecios" (click)="busquedaPrecios=''">✕</button>
+      </div>
+
+      <!-- Lista -->
+      <div class="mdlz-file-list" *ngIf="!cargandoPrecios && !errorListaPrecios">
+        <div class="mdlz-file-row"
+          *ngFor="let a of preciosFiltrados"
+          [class.mdlz-file-row--selected]="precioSeleccionado?.nombre === a.nombre"
+          (click)="seleccionarPrecio(a)">
+          <div class="mdlz-file-icon mdlz-file-icon--blue">XLS</div>
+          <div class="mdlz-file-info">
+            <div class="mdlz-file-name">{{ a.nombre }}</div>
+            <div class="mdlz-file-meta">{{ a.tamanio_mb }} MB</div>
+          </div>
+          <div class="mdlz-file-right">
+            <div class="mdlz-file-date">{{ formatFecha(a.modificado) }}</div>
+            <span class="mdlz-badge mdlz-badge--blue" *ngIf="esMasReciente(a, archivosPrecios)">Más reciente</span>
+          </div>
+        </div>
+        <div class="mdlz-empty" *ngIf="preciosFiltrados.length === 0">{{ mensajeVacioPrecios }}</div>
+      </div>
+
+      <!-- Conflicto -->
+      <div class="mdlz-conflicto" *ngIf="conflictoPrecios">
+        <div class="mdlz-conflicto-body">
+          <span class="mdlz-conflicto-icon">⚠</span>
+          <div>
+            <div class="mdlz-conflicto-titulo">Ya existe lista de precios para este período</div>
+            <div class="mdlz-conflicto-msg">Si continúas se reemplazarán todos los precios del período.</div>
+          </div>
+        </div>
+        <div class="mdlz-conflicto-actions">
+          <button class="mdlz-btn mdlz-btn--warn" (click)="sincronizarPrecios(true)">Reemplazar</button>
+          <button class="mdlz-btn" (click)="conflictoPrecios = false">Cancelar</button>
+        </div>
+      </div>
+
+      <!-- Action bar -->
+      <div class="mdlz-action-bar" *ngIf="!cargandoPrecios && archivosPrecios.length > 0">
+        <span class="mdlz-action-label">
+          Seleccionado: <strong>{{ precioSeleccionado?.nombre ?? '—' }}</strong>
+        </span>
+        <button class="mdlz-btn mdlz-btn--primary"
+          [disabled]="!precioSeleccionado || sincronizandoPrecios"
+          (click)="sincronizarPrecios()">
+          <span class="mdlz-spin" *ngIf="sincronizandoPrecios"></span>
+          <span *ngIf="!sincronizandoPrecios">↻</span>
+          {{ sincronizandoPrecios ? 'Cargando…' : 'Cargar a BD' }}
+        </button>
+      </div>
+
+      <!-- Progreso -->
+      <div class="mdlz-progress-wrap" *ngIf="sincronizandoPrecios">
+        <div class="mdlz-progress-label">
+          Procesando <strong>{{ precioSeleccionado?.nombre }}</strong>…
+        </div>
+        <div class="mdlz-progress-bar">
+          <div class="mdlz-progress-fill" [style.width.%]="progresoPrecios"></div>
+        </div>
+      </div>
+
+      <!-- Error sync -->
+      <div class="mdlz-alert mdlz-alert--err" *ngIf="errorPrecios">⚠ {{ errorPrecios }}</div>
+
+      <!-- Resultado -->
+      <div class="mdlz-result" *ngIf="resultadoPrecios && !sincronizandoPrecios"
+        [class.mdlz-result--ok]="resultadoPrecios.estado === 'ok'"
+        [class.mdlz-result--err]="resultadoPrecios.estado !== 'ok'">
+        <div class="mdlz-result-title">
+          {{ resultadoPrecios.estado === 'ok' ? '✓' : '✕' }} {{ labelEstadoPrecios() }}
+        </div>
+        <div class="mdlz-mini-grid" *ngIf="resultadoPrecios.estado === 'ok'">
+          <div class="mdlz-mini-stat">
+            <div class="mdlz-mini-label">SKUs insertados</div>
+            <div class="mdlz-mini-val mdlz-mini-val--green">{{ formatNum(resultadoPrecios.total_insertados ?? 0) }}</div>
+          </div>
+          <div class="mdlz-mini-stat">
+            <div class="mdlz-mini-label">Período</div>
+            <div class="mdlz-mini-val mdlz-mini-val--blue">
+              {{ resultadoPrecios.mes ? mesLabel(resultadoPrecios.mes) : '—' }} {{ resultadoPrecios.anio ?? '' }}
+            </div>
+          </div>
+          <div class="mdlz-mini-stat">
+            <div class="mdlz-mini-label">Dscto. adicional</div>
+            <div class="mdlz-mini-val">
+              {{ resultadoPrecios.descuento_adicional ? ((resultadoPrecios.descuento_adicional * 100) | number:'1.1-2') + '%' : '—' }}
+            </div>
+          </div>
+        </div>
+        <div class="mdlz-result-note" *ngIf="resultadoPrecios.detalle">{{ resultadoPrecios.detalle }}</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════════
+       VISTA: ESTADO EN BD
+  ════════════════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="vistaActual === 'estado'" class="mdlz-content">
+
+    <!-- Stats -->
+    <div class="mdlz-stat-grid">
+      <div class="mdlz-stat-card">
+        <div class="mdlz-stat-label">Total filas de ventas</div>
+        <div class="mdlz-stat-num mdlz-stat-num--blue">{{ formatNum(totalVentasFilas) }}</div>
+      </div>
+      <div class="mdlz-stat-card">
+        <div class="mdlz-stat-label">Períodos de ventas</div>
+        <div class="mdlz-stat-num">{{ periodosVentas.length }}</div>
+      </div>
+      <div class="mdlz-stat-card">
+        <div class="mdlz-stat-label">Total SKUs de precios</div>
+        <div class="mdlz-stat-num mdlz-stat-num--blue">{{ formatNum(totalPreciosSkus) }}</div>
+      </div>
+      <div class="mdlz-stat-card">
+        <div class="mdlz-stat-label">Listas de precios</div>
+        <div class="mdlz-stat-num">{{ periodosPrecios.length }}</div>
+      </div>
+    </div>
+
+    <!-- Ventas por período -->
+    <div class="mdlz-card" style="margin-bottom:1rem">
+      <div class="mdlz-card-header">
+        <div>
+          <div class="mdlz-card-title">Ventas cargadas por período</div>
+          <div class="mdlz-card-hint">Disponibles para filtrar en el dashboard</div>
+        </div>
+        <button class="mdlz-btn" (click)="cargarEstado()" [disabled]="cargandoEstado">
+          <span class="mdlz-spin" *ngIf="cargandoEstado"></span>
+          <span *ngIf="!cargandoEstado">↻</span>
+          Refrescar
+        </button>
+      </div>
+      <div class="mdlz-loading" *ngIf="cargandoEstado">
+        <span class="mdlz-spin"></span> Cargando…
+      </div>
+      <div class="mdlz-table-wrap" *ngIf="!cargandoEstado">
+        <table class="mdlz-table">
+          <thead>
+            <tr><th>Año</th><th>Mes</th><th>Filas</th><th>Última fila</th><th>Último sync</th></tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of periodosVentas">
+              <td>{{ p.anio }}</td>
+              <td>{{ mesLabel(p.mes) }}</td>
+              <td>{{ formatNum(p.total_filas) }}</td>
+              <td>{{ formatNum(p.ultima_fila) }}</td>
+              <td>{{ formatFecha(p.ultimo_sync) }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="mdlz-empty" *ngIf="periodosVentas.length === 0">No hay ventas cargadas aún.</div>
+      </div>
+    </div>
+
+    <!-- Precios por período -->
+    <div class="mdlz-card">
+      <div class="mdlz-card-header">
+        <div class="mdlz-card-title">Listas de precios cargadas</div>
+      </div>
+      <div class="mdlz-table-wrap" *ngIf="!cargandoEstado">
+        <table class="mdlz-table">
+          <thead>
+            <tr><th>Año</th><th>Mes / Período</th><th>SKUs</th><th>Último sync</th></tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of periodosPrecios">
+              <td>{{ p.anio }}</td>
+              <td>{{ mesLabel(p.mes) }}</td>
+              <td>{{ formatNum(p.total_skus) }}</td>
+              <td>{{ formatFecha(p.ultimo_sync) }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="mdlz-empty" *ngIf="periodosPrecios.length === 0">No hay precios cargados aún.</div>
+      </div>
+    </div>
+
+  </div>
+</div>

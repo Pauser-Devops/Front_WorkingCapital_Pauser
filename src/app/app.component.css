@@ -3,7 +3,7 @@
 .wk-layout {
   display: flex;
   height: 100vh;
-  overflow: hidden;
+  overflow: auto;
   font-family: 'DM Sans', sans-serif;
   background: #F5F7FA;
   min-width: 900px;
@@ -13,11 +13,10 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-y: auto;   /* ← hidden → auto */
   min-height: 0;
   min-width: 0;
 }
-
 .wk-coming {
   flex: 1; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 12px;

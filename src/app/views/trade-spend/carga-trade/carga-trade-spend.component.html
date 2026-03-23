@@ -1,375 +1,469 @@
-<div class="ts-carga-wrap">
+<div class="ts-wrapper">
 
-  <!-- ── Header con tabs ──────────────────────────────────────────────────── -->
+  <!-- ── Cabecera ──────────────────────────────────────────────────────────── -->
   <div class="ts-header">
-    <div>
-      <div class="ts-titulo">Carga mensual · Trade Spend</div>
-      <div class="ts-subtitulo">CBC — Chimbote y Huaraz</div>
+    <div class="ts-header-left">
+      <div class="ts-title">Carga mensual · Trade Spend</div>
+      <div class="ts-subtitle">CBC — Chimbote y Huaraz</div>
     </div>
-    <div class="ts-tabs">
-      <div class="ts-tab" [class.active]="vistaActual === 'carga'"
-           (click)="vistaActual = 'carga'">Carga</div>
-      <div class="ts-tab" [class.active]="vistaActual === 'productos'"
-           [class.disabled]="!estadoCHM.precios && !estadoHRZ.precios"
-           (click)="estadoCHM.precios || estadoHRZ.precios ? verProductos() : null">
-        Productos del mes
-      </div>
-      <div class="ts-tab" [class.active]="vistaActual === 'historial'"
-           (click)="verHistorial()">Historial</div>
+    <div class="ts-header-actions">
+      <button class="ts-btn"
+        [class.ts-btn--disabled]="!estadoCHM.precios && !estadoHRZ.precios"
+        (click)="(estadoCHM.precios || estadoHRZ.precios) ? verProductos() : null">
+        Ver productos
+      </button>
+      <button class="ts-btn" (click)="verHistorial()">Historial</button>
     </div>
   </div>
 
-  <!-- ════════════════════════════════════════════════════════════
+  <!-- ════════════════════════════════════════════════════════════════════════
        VISTA: CARGA
-       ════════════════════════════════════════════════════════ -->
-  <div *ngIf="vistaActual === 'carga'">
+  ════════════════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="vistaActual === 'carga'" class="ts-content">
 
-    <!-- Selector de mes/año -->
+    <!-- Selector de período -->
     <div class="ts-periodo-bar">
-      <div class="ts-periodo-label">Periodo</div>
-      <div class="ts-periodo-selects">
-        <select [(ngModel)]="mesSeleccionado" (ngModelChange)="onCambioPeriodo()">
-          <option *ngFor="let m of mesesOpciones" [value]="m.num">{{ m.label }}</option>
-        </select>
-        <select [(ngModel)]="anioSeleccionado" (ngModelChange)="onCambioPeriodo()">
-          <option *ngFor="let a of aniosOpciones" [value]="a">{{ a }}</option>
-        </select>
-      </div>
+      <span class="ts-periodo-label">Período</span>
+      <select class="ts-select" [(ngModel)]="mesSeleccionado" (ngModelChange)="onCambioPeriodo()">
+        <option *ngFor="let m of mesesOpciones" [value]="m.num">{{ m.label }}</option>
+      </select>
+      <select class="ts-select" [(ngModel)]="anioSeleccionado" (ngModelChange)="onCambioPeriodo()">
+        <option *ngFor="let a of aniosOpciones" [value]="a">{{ a }}</option>
+      </select>
 
-      <!-- Indicadores de estado por agencia -->
-      <div class="ts-agencia-badges" *ngIf="!cargandoEstado">
-        <div class="ts-agencia-badge">
-          <span class="ts-agencia-nombre">Chimbote</span>
-          <span class="ts-dot" [class.ok]="estadoCHM.precios"></span>
-          <span class="ts-dot" [class.ok]="estadoCHM.politica"></span>
-          <span class="ts-dot" [class.ok]="estadoCHM.chess_base"></span>
+      <div class="ts-agencia-dots" *ngIf="!cargandoEstado">
+        <div class="ts-agencia-dot-group">
+          <span class="ts-agencia-nombre">CHM</span>
+          <span class="ts-dot" [class.ts-dot--ok]="estadoCHM.precios" title="Precios"></span>
+          <span class="ts-dot" [class.ts-dot--ok]="estadoCHM.politica" title="Política"></span>
+          <span class="ts-dot" [class.ts-dot--ok]="estadoCHM.chess_base" title="Chess"></span>
         </div>
-        <div class="ts-agencia-badge">
-          <span class="ts-agencia-nombre">Huaraz</span>
-          <span class="ts-dot" [class.ok]="estadoHRZ.precios"></span>
-          <span class="ts-dot" [class.ok]="estadoHRZ.politica"></span>
-          <span class="ts-dot" [class.ok]="estadoHRZ.chess_base"></span>
+        <div class="ts-agencia-dot-group">
+          <span class="ts-agencia-nombre">HRZ</span>
+          <span class="ts-dot" [class.ts-dot--ok]="estadoHRZ.precios" title="Precios"></span>
+          <span class="ts-dot" [class.ts-dot--ok]="estadoHRZ.politica" title="Política"></span>
+          <span class="ts-dot" [class.ts-dot--ok]="estadoHRZ.chess_base" title="Chess"></span>
         </div>
       </div>
 
-      <div *ngIf="todoCargado" class="ts-completo-badge">
-        ✓ Listo para simular
-      </div>
+      <div class="ts-spin-sm" *ngIf="cargandoEstado"></div>
+
+      <span class="ts-badge-green ts-completo" *ngIf="todoCargado">✓ Listo para simular</span>
     </div>
 
-    <!-- Banner de confirmación de reemplazo -->
-    <div *ngIf="tipoConflicto" class="ts-conflicto-banner">
-      <div class="ts-conflicto-icon">⚠</div>
-      <div class="ts-conflicto-body">
-        <div class="ts-conflicto-titulo">Ya existe data cargada</div>
-        <div class="ts-conflicto-msg">{{ mensajeConflicto }}</div>
+    <!-- ── Paso 1: Precios CBC ──────────────────────────────────────────── -->
+    <div class="ts-paso" [class.ts-paso--ok]="estadoPaso('precios') === 'ok'"
+         [class.ts-paso--activo]="pasoExpandido === 'precios'">
+      <div class="ts-paso-head" (click)="togglePaso('precios')">
+        <div class="ts-paso-num" [class.ts-paso-num--ok]="estadoPaso('precios') === 'ok'">
+          <span *ngIf="estadoPaso('precios') !== 'ok'">1</span>
+          <span *ngIf="estadoPaso('precios') === 'ok'">✓</span>
+        </div>
+        <div class="ts-paso-info">
+          <div class="ts-paso-titulo">Tabla de precios</div>
+          <div class="ts-paso-desc">Bebidas CBC · Chimbote y Huaraz · desde OneDrive</div>
+        </div>
+        <span class="ts-badge-green" *ngIf="estadoPaso('precios') === 'ok'">Cargado</span>
+        <span class="ts-chevron" [class.ts-chevron--open]="pasoExpandido === 'precios'">›</span>
       </div>
-      <div class="ts-conflicto-actions">
-        <button class="btn btn-warn" (click)="confirmarReemplazo()">Reemplazar</button>
-        <button class="btn btn-ghost" (click)="cancelarReemplazo()">Cancelar</button>
-      </div>
-    </div>
 
-    <!-- ── Pasos ─────────────────────────────────────────────────────────── -->
-    <div class="ts-pasos">
+      <div class="ts-paso-body" *ngIf="pasoExpandido === 'precios'">
 
-      <div *ngFor="let paso of pasos" class="ts-paso"
-           [class.ok]="estadoPaso(paso.tipo) === 'ok'"
-           [class.activo]="estadoPaso(paso.tipo) === 'activo'"
-           [class.pendiente]="estadoPaso(paso.tipo) === 'pendiente'">
-
-        <!-- Número / check -->
-        <div class="ts-paso-num">
-          <span *ngIf="estadoPaso(paso.tipo) !== 'ok'">{{ paso.numero }}</span>
-          <span *ngIf="estadoPaso(paso.tipo) === 'ok'" class="ts-check">✓</span>
+        <!-- Botón listar -->
+        <div class="ts-od-actions">
+          <button class="ts-btn ts-btn--primary" (click)="listarPrecios()" [disabled]="cargandoListaPrecios">
+            <span class="ts-spin" *ngIf="cargandoListaPrecios"></span>
+            <span *ngIf="!cargandoListaPrecios">↻</span>
+            {{ archivosPrecios.length > 0 ? 'Actualizar lista' : 'Listar archivos OneDrive' }}
+          </button>
         </div>
 
-        <!-- Conector -->
-        <div class="ts-conector" *ngIf="paso.numero < pasos.length"
-             [class.ok]="estadoPaso(paso.tipo) === 'ok'"></div>
+        <!-- Error -->
+        <div class="ts-alert ts-alert--err" *ngIf="errorListaPrecios">⚠ {{ errorListaPrecios }}</div>
 
-        <!-- Contenido del paso -->
-        <div class="ts-paso-content">
-          <div class="ts-paso-head">
-            <div>
-              <div class="ts-paso-titulo">{{ paso.titulo }}</div>
-              <div class="ts-paso-desc">{{ paso.descripcion }}</div>
-              <div class="ts-paso-detalle">{{ paso.detalle }}</div>
+        <!-- Buscador -->
+        <div class="ts-search-wrap" *ngIf="archivosPrecios.length > 0">
+          <span class="ts-search-icon">⌕</span>
+          <input type="text" class="ts-search" [(ngModel)]="busquedaPrecios"
+            placeholder="Buscar archivo…" autocomplete="off" />
+          <button class="ts-search-clear" *ngIf="busquedaPrecios" (click)="busquedaPrecios=''">✕</button>
+        </div>
+
+        <!-- Lista -->
+        <div class="ts-file-list" *ngIf="archivosPrecios.length > 0">
+          <div class="ts-file-row"
+            *ngFor="let a of archivosPreciosFiltrados"
+            [class.ts-file-row--selected]="precioSeleccionado?.nombre === a.nombre"
+            (click)="seleccionarPrecio(a)">
+            <div class="ts-file-icon ts-file-icon--blue">XLS</div>
+            <div class="ts-file-info">
+              <div class="ts-file-name">{{ a.nombre }}</div>
+              <div class="ts-file-meta">{{ a.tamanio_mb }} MB</div>
             </div>
-            <span *ngIf="estadoPaso(paso.tipo) === 'ok'" class="badge badge-pos">Cargado</span>
+            <div class="ts-file-right">
+              <div class="ts-file-date">{{ formatFecha(a.modificado) }}</div>
+              <span class="ts-badge-blue" *ngIf="esMasReciente(a, archivosPrecios)">Más reciente</span>
+            </div>
           </div>
-
-          <!-- ── Zona de acción: Chess Base → OneDrive ── -->
-          <ng-container *ngIf="paso.tipo === 'chess_base'">
-
-            <!-- Botón listar archivos -->
-            <div class="ts-paso-accion"
-                 *ngIf="estadoPaso(paso.tipo) === 'activo' || estadoPaso(paso.tipo) === 'ok'">
-
-              <div class="ts-od-header">
-                <span class="ts-od-label">Archivos disponibles en OneDrive</span>
-                <button class="btn btn-ghost ts-cambiar-btn"
-                        [disabled]="cargandoArchivos"
-                        (click)="listarArchivosOneDrive()">
-                  <span *ngIf="!cargandoArchivos">🔄 Listar archivos</span>
-                  <span *ngIf="cargandoArchivos">Conectando…</span>
-                </button>
-              </div>
-
-              <!-- Lista de archivos -->
-              <div *ngIf="archivosOneDrive.length > 0" class="ts-od-lista">
-                <div *ngFor="let f of archivosOneDrive"
-                     class="ts-od-item"
-                     [class.seleccionado]="archivoSeleccionado === f.nombre"
-                     (click)="seleccionarArchivo(f.nombre)">
-                  <div class="ts-od-item-left">
-                    <span class="ts-od-icono">📊</span>
-                    <div>
-                      <div class="ts-od-nombre">{{ f.nombre }}</div>
-                      <div class="ts-od-meta">{{ f.tamanio_mb }} MB · {{ formatModificado(f.modificado) }}</div>
-                    </div>
-                  </div>
-                  <span *ngIf="archivoSeleccionado === f.nombre" class="ts-od-check">✓</span>
-                </div>
-              </div>
-
-              <!-- Sin archivos -->
-              <div *ngIf="!cargandoArchivos && archivosOneDrive.length === 0 && !errorSync"
-                   class="ts-od-vacio">
-                Haz click en "Listar archivos" para ver los disponibles en OneDrive
-              </div>
-
-              <!-- Error OneDrive -->
-              <div *ngIf="errorSync && !resultadoSync" class="ts-error-msg">
-                ✕ {{ errorSync }}
-              </div>
-
-              <!-- Botón sincronizar -->
-              <div *ngIf="archivoSeleccionado" class="ts-od-footer">
-                <div class="ts-od-seleccionado">
-                  Seleccionado: <strong>{{ archivoSeleccionado }}</strong>
-                </div>
-                <button class="btn btn-primary"
-                        [disabled]="sincronizando"
-                        (click)="sincronizarChess()">
-                  <span *ngIf="!sincronizando">⬇ Sincronizar</span>
-                  <span *ngIf="sincronizando">Sincronizando…</span>
-                </button>
-              </div>
-
-              <!-- Resultado del sync -->
-              <div *ngIf="resultadoSync" class="ts-sync-resultado">
-                <div class="ts-sync-total">
-                  ✓ {{ resultadoSync.total_insertados | number }} filas nuevas insertadas
-                </div>
-                <div *ngFor="let d of resultadoSync.detalle" class="ts-sync-detalle">
-                  <span class="ts-sync-agencia">{{ d.agencia }}</span>
-                  <span *ngIf="d.estado === 'ok'">
-                    +{{ d.insertados | number }} filas
-                    <span class="ts-sync-meta">(fila {{ d.max_row_previo }} → {{ d.max_row_nuevo }})</span>
-                  </span>
-                  <span *ngIf="d.estado === 'sin_cambios'" class="ts-sync-meta">
-                    Sin cambios ({{ d.total_excel | number }} filas ya sincronizadas)
-                  </span>
-                </div>
-              </div>
-
-            </div>
-          </ng-container>
-
-          <!-- ── Zona de acción: Precios y Política → subida manual ── -->
-          <ng-container *ngIf="paso.tipo !== 'chess_base'">
-
-            <div class="ts-paso-accion"
-                 *ngIf="estadoPaso(paso.tipo) === 'activo' || archivos[paso.tipo]">
-
-              <div class="ts-file-row">
-                <div class="ts-file-name" *ngIf="archivos[paso.tipo]">
-                  📄 {{ archivos[paso.tipo]?.name }}
-                </div>
-                <div class="ts-file-placeholder" *ngIf="!archivos[paso.tipo]">
-                  Ningún archivo seleccionado
-                </div>
-
-                <input type="file" accept=".xlsx,.xls,.xlsm"
-                       [id]="'file-' + paso.tipo"
-                       style="display:none"
-                       (change)="onArchivoSeleccionado($event, paso.tipo)">
-
-                <label [for]="'file-' + paso.tipo" class="btn btn-ghost">
-                  Elegir archivo
-                </label>
-
-                <button class="btn btn-primary"
-                        [disabled]="!archivos[paso.tipo] || subiendo[paso.tipo]"
-                        (click)="subirArchivo(paso.tipo)">
-                  <span *ngIf="!subiendo[paso.tipo]">Subir</span>
-                  <span *ngIf="subiendo[paso.tipo]" class="ts-spinner">Subiendo…</span>
-                </button>
-              </div>
-
-              <div *ngIf="erroresCarga[paso.tipo]" class="ts-error-msg">
-                ✕ {{ erroresCarga[paso.tipo] }}
-              </div>
-            </div>
-
-            <div *ngIf="resultados[paso.tipo] as res" class="ts-resultado-ok">
-              <span>✓ {{ res.insertados | number }} filas insertadas</span>
-              <span *ngIf="res.errores.length > 0" class="ts-warn-count">
-                · {{ res.errores.length }} advertencias
-              </span>
-            </div>
-
-            <div *ngIf="estadoPaso(paso.tipo) === 'ok' && !resultados[paso.tipo]"
-                 class="ts-cambiar-row">
-              <input type="file" accept=".xlsx,.xls,.xlsm"
-                     [id]="'file-cambiar-' + paso.tipo"
-                     style="display:none"
-                     (change)="onArchivoSeleccionado($event, paso.tipo)">
-              <label [for]="'file-cambiar-' + paso.tipo"
-                     class="btn btn-ghost ts-cambiar-btn">
-                Cambiar archivo
-              </label>
-            </div>
-
-          </ng-container>
-
+          <div class="ts-empty-sm" *ngIf="archivosPreciosFiltrados.length === 0">Sin resultados</div>
         </div>
+
+        <!-- Conflicto precios -->
+        <div class="ts-conflicto" *ngIf="conflictoPrecios">
+          <div class="ts-conflicto-body">
+            <span class="ts-conflicto-icon">⚠</span>
+            <div>
+              <div class="ts-conflicto-titulo">Ya existen precios cargados para {{ periodoLabel }}</div>
+              <div class="ts-conflicto-msg">Si continúas se reemplazarán los precios de ambas agencias.</div>
+            </div>
+          </div>
+          <div class="ts-conflicto-actions">
+            <button class="ts-btn ts-btn--warn" (click)="sincronizarPrecios(true)">Reemplazar</button>
+            <button class="ts-btn" (click)="conflictoPrecios = false">Cancelar</button>
+          </div>
+        </div>
+
+        <!-- Action bar -->
+        <div class="ts-action-bar" *ngIf="archivosPrecios.length > 0">
+          <span class="ts-action-label">
+            Seleccionado: <strong>{{ precioSeleccionado?.nombre ?? '—' }}</strong>
+          </span>
+          <button class="ts-btn ts-btn--primary" [disabled]="!precioSeleccionado || sincronizandoPrecios"
+            (click)="sincronizarPrecios()">
+            <span class="ts-spin" *ngIf="sincronizandoPrecios"></span>
+            <span *ngIf="!sincronizandoPrecios">↻</span>
+            {{ sincronizandoPrecios ? 'Cargando…' : 'Cargar a BD' }}
+          </button>
+        </div>
+
+        <!-- Progreso -->
+        <div class="ts-progress-wrap" *ngIf="sincronizandoPrecios">
+          <div class="ts-progress-label">Procesando <strong>{{ precioSeleccionado?.nombre }}</strong>…</div>
+          <div class="ts-progress-bar"><div class="ts-progress-fill" [style.width.%]="progresoPrecios"></div></div>
+        </div>
+
+        <!-- Resultado -->
+        <div class="ts-result" *ngIf="resultadoPrecios && !sincronizandoPrecios"
+          [class.ts-result--ok]="resultadoPrecios.estado === 'ok'"
+          [class.ts-result--err]="resultadoPrecios.estado !== 'ok'">
+          <div class="ts-result-title">
+            {{ resultadoPrecios.estado === 'ok' ? '✓ Carga completada' : '✕ ' + resultadoPrecios.estado }}
+          </div>
+          <div class="ts-mini-grid">
+            <div class="ts-mini-stat">
+              <div class="ts-mini-label">Precios insertados</div>
+              <div class="ts-mini-val ts-mini-val--green">{{ formatNum(resultadoPrecios.total_insertados ?? 0) }}</div>
+            </div>
+            <div class="ts-mini-stat">
+              <div class="ts-mini-label">SKUs procesados</div>
+              <div class="ts-mini-val ts-mini-val--blue">{{ formatNum(resultadoPrecios.total_skus ?? 0) }}</div>
+            </div>
+            <div class="ts-mini-stat">
+              <div class="ts-mini-label">Período</div>
+              <div class="ts-mini-val ts-mini-val--blue">
+                {{ resultadoPrecios.mes ? mesesLabels[resultadoPrecios.mes] : '—' }} {{ resultadoPrecios.anio ?? '' }}
+              </div>
+            </div>
+            <div class="ts-mini-stat">
+              <div class="ts-mini-label">Errores parser</div>
+              <div class="ts-mini-val" [class.ts-mini-val--warn]="(resultadoPrecios.errores_parser ?? 0) > 0"
+                [class.ts-mini-val--muted]="(resultadoPrecios.errores_parser ?? 0) === 0">
+                {{ formatNum(resultadoPrecios.errores_parser ?? 0) }}
+              </div>
+            </div>
+          </div>
+          <div class="ts-result-note" *ngIf="resultadoPrecios.detalle">{{ resultadoPrecios.detalle }}</div>
+        </div>
+        <div class="ts-alert ts-alert--err" *ngIf="errorPrecios">⚠ {{ errorPrecios }}</div>
+
+      </div>
+    </div>
+
+    <!-- ── Paso 2: Política Comercial ─────────────────────────────────── -->
+    <div class="ts-paso" [class.ts-paso--ok]="estadoPaso('politica') === 'ok'"
+         [class.ts-paso--activo]="pasoExpandido === 'politica'">
+      <div class="ts-paso-head" (click)="togglePaso('politica')">
+        <div class="ts-paso-num" [class.ts-paso-num--ok]="estadoPaso('politica') === 'ok'">
+          <span *ngIf="estadoPaso('politica') !== 'ok'">2</span>
+          <span *ngIf="estadoPaso('politica') === 'ok'">✓</span>
+        </div>
+        <div class="ts-paso-info">
+          <div class="ts-paso-titulo">Política comercial</div>
+          <div class="ts-paso-desc">Bonificaciones y descuentos · Política_Comercial_Pauser.xlsx</div>
+        </div>
+        <span class="ts-badge-green" *ngIf="estadoPaso('politica') === 'ok'">Cargado</span>
+        <span class="ts-chevron" [class.ts-chevron--open]="pasoExpandido === 'politica'">›</span>
+      </div>
+
+      <div class="ts-paso-body" *ngIf="pasoExpandido === 'politica'">
+
+        <!-- Conflicto -->
+        <div class="ts-conflicto" *ngIf="tipoConflictoPolitica">
+          <div class="ts-conflicto-body">
+            <span class="ts-conflicto-icon">⚠</span>
+            <div>
+              <div class="ts-conflicto-titulo">Ya existe política cargada para {{ periodoLabel }}</div>
+              <div class="ts-conflicto-msg">Si continúas se reemplazará la información de ambas agencias.</div>
+            </div>
+          </div>
+          <div class="ts-conflicto-actions">
+            <button class="ts-btn ts-btn--warn" (click)="subirPolitica(true)">Reemplazar</button>
+            <button class="ts-btn" (click)="tipoConflictoPolitica = false; archivoPolitica = null">Cancelar</button>
+          </div>
+        </div>
+
+        <div class="ts-file-upload-row" *ngIf="!tipoConflictoPolitica">
+          <div class="ts-file-placeholder" *ngIf="!archivoPolitica">Ningún archivo seleccionado</div>
+          <div class="ts-file-chosen" *ngIf="archivoPolitica">
+            <span class="ts-file-icon ts-file-icon--amber">XLS</span>
+            {{ archivoPolitica.name }}
+          </div>
+          <input type="file" accept=".xlsx,.xls,.xlsm" id="file-politica" style="display:none"
+            (change)="onArchivoPolitica($event)" />
+          <label for="file-politica" class="ts-btn">Elegir archivo</label>
+          <button class="ts-btn ts-btn--primary"
+            [disabled]="!archivoPolitica || subiendoPolitica"
+            (click)="subirPolitica()">
+            <span class="ts-spin" *ngIf="subiendoPolitica"></span>
+            <span *ngIf="!subiendoPolitica">↑</span>
+            {{ subiendoPolitica ? 'Subiendo…' : 'Subir' }}
+          </button>
+        </div>
+
+        <div class="ts-result ts-result--ok" *ngIf="resultadoPolitica && !subiendoPolitica">
+          <div class="ts-result-title">✓ Política cargada</div>
+          <div class="ts-mini-grid">
+            <div class="ts-mini-stat">
+              <div class="ts-mini-label">Filas insertadas</div>
+              <div class="ts-mini-val ts-mini-val--green">{{ formatNum(resultadoPolitica.insertados ?? 0) }}</div>
+            </div>
+            <div class="ts-mini-stat">
+              <div class="ts-mini-label">Advertencias</div>
+              <div class="ts-mini-val" [class.ts-mini-val--warn]="(resultadoPolitica.errores?.length ?? 0) > 0"
+                [class.ts-mini-val--muted]="(resultadoPolitica.errores?.length ?? 0) === 0">
+                {{ resultadoPolitica.errores?.length ?? 0 }}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="ts-alert ts-alert--err" *ngIf="errorPolitica">⚠ {{ errorPolitica }}</div>
+
+      </div>
+    </div>
+
+    <!-- ── Paso 3: Chess Base ─────────────────────────────────────────── -->
+    <div class="ts-paso" [class.ts-paso--ok]="estadoPaso('chess_base') === 'ok'"
+         [class.ts-paso--activo]="pasoExpandido === 'chess'">
+      <div class="ts-paso-head" (click)="togglePaso('chess')">
+        <div class="ts-paso-num" [class.ts-paso-num--ok]="estadoPaso('chess_base') === 'ok'">
+          <span *ngIf="estadoPaso('chess_base') !== 'ok'">3</span>
+          <span *ngIf="estadoPaso('chess_base') === 'ok'">✓</span>
+        </div>
+        <div class="ts-paso-info">
+          <div class="ts-paso-titulo">Chess Base</div>
+          <div class="ts-paso-desc">Ventas reales del mes · desde OneDrive</div>
+        </div>
+        <span class="ts-badge-green" *ngIf="estadoPaso('chess_base') === 'ok'">Cargado</span>
+        <span class="ts-chevron" [class.ts-chevron--open]="pasoExpandido === 'chess'">›</span>
+      </div>
+
+      <div class="ts-paso-body" *ngIf="pasoExpandido === 'chess'">
+
+        <div class="ts-od-actions">
+          <button class="ts-btn ts-btn--primary" (click)="listarChess()" [disabled]="cargandoListaChess">
+            <span class="ts-spin" *ngIf="cargandoListaChess"></span>
+            <span *ngIf="!cargandoListaChess">↻</span>
+            {{ archivosChess.length > 0 ? 'Actualizar lista' : 'Listar archivos OneDrive' }}
+          </button>
+        </div>
+
+        <div class="ts-alert ts-alert--err" *ngIf="errorListaChess">⚠ {{ errorListaChess }}</div>
+
+        <div class="ts-search-wrap" *ngIf="archivosChess.length > 0">
+          <span class="ts-search-icon">⌕</span>
+          <input type="text" class="ts-search" [(ngModel)]="busquedaChess"
+            placeholder="Buscar archivo…" autocomplete="off" />
+          <button class="ts-search-clear" *ngIf="busquedaChess" (click)="busquedaChess=''">✕</button>
+        </div>
+
+        <div class="ts-file-list" *ngIf="archivosChess.length > 0">
+          <div class="ts-file-row"
+            *ngFor="let a of archivosChessFiltrados"
+            [class.ts-file-row--selected]="chessSeleccionado?.nombre === a.nombre"
+            (click)="seleccionarChess(a)">
+            <div class="ts-file-icon ts-file-icon--green">XLS</div>
+            <div class="ts-file-info">
+              <div class="ts-file-name">{{ a.nombre }}</div>
+              <div class="ts-file-meta">{{ a.tamanio_mb }} MB</div>
+            </div>
+            <div class="ts-file-right">
+              <div class="ts-file-date">{{ formatFecha(a.modificado) }}</div>
+              <span class="ts-badge-blue" *ngIf="esMasReciente(a, archivosChess)">Más reciente</span>
+            </div>
+          </div>
+          <div class="ts-empty-sm" *ngIf="archivosChessFiltrados.length === 0">Sin resultados</div>
+        </div>
+
+        <!-- Conflicto chess -->
+        <div class="ts-conflicto" *ngIf="conflictoChess">
+          <div class="ts-conflicto-body">
+            <span class="ts-conflicto-icon">⚠</span>
+            <div>
+              <div class="ts-conflicto-titulo">Ya existe Chess Base cargado para {{ periodoLabel }}</div>
+              <div class="ts-conflicto-msg">Si continúas se agregarán solo las filas nuevas (source_row mayor al guardado).</div>
+            </div>
+          </div>
+          <div class="ts-conflicto-actions">
+            <button class="ts-btn ts-btn--warn" (click)="sincronizarChess(true)">Continuar</button>
+            <button class="ts-btn" (click)="conflictoChess = false">Cancelar</button>
+          </div>
+        </div>
+
+        <div class="ts-action-bar" *ngIf="archivosChess.length > 0">
+          <span class="ts-action-label">
+            Seleccionado: <strong>{{ chessSeleccionado?.nombre ?? '—' }}</strong>
+          </span>
+          <button class="ts-btn ts-btn--primary" [disabled]="!chessSeleccionado || sincronizandoChess"
+            (click)="sincronizarChess()">
+            <span class="ts-spin" *ngIf="sincronizandoChess"></span>
+            <span *ngIf="!sincronizandoChess">↻</span>
+            {{ sincronizandoChess ? 'Sincronizando…' : 'Cargar a BD' }}
+          </button>
+        </div>
+
+        <div class="ts-progress-wrap" *ngIf="sincronizandoChess">
+          <div class="ts-progress-label">Procesando <strong>{{ chessSeleccionado?.nombre }}</strong>…</div>
+          <div class="ts-progress-bar"><div class="ts-progress-fill" [style.width.%]="progresoChess"></div></div>
+        </div>
+
+        <div class="ts-result ts-result--ok" *ngIf="resultadoChess && !sincronizandoChess && resultadoChess.estado === 'ok'">
+          <div class="ts-result-title">✓ Chess Base sincronizado</div>
+          <div class="ts-mini-grid">
+            <div class="ts-mini-stat">
+              <div class="ts-mini-label">Filas nuevas</div>
+              <div class="ts-mini-val ts-mini-val--green">{{ formatNum(resultadoChess.total_insertados ?? 0) }}</div>
+            </div>
+            <div class="ts-mini-stat" *ngFor="let d of resultadoChess.detalle">
+              <div class="ts-mini-label">{{ d.agencia }}</div>
+              <div class="ts-mini-val ts-mini-val--blue" *ngIf="d.estado === 'ok'">+{{ formatNum(d.insertados) }}</div>
+              <div class="ts-mini-val ts-mini-val--muted" *ngIf="d.estado === 'sin_cambios'">Sin cambios</div>
+            </div>
+          </div>
+        </div>
+        <div class="ts-result ts-result--err" *ngIf="resultadoChess && resultadoChess.estado !== 'ok' && !sincronizandoChess">
+          <div class="ts-result-title">✕ {{ resultadoChess.estado }}</div>
+        </div>
+        <div class="ts-alert ts-alert--err" *ngIf="errorChess">⚠ {{ errorChess }}</div>
+
       </div>
     </div>
 
     <!-- CTA final -->
-    <div *ngIf="todoCargado" class="ts-cta">
-      <button class="btn btn-primary" (click)="verProductos()">
-        Ver productos cargados →
+    <div class="ts-cta" *ngIf="todoCargado">
+      <button class="ts-btn ts-btn--primary" (click)="verProductos()">
+        Ver productos del mes →
       </button>
     </div>
 
   </div>
 
-
-  <!-- ════════════════════════════════════════════════════════════
-       VISTA: PRODUCTOS DEL MES
-       ════════════════════════════════════════════════════════ -->
-  <div *ngIf="vistaActual === 'productos'">
-
+  <!-- ════════════════════════════════════════════════════════════════════════
+       VISTA: PRODUCTOS
+  ════════════════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="vistaActual === 'productos'" class="ts-content">
     <div class="ts-vista-header">
       <div>
         <div class="ts-vista-titulo">Productos — {{ periodoLabel }}</div>
-        <div class="ts-vista-sub">{{ productos.length }} SKUs cargados</div>
+        <div class="ts-vista-sub">{{ productos.length }} SKUs</div>
       </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <span *ngIf="productosConDiferencia > 0" class="badge badge-neg">
-          {{ productosConDiferencia }} con dif. de precio
+      <div class="ts-vista-actions">
+        <span class="ts-badge-red" *ngIf="productosConDiferencia > 0">
+          {{ productosConDiferencia }} con dif. precio
         </span>
-
-        <!-- Toggle agencia -->
-        <div class="ts-agencia-toggle">
-          <button [class.active]="agenciaProductos === 'CHM'"
-                  (click)="agenciaProductos = 'CHM'; cargarProductos()">Chimbote</button>
-          <button [class.active]="agenciaProductos === 'HRZ'"
-                  (click)="agenciaProductos = 'HRZ'; cargarProductos()">Huaraz</button>
+        <div class="ts-seg">
+          <button [class.ts-seg--active]="agenciaProductos === 'CHM'"
+            (click)="agenciaProductos = 'CHM'; cargarProductos()">Chimbote</button>
+          <button [class.ts-seg--active]="agenciaProductos === 'HRZ'"
+            (click)="agenciaProductos = 'HRZ'; cargarProductos()">Huaraz</button>
         </div>
-
-        <select [(ngModel)]="filtroNegocio" (ngModelChange)="cargarProductos()">
-          <option value="">Todos</option>
+        <select class="ts-select" [(ngModel)]="filtroNegocio" (ngModelChange)="cargarProductos()">
+          <option value="">Todos los negocios</option>
           <option *ngFor="let n of negocios" [value]="n">{{ n }}</option>
         </select>
-
-        <button class="btn btn-ghost" (click)="vistaActual = 'carga'">← Volver</button>
+        <button class="ts-btn" (click)="vistaActual = 'carga'">← Volver</button>
       </div>
     </div>
 
-    <div *ngIf="cargandoProductos" class="ts-loading">Cargando productos…</div>
+    <div class="ts-loading" *ngIf="cargandoProductos">Cargando productos…</div>
 
-    <div *ngIf="!cargandoProductos" class="ts-card">
-      <div class="table-wrap">
-        <table>
+    <div class="ts-card" *ngIf="!cargandoProductos">
+      <div class="ts-table-wrap">
+        <table class="ts-table">
           <thead>
             <tr>
-              <th>SKU</th>
-              <th>Negocio</th>
-              <th>Unds/Bulto</th>
-              <th>Trad s/IGV</th>
-              <th>Mayo s/IGV</th>
-              <th>Sistema Trad</th>
-              <th>Dif. Trad</th>
-              <th>TTV Trad</th>
+              <th>SKU</th><th>Negocio</th><th>Unds/B</th>
+              <th>Trad s/IGV</th><th>Mayo s/IGV</th>
+              <th>Sistema Trad</th><th>Dif. Trad</th><th>TTV Trad</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let p of productos"
-                [class.fila-dif]="p.tiene_diferencia">
+            <tr *ngFor="let p of productos" [class.ts-fila-dif]="p.tiene_diferencia">
               <td>
-                <span class="sku-nombre">{{ p.sku_gerencial }}</span><br>
-                <span class="sku-full">{{ p.nombre_completo | slice:0:45 }}</span>
+                <div class="ts-sku-g">{{ p.sku_gerencial }}</div>
+                <div class="ts-sku-full">{{ p.nombre_completo | slice:0:45 }}</div>
               </td>
               <td>{{ p.negocio ?? '—' }}</td>
-              <td class="num-cell">{{ p.unds_bulto }}</td>
-              <td class="num-cell">{{ p.trad_pnd_sigv | number:'1.4-4' }}</td>
-              <td class="num-cell">{{ p.mayo_pnd_sigv | number:'1.4-4' }}</td>
-              <td class="num-cell">{{ p.precio_sistema_trad | number:'1.4-4' }}</td>
-              <td class="num-cell">
-                <span class="badge" [ngClass]="p.tiene_diferencia ? 'badge-neg' : 'badge-pos'">
+              <td class="ts-num">{{ p.unds_bulto }}</td>
+              <td class="ts-num">{{ p.trad_pnd_sigv | number:'1.4-4' }}</td>
+              <td class="ts-num">{{ p.mayo_pnd_sigv | number:'1.4-4' }}</td>
+              <td class="ts-num">{{ p.precio_sistema_trad | number:'1.4-4' }}</td>
+              <td class="ts-num">
+                <span [class.ts-badge-red]="p.tiene_diferencia" [class.ts-badge-green]="!p.tiene_diferencia">
                   {{ p.dif_trad | number:'1.4-4' }}
                 </span>
               </td>
-              <td class="num-cell">{{ p.ttv_trad | number:'1.2-2' }}</td>
+              <td class="ts-num">{{ p.ttv_trad | number:'1.2-2' }}</td>
             </tr>
           </tbody>
         </table>
-        <div *ngIf="productos.length === 0" class="ts-empty">
-          No hay productos cargados para este periodo.
-        </div>
+        <div class="ts-empty" *ngIf="productos.length === 0">No hay productos para este período.</div>
       </div>
     </div>
   </div>
 
-
-  <!-- ════════════════════════════════════════════════════════════
+  <!-- ════════════════════════════════════════════════════════════════════════
        VISTA: HISTORIAL
-       ════════════════════════════════════════════════════════ -->
-  <div *ngIf="vistaActual === 'historial'">
-
+  ════════════════════════════════════════════════════════════════════════════ -->
+  <div *ngIf="vistaActual === 'historial'" class="ts-content">
     <div class="ts-vista-header">
       <div>
         <div class="ts-vista-titulo">Historial de cargas</div>
         <div class="ts-vista-sub">Últimas cargas registradas</div>
       </div>
-      <button class="btn btn-ghost" (click)="vistaActual = 'carga'">← Volver</button>
+      <button class="ts-btn" (click)="vistaActual = 'carga'">← Volver</button>
     </div>
 
-    <div *ngIf="cargandoHistorial" class="ts-loading">Cargando…</div>
+    <div class="ts-loading" *ngIf="cargandoHistorial">Cargando…</div>
 
-    <div *ngIf="!cargandoHistorial" class="ts-card">
-      <div class="table-wrap">
-        <table>
+    <div class="ts-card" *ngIf="!cargandoHistorial">
+      <div class="ts-table-wrap">
+        <table class="ts-table">
           <thead>
-            <tr>
-              <th>Archivo</th>
-              <th>Tipo</th>
-              <th>Agencia</th>
-              <th>Periodo</th>
-              <th>Filas</th>
-              <th>Estado</th>
-              <th>Fecha</th>
-            </tr>
+            <tr><th>Archivo</th><th>Tipo</th><th>Agencia</th><th>Período</th><th>Filas</th><th>Estado</th><th>Fecha</th></tr>
           </thead>
           <tbody>
             <tr *ngFor="let c of historial">
-              <td class="sku-full">{{ c.nombre_archivo }}</td>
-              <td><span class="badge" [ngClass]="badgeTipo(c.tipo)">{{ labelTipo(c.tipo) }}</span></td>
+              <td class="ts-sku-full">{{ c.nombre_archivo }}</td>
+              <td><span class="ts-chip" [ngClass]="badgeTipo(c.tipo)">{{ labelTipo(c.tipo) }}</span></td>
               <td>{{ c.agencia }}</td>
               <td>{{ mesesLabels[c.mes] }} {{ c.anio }}</td>
-              <td class="num-cell">{{ formatNum(c.filas_cargadas) }}</td>
-              <td><span class="badge" [ngClass]="badgeEstadoCarga(c.estado)">{{ labelEstadoCarga(c.estado) }}</span></td>
-              <td class="sku-full">{{ formatFecha(c.fecha_carga) }}</td>
+              <td class="ts-num">{{ formatNum(c.filas_cargadas) }}</td>
+              <td><span class="ts-chip" [ngClass]="badgeEstadoCarga(c.estado)">{{ labelEstadoCarga(c.estado) }}</span></td>
+              <td class="ts-sku-full">{{ formatFechaCorta(c.fecha_carga) }}</td>
             </tr>
           </tbody>
-          <tr *ngIf="historial.length === 0">
-            <td colspan="7" class="ts-empty">Sin registros aún.</td>
-          </tr>
         </table>
+        <div class="ts-empty" *ngIf="historial.length === 0">Sin registros aún.</div>
       </div>
     </div>
   </div>

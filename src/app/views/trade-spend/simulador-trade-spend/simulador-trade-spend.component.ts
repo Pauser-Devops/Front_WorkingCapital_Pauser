@@ -51,7 +51,7 @@ export interface SkuPolitica {
 }
 export interface SimulacionGuardada {
   id: number; nombre: string; agencia: string; agencia_codigo: string;
-  mes: number; anio: number; canal: string; modo: string;
+  mes: number; anio: number; canal: null; modo: string;
   ts_pct_total: number; ttv_total: number; limite_ts_pct: number;
   supera_limite: boolean; estado: string; created_at: string;
 }
@@ -274,4 +274,44 @@ export class SimuladorTradeSpendComponent implements OnInit {
   usaTtvMayo(c: string): boolean { return (c ?? '').toUpperCase().includes('MAYO') || (c ?? '').toUpperCase().includes('SUB'); }
 
 
+
+  get negociosSummary(): any[] {
+  const skus = this.resultado?.skus ?? [];
+  const map: Record<string, any> = {};
+
+  for (const s of skus) {
+    const neg = s.negocio || 'Sin negocio';
+    if (!map[neg]) {
+      map[neg] = {
+        negocio: neg,
+        skus_count: 0,
+        paquetes: 0,
+        paquetes_bonif: 0,
+        ttv_real: 0,
+        ttv_teorico: 0,
+        ts_soles: 0,
+      };
+    }
+    map[neg].skus_count  += 1;
+    map[neg].paquetes    += s.paquetes_total;
+    map[neg].paquetes_bonif += s.paquetes_bonif;
+    map[neg].ttv_real    += s.ttv_real;
+    map[neg].ttv_teorico += s.ttv_teorico;
+    map[neg].ts_soles    += s.ts_soles;
+  }
+
+  return Object.values(map).map(n => ({
+    ...n,
+    pct_bonif:       n.paquetes > 0 ? (n.paquetes_bonif / n.paquetes * 100) : 0,
+    ts_pct:          n.ttv_teorico > 0 ? (n.ts_soles / n.ttv_teorico * 100) : 0,
+    gap:             n.ttv_real - n.ttv_teorico,
+    supera_limite:   n.ttv_teorico > 0 && (n.ts_soles / n.ttv_teorico * 100) > (this.resultado?.limite_ts_pct ?? 9),
+    semaforo:        this.getSemaforo(n),
+  })).sort((a, b) => b.ttv_real - a.ttv_real);
+}
+
+getSemaforo(n: any): string {
+  const lim = this.resultado?.limite_ts_pct ?? 9;
+  return n.ts_pct > lim ? 'rojo' : n.ts_pct > lim * 0.85 ? 'amarillo' : 'verde';
+}
 }

@@ -50,16 +50,20 @@
       <app-conciliacion-prosegur *ngIf="vista === 'conciliacionProsegur'"></app-conciliacion-prosegur>
       <app-usuarios *ngIf="vista === 'usuarios'"></app-usuarios>
       <app-carga-trade-spend *ngIf="vista === 'cargaTS'"></app-carga-trade-spend>
-
-
-
+      <app-carga-trade-backus *ngIf="vista === 'cargaBackus'"></app-carga-trade-backus>
+      <app-dash-backus *ngIf="vista === 'dashBackus'"></app-dash-backus>
+      <app-carga-trade-mondelez *ngIf="vista === 'cargaMondelez'"></app-carga-trade-mondelez>
+      <app-simulador-optimo *ngIf="vista === 'simuladorOptimoCBC'"></app-simulador-optimo>
       <div class="wk-coming" *ngIf="vista !== 'semanal' && vista !== 'mensual' && vista !== 'ingresos' 
              && vista !== 'egresos' && vista !== 'stock' && vista !== 'ingresosbancarios' 
              && vista !== 'reportes-bancarios' && vista !== 'registroIB' && vista !== 'compBancario' && vista !== 'analisisBancarios' 
              && vista !== 'comparadorIngresos' && vista !== 'dashwk' && vista !== 'maes' && vista !== 'pga' 
              && vista !== 'renta' && vista !== 'usuarios' && vista !== 'simuladorTS' && vista !== 'flujoCaja'
-             && vista !== 'conciliacionProsegur' && vista !== 'cargaTS'
-             && vista !== 'ebitda'">
+             && vista !== 'conciliacionProsegur' && vista !== 'cargaTS' && vista !== 'cargaBackus'
+             && vista !== 'ebitda' && vista !== 'cargaMondelez' && vista !== 'dashBackus' 
+             && vista !== 'simuladorOptimoCBC' 
+             
+             ">
         <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
           <circle cx="26" cy="26" r="23" stroke="#0070C0" stroke-width="2" fill="#EBF3FB" />
           <path d="M26 15v11l7 4" stroke="#0070C0" stroke-width="2.5" stroke-linecap="round" />

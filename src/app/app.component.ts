@@ -26,6 +26,10 @@ import { ConciliacionProsegurComponent } from './views/prosegur/conciliacion-pro
 import { FlujoCajaComponent } from './views/flujo-de-caja/flujo-caja.component';
 import { CargaTradeSpendComponent } from './views/trade-spend/carga-trade/carga-trade-spend.component';
 import { EbitdaComponent } from './views/powerbi/ebitda.component';
+import { CargaTradeBackusComponent } from './views/trade-spend/carga-trade-backus/carga-trade-backus.component';
+import { DashBackusComponent } from './views/trade-spend/dash-backus/dash-backus.component';
+import { CargaTradeMondelezComponent } from './views/trade-spend/carga-trade-mondelez/carga-trade-mondelez.component';
+import { SimuladorOptimoComponent } from './views/trade-spend/simulador-optimo-cbc/simulador-optimo.component';
 const VISTA_NOMBRES: Record<string, string> = {
   semanal: 'WK Semanal 2026',
   mensual: 'WK Mensual 2026',
@@ -47,8 +51,11 @@ const VISTA_NOMBRES: Record<string, string> = {
   conciliacionProsegur: 'Traking Prosegur - Bancos',
   flujoCaja: 'Flujo de Caja',
   cargaTS: 'Carga de Archivos Trade Spend',
-  ebitda: 'EBITDA'
-
+  ebitda: 'EBITDA',
+  cargaBackus: 'Carga de Archivos Backus',
+  dashBackus: 'Dashboard de Ventas Uniflex Backus',
+  cargaMondelez: 'Carga de Archivos Lima Mondelez',
+  simuladorOptimoCBC: 'Simulador de predicción CBC'
 };
 
 @Component({
@@ -81,6 +88,10 @@ const VISTA_NOMBRES: Record<string, string> = {
     ConciliacionProsegurComponent,
     CargaTradeSpendComponent,
     EbitdaComponent,
+    CargaTradeBackusComponent,
+    DashBackusComponent,
+    CargaTradeMondelezComponent,
+    SimuladorOptimoComponent
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']

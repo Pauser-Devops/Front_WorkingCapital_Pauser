@@ -1,0 +1,254 @@
+<div class="sop-wrapper">
+
+  <!-- ── Cabecera ──────────────────────────────────────────────────────────── -->
+  <div class="dbb-header">
+    <div>
+      <div class="dbb-title">Simulador Óptimo · Trade Spend CBC</div>
+      <div class="dbb-subtitle">
+        ¿Cuánto más puedo vender sin exceder el límite de TS?
+      </div>
+    </div>
+    <button class="dbb-btn" (click)="cargar()" [disabled]="cargando">
+      <span class="dbb-spin" *ngIf="cargando"></span>
+      <span *ngIf="!cargando">↻</span>
+      Refrescar
+    </button>
+  </div>
+
+  <!-- ── Barra de filtros ───────────────────────────────────────────────────── -->
+  <div class="dbb-filterbar">
+
+    <div class="dbb-filter-group">
+      <span class="dbb-filter-label">Agencia</span>
+      <select class="dbb-select" [(ngModel)]="formAgencia" style="min-width:130px">
+        <option value="CHM">Chimbote</option>
+        <option value="HRZ">Huaraz</option>
+      </select>
+    </div>
+
+    <div class="dbb-filter-divider"></div>
+
+    <div class="dbb-filter-group">
+      <span class="dbb-filter-label">Mes</span>
+      <select class="dbb-select" [(ngModel)]="formMes" style="min-width:110px">
+        <option *ngFor="let m of mesesOpciones" [value]="m.num">{{ m.label }}</option>
+      </select>
+    </div>
+
+    <div class="dbb-filter-group">
+      <span class="dbb-filter-label">Año</span>
+      <select class="dbb-select" [(ngModel)]="formAnio" style="min-width:80px">
+        <option *ngFor="let a of aniosOpciones" [value]="a">{{ a }}</option>
+      </select>
+    </div>
+
+    <div class="dbb-filter-divider"></div>
+
+    <div class="dbb-filter-group">
+      <span class="dbb-filter-label">Negocio</span>
+      <select class="dbb-select" [(ngModel)]="formNegocio" style="min-width:130px">
+        <option value="">Todos</option>
+        <option *ngFor="let n of negociosDisponibles" [value]="n">{{ n }}</option>
+      </select>
+    </div>
+
+    <div class="dbb-filter-actions">
+      <button class="dbb-btn dbb-btn--primary" (click)="cargar()" [disabled]="cargando">
+        Calcular
+      </button>
+    </div>
+
+  </div>
+
+  <!-- ── Contenido ─────────────────────────────────────────────────────────── -->
+  <div class="dbb-content">
+
+    <div class="dbb-loading-full" *ngIf="cargando">
+      <span class="dbb-spin dbb-spin--lg"></span>
+      <span>Calculando margen disponible…</span>
+    </div>
+
+    <div class="dbb-alert" *ngIf="error && !cargando">⚠ {{ error }}</div>
+
+    <ng-container *ngIf="data && !cargando">
+
+      <!-- ── KPIs estado actual ─────────────────────────────────────────────── -->
+      <div class="dbb-kpi-row" style="grid-template-columns: 1fr 1fr 1fr 1fr 1fr">
+
+        <div class="dbb-kpi" [class.dbb-kpi--total]="!data.estado_actual.ya_excede_limite"
+          [class.sop-kpi--danger]="data.estado_actual.ya_excede_limite">
+          <div class="dbb-kpi-label">% TS actual</div>
+          <div class="dbb-kpi-val" [class.sop-val-ok]="!data.estado_actual.ya_excede_limite"
+            [class.sop-val-bad]="data.estado_actual.ya_excede_limite">
+            {{ fmtPct(data.estado_actual.ts_pct) }}
+          </div>
+          <div class="dbb-kpi-bar-wrap">
+            <div class="dbb-kpi-bar" [class.dbb-kpi-bar--pauser]="!data.estado_actual.ya_excede_limite"
+              [class.sop-bar-danger]="data.estado_actual.ya_excede_limite"
+              [style.width.%]="barPct(data.estado_actual.ts_pct, data.limite_ts_pct)"></div>
+          </div>
+          <div class="dbb-kpi-sub">Límite: {{ fmtPct(data.limite_ts_pct) }}</div>
+        </div>
+
+        <div class="dbb-kpi">
+          <div class="dbb-kpi-label">Fact. teórica actual</div>
+          <div class="dbb-kpi-val dbb-kpi-val--sm">{{ fmtMoney(data.estado_actual.fact_teorica) }}</div>
+          <div class="dbb-kpi-sub">Base de cálculo s/IGV</div>
+        </div>
+
+        <div class="dbb-kpi">
+          <div class="dbb-kpi-label">TS gastado</div>
+          <div class="dbb-kpi-val dbb-kpi-val--sm">{{ fmtMoney(data.estado_actual.ts_soles) }}</div>
+          <div class="dbb-kpi-sub">En soles s/IGV</div>
+        </div>
+
+        <div class="dbb-kpi" [class.sop-kpi--ok]="data.margen_disponible.positivo"
+          [class.sop-kpi--danger]="!data.margen_disponible.positivo">
+          <div class="dbb-kpi-label">Margen disponible</div>
+          <div class="dbb-kpi-val dbb-kpi-val--sm"
+            [class.sop-val-ok]="data.margen_disponible.positivo"
+            [class.sop-val-bad]="!data.margen_disponible.positivo">
+            {{ fmtMoney(data.margen_disponible.margen_soles) }}
+          </div>
+          <div class="dbb-kpi-sub">
+            {{ data.margen_disponible.positivo ? 'Puedes gastar más TS' : 'Ya excediste el límite' }}
+          </div>
+        </div>
+
+        <div class="dbb-kpi">
+          <div class="dbb-kpi-label">TS máximo permitido</div>
+          <div class="dbb-kpi-val dbb-kpi-val--sm">{{ fmtMoney(data.margen_disponible.ts_maximo_soles) }}</div>
+          <div class="dbb-kpi-sub">{{ fmtPct(data.limite_ts_pct) }} × fact. teórica</div>
+        </div>
+
+      </div>
+
+      <!-- ── Alerta si ya excedió ───────────────────────────────────────────── -->
+      <div class="dbb-alert" *ngIf="data.estado_actual.ya_excede_limite" style="margin-bottom:1rem">
+        ⚠ Ya excediste el límite de {{ fmtPct(data.limite_ts_pct) }} TS.
+        No puedes ofrecer más bonificaciones ni descuentos este mes.
+      </div>
+
+      <!-- ── Tabla de SKUs sugeridos ───────────────────────────────────────── -->
+      <div class="dbb-card">
+        <div class="dbb-card-header">
+          <div>
+            <div class="dbb-card-title">SKUs disponibles — ordenados por margen (MC)</div>
+            <div class="dbb-kpi-sub" style="margin-top:3px">
+              {{ data.total_skus }} SKUs · Margen disponible: {{ fmtMoney(data.margen_disponible.margen_soles) }}
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="dbb-filter-label">Filtrar negocio</span>
+            <select class="dbb-select" [(ngModel)]="filtroNegocioTabla" style="min-width:130px">
+              <option value="">Todos</option>
+              <option *ngFor="let n of negociosDisponibles" [value]="n">{{ n }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="dbb-table-wrap">
+          <table class="dbb-table">
+            <thead>
+              <tr>
+                <th style="width:5%">#</th>
+                <th style="width:14%">SKU</th>
+                <th style="width:8%">Negocio</th>
+                <th style="width:6%" class="sop-th-right">MC/und</th>
+                <th style="width:8%">Acción</th>
+                <th style="width:7%">Rango</th>
+                <th style="width:8%" class="sop-th-right">Precio Trad</th>
+                <th style="width:8%" class="sop-th-right">TS/paq</th>
+                <th style="width:8%" class="sop-th-right">Paq máx Trad</th>
+                <th style="width:8%" class="sop-th-right">TTV pot. Trad</th>
+                <th style="width:8%" class="sop-th-right">Precio Mayo</th>
+                <th style="width:8%" class="sop-th-right">Paq máx Mayo</th>
+                <th style="width:8%" class="sop-th-right">TTV pot. Mayo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <ng-container *ngFor="let sku of skusFiltrados; let i = index">
+                <tr [class.sop-tr-best]="sku.mejor_canal === 'Tradicional' && i < 5">
+                  <td style="color:#aaa;font-size:11px">{{ i + 1 }}</td>
+                  <td>
+                    <div class="dbb-td-name">{{ sku.sku_gerencial }}</div>
+                    <div style="font-size:10px;color:#aaa">{{ sku.nombre | slice:0:28 }}</div>
+                  </td>
+                  <td>
+                    <span class="sop-badge sop-badge-neg">{{ sku.negocio || '—' }}</span>
+                  </td>
+                  <td class="sop-td-right">
+                    <span class="sop-mc">S/ {{ fmtNum(sku.mc, 2) }}</span>
+                  </td>
+
+                  <!-- Acción y rango -->
+                  <ng-container *ngIf="getTrad(sku) as trad">
+                    <td>
+                      <span class="sop-badge" [ngClass]="badgeAccion(trad.tipo_accion)">
+                        {{ trad.accion_texto || '—' }}
+                      </span>
+                    </td>
+                    <td style="font-size:11px;color:#888">{{ trad.rango_texto || '—' }}</td>
+
+                    <!-- Canal TRAD -->
+                    <td class="sop-td-right">S/ {{ fmtNum(trad.precio_base, 2) }}</td>
+                    <td class="sop-td-right" style="color:#dc2626;font-weight:500">
+                      {{ trad.ts_por_paquete > 0 ? 'S/ ' + fmtNum(trad.ts_por_paquete, 3) : '—' }}
+                    </td>
+                    <td class="sop-td-right">
+                      <span *ngIf="trad.paq_max !== null" class="sop-paq-max">
+                        {{ fmtNum(trad.paq_max, 0) }}
+                      </span>
+                      <span *ngIf="trad.paq_max === null" style="color:#aaa">∞</span>
+                    </td>
+                    <td class="sop-td-right">
+                      <span *ngIf="trad.ttv_potencial !== null" class="sop-ttv">
+                        S/ {{ fmtNum(trad.ttv_potencial, 0) }}
+                      </span>
+                      <span *ngIf="trad.ttv_potencial === null" style="color:#aaa">—</span>
+                    </td>
+                  </ng-container>
+
+                  <!-- Canal MAYO -->
+                  <ng-container *ngIf="getMayo(sku) as mayo">
+                    <td class="sop-td-right">S/ {{ fmtNum(mayo.precio_base, 2) }}</td>
+                    <td class="sop-td-right">
+                      <span *ngIf="mayo.paq_max !== null" class="sop-paq-max">
+                        {{ fmtNum(mayo.paq_max, 0) }}
+                      </span>
+                      <span *ngIf="mayo.paq_max === null" style="color:#aaa">∞</span>
+                    </td>
+                    <td class="sop-td-right">
+                      <span *ngIf="mayo.ttv_potencial !== null" class="sop-ttv">
+                        S/ {{ fmtNum(mayo.ttv_potencial, 0) }}
+                      </span>
+                      <span *ngIf="mayo.ttv_potencial === null" style="color:#aaa">—</span>
+                    </td>
+                  </ng-container>
+
+                  <!-- Si no hay mayo -->
+                  <ng-container *ngIf="!getMayo(sku)">
+                    <td class="sop-td-right" style="color:#aaa">—</td>
+                    <td class="sop-td-right" style="color:#aaa">—</td>
+                    <td class="sop-td-right" style="color:#aaa">—</td>
+                  </ng-container>
+
+                </tr>
+              </ng-container>
+
+              <tr *ngIf="skusFiltrados.length === 0">
+                <td colspan="13" class="dbb-empty">Sin SKUs disponibles para este filtro.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </ng-container>
+
+    <div class="dbb-empty" *ngIf="!data && !cargando && !error">
+      Selecciona agencia y mes, luego presiona <strong>Calcular</strong>.
+    </div>
+
+  </div>
+</div>

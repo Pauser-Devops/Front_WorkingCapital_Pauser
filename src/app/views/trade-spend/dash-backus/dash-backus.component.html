@@ -1,0 +1,237 @@
+<div class="dbb-wrapper">
+
+  <!-- ── Cabecera ──────────────────────────────────────────────────────────── -->
+  <div class="dbb-header">
+    <div>
+      <div class="dbb-title">Dashboard · Descuentos Backus</div>
+      <div class="dbb-subtitle">
+       
+        <span *ngIf="data?.periodo_label">{{ data?.periodo_label }}</span>
+      </div>
+    </div>
+    <button class="dbb-btn" (click)="cargarDashboard()" [disabled]="cargando">
+      <span class="dbb-spin" *ngIf="cargando"></span>
+      <span *ngIf="!cargando">↻</span>
+      Refrescar
+    </button>
+  </div>
+
+  <!-- ── Barra de filtros ───────────────────────────────────────────────────── -->
+  <div class="dbb-filterbar">
+
+    <div class="dbb-filter-group">
+      <span class="dbb-filter-label">Período</span>
+      <div *ngIf="cargandoPeriodos" class="dbb-loading-sm">
+        <span class="dbb-spin"></span>
+      </div>
+      <select
+        *ngIf="!cargandoPeriodos"
+        class="dbb-select"
+        (change)="onSelectPeriodo($event)"
+      >
+        <option
+          *ngFor="let p of periodos"
+          [value]="p.anio + '-' + p.mes"
+          [selected]="periodoSeleccionado?.anio === p.anio && periodoSeleccionado?.mes === p.mes"
+        >{{ p.label }} · {{ formatNum(p.total_filas) }} reg.</option>
+      </select>
+    </div>
+
+    <div class="dbb-filter-divider"></div>
+
+    <div class="dbb-filter-group">
+      <span class="dbb-filter-label">Desde</span>
+      <input type="date" class="dbb-input" [(ngModel)]="filtro.fecha_desde" />
+    </div>
+
+    <div class="dbb-filter-group">
+      <span class="dbb-filter-label">Hasta</span>
+      <input type="date" class="dbb-input" [(ngModel)]="filtro.fecha_hasta" />
+    </div>
+
+    <div class="dbb-filter-divider"></div>
+
+    <div class="dbb-filter-group">
+      <span class="dbb-filter-label">Responsable</span>
+      <div class="dbb-seg">
+        <button class="dbb-seg-btn" [class.dbb-seg-btn--active]="filtro.responsable === 'todos'"
+          (click)="filtro.responsable = 'todos'">Todos</button>
+        <button class="dbb-seg-btn" [class.dbb-seg-btn--active]="filtro.responsable === 'pauser'"
+          (click)="filtro.responsable = 'pauser'">
+          <span class="dbb-dot dbb-dot--pauser"></span> Pauser
+        </button>
+        <button class="dbb-seg-btn" [class.dbb-seg-btn--active]="filtro.responsable === 'backus'"
+          (click)="filtro.responsable = 'backus'">
+          <span class="dbb-dot dbb-dot--backus"></span> Backus
+        </button>
+      </div>
+    </div>
+
+    <div class="dbb-filter-actions">
+      <button class="dbb-btn dbb-btn--primary" (click)="aplicarFiltros()" [disabled]="cargando">Aplicar</button>
+      <button class="dbb-btn" (click)="resetFiltros()">Restablecer</button>
+    </div>
+
+  </div>
+
+  <!-- ── Contenido ─────────────────────────────────────────────────────────── -->
+  <div class="dbb-content">
+
+    <div class="dbb-loading-full" *ngIf="cargando">
+      <span class="dbb-spin dbb-spin--lg"></span>
+      <span>Cargando datos…</span>
+    </div>
+
+    <div class="dbb-alert" *ngIf="error && !cargando">⚠ {{ error }}</div>
+
+    <ng-container *ngIf="data && !cargando">
+
+      <!-- KPIs -->
+      <div class="dbb-kpi-row">
+
+        <div class="dbb-kpi dbb-kpi--total">
+          <div class="dbb-kpi-label">Descuento total</div>
+          <div class="dbb-kpi-val">{{ formatMoney(data.kpis.total_descuento) }}</div>
+          <div class="dbb-kpi-sub">{{ formatNum(data.kpis.total_transacciones) }} transacciones válidas</div>
+        </div>
+
+        <div class="dbb-kpi dbb-kpi--pauser">
+          <div class="dbb-kpi-label">
+            <span class="dbb-dot dbb-dot--pauser"></span> Cubre Pauser
+          </div>
+          <div class="dbb-kpi-val">{{ formatMoney(data.kpis.descuento_pauser) }}</div>
+          <div class="dbb-kpi-bar-wrap">
+            <div class="dbb-kpi-bar dbb-kpi-bar--pauser" [style.width.%]="data.kpis.pct_pauser"></div>
+          </div>
+          <div class="dbb-kpi-sub">{{ formatPct(data.kpis.pct_pauser) }} del total</div>
+        </div>
+
+        <div class="dbb-kpi dbb-kpi--backus">
+          <div class="dbb-kpi-label">
+            <span class="dbb-dot dbb-dot--backus"></span> Cubre Backus
+          </div>
+          <div class="dbb-kpi-val">{{ formatMoney(data.kpis.descuento_backus) }}</div>
+          <div class="dbb-kpi-bar-wrap">
+            <div class="dbb-kpi-bar dbb-kpi-bar--backus" [style.width.%]="data.kpis.pct_backus"></div>
+          </div>
+          <div class="dbb-kpi-sub">{{ formatPct(data.kpis.pct_backus) }} del total</div>
+        </div>
+
+        <div class="dbb-kpi">
+          <div class="dbb-kpi-label">Ventas totales</div>
+          <div class="dbb-kpi-val dbb-kpi-val--sm">{{ formatMoney(data.kpis.total_ventas) }}</div>
+          <div class="dbb-kpi-sub">Ratio dscto/venta: {{ formatPct(data.kpis.ratio_descuento_venta) }}</div>
+        </div>
+
+        <div class="dbb-kpi">
+          <div class="dbb-kpi-label">Unidades vendidas</div>
+          <div class="dbb-kpi-val dbb-kpi-val--sm">{{ formatNum(data.kpis.total_unidades) }}</div>
+          <div class="dbb-kpi-sub">Anuladas: {{ formatNum(data.kpis.anuladas) }}</div>
+        </div>
+
+      </div>
+
+      <!-- Gráfico diario -->
+      <div class="dbb-card" style="margin-bottom:1rem">
+        <div class="dbb-card-header">
+          <div class="dbb-card-title">Evolución diaria del descuento</div>
+          <div class="dbb-legend">
+            <span class="dbb-dot dbb-dot--pauser"></span> Pauser
+            <span class="dbb-dot dbb-dot--backus" style="margin-left:10px"></span> Backus
+          </div>
+        </div>
+        <div class="dbb-chart-bars">
+          <div class="dbb-bar-col" *ngFor="let d of data.por_dia">
+            <div class="dbb-bar-stack">
+              <div class="dbb-bar-seg dbb-bar-seg--pauser"
+                [style.height.%]="barDia(d.descuento_pauser)"
+                [title]="'Pauser: ' + formatMoney(d.descuento_pauser)"></div>
+              <div class="dbb-bar-seg dbb-bar-seg--backus"
+                [style.height.%]="barDia(d.descuento_backus)"
+                [title]="'Backus: ' + formatMoney(d.descuento_backus)"></div>
+            </div>
+            <div class="dbb-bar-label">{{ d.fecha | date:'dd' }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla -->
+      <div class="dbb-card">
+        <div class="dbb-card-header">
+          <div class="dbb-tabs-inline">
+            <button class="dbb-tab-inline"
+              [class.dbb-tab-inline--active]="tablaActiva === 'productos'"
+              (click)="tablaActiva = 'productos'">Por producto</button>
+            <button class="dbb-tab-inline"
+              [class.dbb-tab-inline--active]="tablaActiva === 'clientes'"
+              (click)="tablaActiva = 'clientes'">Por cliente</button>
+          </div>
+          <div class="dbb-legend">
+            <span class="dbb-dot dbb-dot--pauser"></span> Pauser
+            <span class="dbb-dot dbb-dot--backus" style="margin-left:10px"></span> Backus
+          </div>
+        </div>
+
+        <div *ngIf="tablaActiva === 'productos'" class="dbb-table-wrap">
+          <table class="dbb-table">
+            <thead>
+              <tr>
+                <th style="width:34%">Producto</th>
+                <th style="width:18%">Descuento Pauser</th>
+                <th style="width:18%">Descuento Backus</th>
+                <th>Distribución</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let p of data.por_producto">
+                <td class="dbb-td-name">{{ shortName(p.producto) }}</td>
+                <td><span class="dbb-money dbb-money--pauser">{{ formatMoney(p.descuento_pauser) }}</span></td>
+                <td><span class="dbb-money dbb-money--backus">{{ formatMoney(p.descuento_backus) }}</span></td>
+                <td>
+                  <div class="dbb-dist-bar">
+                    <div class="dbb-dist-seg dbb-dist-seg--pauser" [style.width.%]="barWidthPauser(p, maxBarProducto)"></div>
+                    <div class="dbb-dist-seg dbb-dist-seg--backus" [style.width.%]="barWidthBackus(p, maxBarProducto)"></div>
+                  </div>
+                  <div class="dbb-dist-total">{{ formatMoney(p.total) }}</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div *ngIf="tablaActiva === 'clientes'" class="dbb-table-wrap">
+          <table class="dbb-table">
+            <thead>
+              <tr>
+                <th style="width:34%">Cliente</th>
+                <th style="width:18%">Descuento Pauser</th>
+                <th style="width:18%">Descuento Backus</th>
+                <th>Distribución</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let c of data.por_cliente">
+                <td class="dbb-td-name">{{ shortName(c.cliente) }}</td>
+                <td><span class="dbb-money dbb-money--pauser">{{ formatMoney(c.descuento_pauser) }}</span></td>
+                <td><span class="dbb-money dbb-money--backus">{{ formatMoney(c.descuento_backus) }}</span></td>
+                <td>
+                  <div class="dbb-dist-bar">
+                    <div class="dbb-dist-seg dbb-dist-seg--pauser" [style.width.%]="barWidthPauser(c, maxBarCliente)"></div>
+                    <div class="dbb-dist-seg dbb-dist-seg--backus" [style.width.%]="barWidthBackus(c, maxBarCliente)"></div>
+                  </div>
+                  <div class="dbb-dist-total">{{ formatMoney(c.total) }}</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </ng-container>
+
+    <div class="dbb-empty" *ngIf="!data && !cargando && !error">
+      Selecciona un período para ver el dashboard.
+    </div>
+
+  </div>
+</div>
