@@ -94,6 +94,11 @@
           <td class="wk-val" *ngFor="let m of mesesFiltrados">{{ fmt(gVentaRuta(m.ym)) }}</td>
         </tr>
 
+        <tr class="wk-row-sec">
+          <td class="wk-concepto">CRÉDITOS FISCALES</td>
+          <td class="wk-val" *ngFor="let m of mesesFiltrados">{{ fmt(gCredFiscal(m.ym)) }}</td>
+        </tr>
+
         <tr class="wk-row-total wk-total-activo">
           <td class="wk-concepto">TOTAL ACTIVO CORRIENTE</td>
           <td class="wk-val" *ngFor="let m of mesesFiltrados">{{ fmt(gTotalActivo(m.ym)) }}</td>

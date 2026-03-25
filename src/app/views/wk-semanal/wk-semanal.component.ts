@@ -15,6 +15,7 @@ interface WkDatos {
     prosegur: number;
     inventarios: { items: Record<string, number>; total: number };
     cxc: { items: Record<string, number>; total: number };
+    credFiscal: number;
     ventaEnRuta: number;
     total: number;
   };
@@ -148,6 +149,7 @@ export class WkSemanalComponent implements OnInit, OnDestroy {
   gCxcTotal(f: string): number | null { return this.get$(f)?.activo.cxc.total ?? null; }
   gCxcItem(f: string, k: string): number | null { return this.get$(f)?.activo.cxc.items[k] ?? null; }
   gVentaRuta(f: string): number | null { return this.get$(f)?.activo.ventaEnRuta ?? null; }
+  gCredFiscal(f: string): number | null { return this.get$(f)?.activo.credFiscal ?? null; }
   gTotalActivo(f: string): number | null { return this.get$(f)?.activo.total ?? null; }
   gCtasPagarTotal(f: string): number | null { return this.get$(f)?.pasivo.ctasPagar.total ?? null; }
   gProvPrincTotal(f: string): number | null { return this.get$(f)?.pasivo.ctasPagar.proveedoresPrincipales.total ?? null; }
