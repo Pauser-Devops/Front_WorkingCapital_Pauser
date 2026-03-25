@@ -29,7 +29,7 @@ import { EbitdaComponent } from './views/powerbi/ebitda.component';
 import { CargaTradeBackusComponent } from './views/trade-spend/carga-trade-backus/carga-trade-backus.component';
 import { DashBackusComponent } from './views/trade-spend/dash-backus/dash-backus.component';
 import { CargaTradeMondelezComponent } from './views/trade-spend/carga-trade-mondelez/carga-trade-mondelez.component';
-import { SimuladorOptimoComponent } from './views/trade-spend/simulador-optimo-cbc/simulador-optimo.component';
+import { SimuladorOptimoComponent } from './views/trade-spend/simulador-optimo/simulador-optimo.component';
 const VISTA_NOMBRES: Record<string, string> = {
   semanal: 'WK Semanal 2026',
   mensual: 'WK Mensual 2026',

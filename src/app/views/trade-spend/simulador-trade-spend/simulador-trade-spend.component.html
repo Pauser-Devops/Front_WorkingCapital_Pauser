@@ -1,652 +1,669 @@
-<div class="sim-wrap">
+<div class="sim-wrapper">
 
-  <!-- ── Tabs ──────────────────────────────────────────────────────────────── -->
+  <!-- ── Cabecera ──────────────────────────────────────────────────────────── -->
+  <div class="sim-header">
+    <div class="sim-header-left">
+      <div class="sim-title">Simulador Trade Spend · CBC</div>
+      <div class="sim-subtitle">Chimbote y Huaraz</div>
+    </div>
+    <div class="sim-header-actions">
+      <button class="sim-btn" (click)="verResumen()">Resumen</button>
+      <button class="sim-btn" (click)="verChessHistorial()">Chess Base</button>
+      <button class="sim-btn sim-btn--primary" (click)="nuevaSimulacion()">+ Nueva simulación</button>
+    </div>
+  </div>
+
+  <!-- ── Tabs ───────────────────────────────────────────────────────────────── -->
   <div class="sim-tabs">
-    <div class="sim-tab" [class.active]="vistaActual==='lista'" (click)="vistaActual='lista'; cargarLista()">
-      Simulaciones</div>
-    <div class="sim-tab" [class.active]="vistaActual==='nueva'" (click)="nuevaSimulacion()">Nueva</div>
-    <div class="sim-tab" [class.active]="vistaActual==='resultado'" [class.disabled]="!resultado">Resultado</div>
-    <div class="sim-tab" [class.active]="vistaActual==='resumen'" (click)="verResumen()">Resumen</div>
-    <div class="sim-tab" [class.active]="vistaActual==='chess'" (click)="verChessHistorial()">Chess Base</div>
+    <button class="sim-tab" [class.sim-tab--active]="vistaActual==='lista'"
+      (click)="vistaActual='lista'; cargarLista()">Simulaciones</button>
+    <button class="sim-tab" [class.sim-tab--active]="vistaActual==='nueva'"
+      (click)="nuevaSimulacion()">Nueva</button>
+    <button class="sim-tab" [class.sim-tab--active]="vistaActual==='resultado'"
+      [class.sim-tab--disabled]="!resultado && !cargandoResultado">Resultado</button>
+    <button class="sim-tab" [class.sim-tab--active]="vistaActual==='resumen'"
+      (click)="verResumen()">Resumen</button>
+    <button class="sim-tab" [class.sim-tab--active]="vistaActual==='chess'"
+      (click)="verChessHistorial()">Chess Base</button>
   </div>
 
-  <!-- ════════════ LISTA ════════════ -->
-  <div *ngIf="vistaActual==='lista'">
-    <div class="sim-page-header">
-      <div>
-        <div class="sim-page-title">Simulador Trade Spend - CBC</div>
-        <div class="sim-page-sub">Simulaciones guardadas</div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <select class="sim-select" [(ngModel)]="filtroAgenciaLista" (ngModelChange)="cargarLista()">
-          <option value="">Todas las agencias</option>
-          <option *ngFor="let a of agencias" [value]="a.codigo">{{ a.nombre }}</option>
-        </select>
-        <button class="sim-btn sim-btn-primary" (click)="nuevaSimulacion()">+ Nueva simulación</button>
-      </div>
-    </div>
+  <div class="sim-content">
 
-    <div *ngIf="cargandoLista" class="sim-loading">Cargando simulaciones…</div>
+    <!-- ════════════════════════════════════════════════════════════════════════
+         VISTA: LISTA
+    ════════════════════════════════════════════════════════════════════════════ -->
+    <div *ngIf="vistaActual==='lista'">
 
-    <div *ngIf="!cargandoLista && simulaciones.length === 0" class="sim-empty">
-      <div class="sim-empty-title">Sin simulaciones guardadas</div>
-      <div class="sim-empty-sub">Crea una simulación y guárdala para verla aquí</div>
-      <button class="sim-btn sim-btn-primary" style="margin-top:12px" (click)="nuevaSimulacion()">+ Nueva
-        simulación</button>
-    </div>
-
-    <div *ngIf="!cargandoLista && simulaciones.length > 0" class="sim-card">
-      <div class="sim-table-wrap">
-        <table class="sim-table">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Agencia</th>
-              <th>Periodo</th>
-              <th>Modo</th>
-              <th>TTV real</th>
-              <th>% TS</th>
-              <th>Estado</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let s of simulacionesFiltradas" (click)="verSimulacion(s)" style="cursor:pointer">
-              <td>
-                <span class="sim-fw">{{ s.nombre }}</span>
-                <span class="sim-sub" *ngIf="s.canal">{{ s.canal }}</span>
-              </td>
-              <td>{{ s.agencia }}</td>
-              <td>{{ mesesLabels[s.mes] }} {{ s.anio }}</td>
-              <td><span class="sim-badge" [ngClass]="s.modo==='cierre_real'?'badge-blue':'badge-boni'">
-                  {{ s.modo==='cierre_real' ? 'Cierre' : 'Proyección' }}</span></td>
-              <td class="sim-num">S/ {{ fmt(s.ttv_total) }}</td>
-              <td>
-                <div class="sim-pct-row">
-                  <span [class.sim-pct-ok]="!s.supera_limite" [class.sim-pct-bad]="s.supera_limite">
-                    {{ fmtPct(s.ts_pct_total) }}
-                  </span>
-                  <span class="sim-pct-lim">lím. {{ fmtPct(s.limite_ts_pct) }}</span>
-                </div>
-                <div class="sim-bar">
-                  <div class="sim-bar-fill" [class.bar-danger]="s.supera_limite"
-                    [style.width.%]="pctFill(s.ts_pct_total, s.limite_ts_pct)"></div>
-                </div>
-              </td>
-              <td><span class="sim-badge" [ngClass]="s.supera_limite?'badge-neg':'badge-pos'">
-                  {{ s.supera_limite?'Excede':'OK' }}</span></td>
-              <td>
-                <button class="sim-btn sim-btn-ghost sim-btn-sm"
-                  (click)="eliminarSimulacion(s.id, $event)">Eliminar</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- ════════════ NUEVA ════════════ -->
-  <div *ngIf="vistaActual==='nueva'">
-    <div class="sim-page-header">
-      <div>
-        <div class="sim-page-title">Nueva simulación</div>
-        <div class="sim-page-sub">{{ agenciaNombre }} · {{ periodoLabel }}</div>
-      </div>
-      <button class="sim-btn sim-btn-ghost" (click)="vistaActual='lista'">← Volver</button>
-    </div>
-
-    <!-- Steps -->
-    <div class="sim-steps">
-      <div class="sim-step" [class.active]="pasoActual===1" [class.done]="pasoActual>1">
-        <div class="sim-step-num">{{ pasoActual>1 ? '✓' : '1' }}</div>
-        <span>Configuración</span>
-      </div>
-      <div class="sim-step-line" [class.done]="pasoActual>1"></div>
-      <div class="sim-step" [class.active]="pasoActual===2" [class.done]="pasoActual>2" [class.pending]="pasoActual<2">
-        <div class="sim-step-num">{{ pasoActual>2 ? '✓' : '2' }}</div>
-        <span>SKUs</span>
-      </div>
-      <div class="sim-step-line" [class.done]="pasoActual>2"></div>
-      <div class="sim-step" [class.active]="pasoActual===3" [class.pending]="pasoActual<3">
-        <div class="sim-step-num">3</div>
-        <span>Volumen</span>
-      </div>
-    </div>
-
-    <!-- Paso 1 -->
-    <div *ngIf="pasoActual===1" class="sim-card">
-      <div class="sim-section-title">Parámetros</div>
-      <div class="sim-form-row">
-        <div class="sim-form-group">
-          <label>Nombre</label>
-          <input class="sim-input" [(ngModel)]="formNombre" placeholder="Ej: Marzo CHM – Pepsi" />
+      <div class="sim-vista-header">
+        <div>
+          <div class="sim-vista-title">Simulaciones guardadas</div>
+          <div class="sim-vista-sub">{{ simulaciones.length }} en total</div>
         </div>
-        <div class="sim-form-group">
-          <label>Modo</label>
-          <select class="sim-select" [(ngModel)]="formModo">
-            <option value="cierre_real">Cierre real (Chess Base)</option>
-            <option value="proyeccion">Proyección (volumen estimado)</option>
-          </select>
-        </div>
-      </div>
-      <div class="sim-form-row sim-form-row-3">
-        <div class="sim-form-group">
-          <label>Agencia</label>
-          <select class="sim-select" [(ngModel)]="formAgencia">
+        <div style="display:flex;gap:8px;align-items:center">
+          <select class="sim-select" [(ngModel)]="filtroAgenciaLista" (ngModelChange)="cargarLista()">
+            <option value="">Todas las agencias</option>
             <option *ngFor="let a of agencias" [value]="a.codigo">{{ a.nombre }}</option>
           </select>
         </div>
-        <div class="sim-form-group">
-          <label>Mes</label>
-          <select class="sim-select" [(ngModel)]="formMes">
+      </div>
+
+      <div class="sim-loading" *ngIf="cargandoLista">
+        <span class="sim-spin"></span> Cargando simulaciones…
+      </div>
+
+      <div class="sim-empty-state" *ngIf="!cargandoLista && simulaciones.length === 0">
+        <div class="sim-empty-title">Sin simulaciones guardadas</div>
+        <div class="sim-empty-sub">Crea una simulación y guárdala para verla aquí</div>
+        <button class="sim-btn sim-btn--primary" style="margin-top:12px" (click)="nuevaSimulacion()">
+          + Nueva simulación
+        </button>
+      </div>
+
+      <div class="sim-card" *ngIf="!cargandoLista && simulaciones.length > 0">
+        <div class="sim-table-wrap">
+          <table class="sim-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Agencia</th>
+                <th>Período</th>
+                <th>Modo</th>
+                <th>TTV real</th>
+                <th>% TS</th>
+                <th>Estado</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let s of simulacionesFiltradas"
+                class="sim-tr--clickable"
+                (click)="verSimulacion(s)">
+                <td>
+                  <div class="sim-fw">{{ s.nombre }}</div>
+                  <div class="sim-sub" *ngIf="s.canal">{{ s.canal }}</div>
+                </td>
+                <td>{{ s.agencia }}</td>
+                <td>{{ mesesLabels[s.mes] }} {{ s.anio }}</td>
+                <td>
+                  <span class="sim-badge" [ngClass]="s.modo==='cierre_real'?'sim-badge--blue':'sim-badge--boni'">
+                    {{ s.modo==='cierre_real' ? 'Cierre' : 'Proyección' }}
+                  </span>
+                </td>
+                <td class="sim-num">S/ {{ fmt(s.ttv_total) }}</td>
+                <td>
+                  <div class="sim-pct-row">
+                    <span [class.sim-pct--ok]="!s.supera_limite" [class.sim-pct--bad]="s.supera_limite">
+                      {{ fmtPct(s.ts_pct_total) }}
+                    </span>
+                    <span class="sim-pct-lim">lím. {{ fmtPct(s.limite_ts_pct) }}</span>
+                  </div>
+                  <div class="sim-bar">
+                    <div class="sim-bar-fill"
+                      [class.sim-bar-fill--danger]="s.supera_limite"
+                      [style.width.%]="pctFill(s.ts_pct_total, s.limite_ts_pct)">
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="sim-badge" [ngClass]="s.supera_limite?'sim-badge--red':'sim-badge--green'">
+                    {{ s.supera_limite ? 'Excede' : 'OK' }}
+                  </span>
+                </td>
+                <td>
+                  <button class="sim-btn sim-btn--sm sim-btn--ghost"
+                    (click)="eliminarSimulacion(s.id, $event)">Eliminar</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════════════
+         VISTA: NUEVA
+    ════════════════════════════════════════════════════════════════════════════ -->
+    <div *ngIf="vistaActual==='nueva'">
+
+      <div class="sim-vista-header">
+        <div>
+          <div class="sim-vista-title">Nueva simulación</div>
+          <div class="sim-vista-sub">{{ agenciaNombre }} · {{ periodoLabel }}</div>
+        </div>
+        <button class="sim-btn" (click)="vistaActual='lista'">← Volver</button>
+      </div>
+
+      <!-- Steps -->
+      <div class="sim-steps">
+        <div class="sim-step" [class.sim-step--active]="pasoActual===1" [class.sim-step--done]="pasoActual>1">
+          <div class="sim-step-num">{{ pasoActual>1 ? '✓' : '1' }}</div>
+          <span>Configuración</span>
+        </div>
+        <div class="sim-step-line" [class.sim-step-line--done]="pasoActual>1"></div>
+        <div class="sim-step" [class.sim-step--active]="pasoActual===2" [class.sim-step--done]="pasoActual>2" [class.sim-step--pending]="pasoActual<2">
+          <div class="sim-step-num">{{ pasoActual>2 ? '✓' : '2' }}</div>
+          <span>SKUs</span>
+        </div>
+        <div class="sim-step-line" [class.sim-step-line--done]="pasoActual>2"></div>
+        <div class="sim-step" [class.sim-step--active]="pasoActual===3" [class.sim-step--pending]="pasoActual<3">
+          <div class="sim-step-num">3</div>
+          <span>Volumen</span>
+        </div>
+      </div>
+
+      <!-- Paso 1: Config -->
+      <div *ngIf="pasoActual===1" class="sim-card">
+        <div class="sim-section-title">Parámetros de la simulación</div>
+        <div class="sim-form-row">
+          <div class="sim-form-group">
+            <label class="sim-label">Nombre</label>
+            <input class="sim-input" [(ngModel)]="formNombre" placeholder="Ej: Marzo CHM – Pepsi" />
+          </div>
+          <div class="sim-form-group">
+            <label class="sim-label">Modo</label>
+            <select class="sim-select" [(ngModel)]="formModo">
+              <option value="cierre_real">Cierre real (Chess Base)</option>
+              <option value="proyeccion">Proyección (volumen estimado)</option>
+            </select>
+          </div>
+        </div>
+        <div class="sim-form-row sim-form-row--3">
+          <div class="sim-form-group">
+            <label class="sim-label">Agencia</label>
+            <select class="sim-select" [(ngModel)]="formAgencia">
+              <option *ngFor="let a of agencias" [value]="a.codigo">{{ a.nombre }}</option>
+            </select>
+          </div>
+          <div class="sim-form-group">
+            <label class="sim-label">Mes</label>
+            <select class="sim-select" [(ngModel)]="formMes">
+              <option *ngFor="let m of mesesOpciones" [value]="m.num">{{ m.label }}</option>
+            </select>
+          </div>
+          <div class="sim-form-group">
+            <label class="sim-label">Año</label>
+            <select class="sim-select" [(ngModel)]="formAnio">
+              <option *ngFor="let a of aniosOpciones" [value]="a">{{ a }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="sim-form-row" *ngIf="formModo==='proyeccion'" style="max-width:260px">
+          <div class="sim-form-group">
+            <label class="sim-label">Canal</label>
+            <select class="sim-select" [(ngModel)]="formCanal">
+              <option *ngFor="let c of canales" [value]="c">{{ c }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="sim-alert sim-alert--warn" *ngIf="errorResultado">{{ errorResultado }}</div>
+        <div class="sim-form-actions">
+          <button class="sim-btn sim-btn--primary"
+            [disabled]="!formNombre.trim() || cargandoResultado"
+            (click)="avanzarPaso1()">
+            <span class="sim-spin" *ngIf="cargandoResultado"></span>
+            {{ cargandoResultado ? 'Calculando…' : formModo==='cierre_real' ? 'Calcular cierre' : 'Siguiente →' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Paso 2: SKUs -->
+      <div *ngIf="pasoActual===2">
+        <div class="sim-loading" *ngIf="cargandoPolitica">
+          <span class="sim-spin"></span> Cargando política comercial…
+        </div>
+        <div *ngIf="!cargandoPolitica" class="sim-card" style="margin-bottom:1rem">
+          <div class="sim-card-subheader">
+            <span class="sim-section-title">{{ skusPolitica.length }} SKUs disponibles</span>
+            <div style="display:flex;gap:8px;align-items:center">
+              <select class="sim-select sim-select--sm" [(ngModel)]="filtroNegocio">
+                <option value="">Todos los negocios</option>
+                <option *ngFor="let n of negociosDisponibles" [value]="n">{{ n }}</option>
+              </select>
+              <span class="sim-hint">{{ skusSeleccionados.length }} seleccionados</span>
+            </div>
+          </div>
+          <div class="sim-table-wrap">
+            <table class="sim-table">
+              <thead>
+                <tr>
+                  <th style="width:32px"></th>
+                  <th>SKU</th><th>Negocio</th><th>Precio lista</th>
+                  <th>Rango</th><th>Acción</th><th>Precio final</th><th>% TS</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let sku of skusFiltrados"
+                  [class.sim-tr--selected]="sku.seleccionado"
+                  class="sim-tr--clickable"
+                  (click)="toggleSku(sku)">
+                  <td>
+                    <div class="sim-check" [class.sim-check--on]="sku.seleccionado">
+                      <span *ngIf="sku.seleccionado">✓</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="sim-fw">{{ sku.sku_gerencial }}</div>
+                    <div class="sim-sub">{{ sku.nombre_completo | slice:0:38 }}</div>
+                  </td>
+                  <td>{{ sku.negocio }}</td>
+                  <td class="sim-num">S/ {{ fmtDec(sku.rangoElegido?.precio_lista??0, 2) }}</td>
+                  <td>
+                    <select class="sim-select sim-select--sm" [(ngModel)]="sku.rangoElegido"
+                      (ngModelChange)="onRangoChange(sku,$event?.politica_id)"
+                      (click)="$event.stopPropagation()">
+                      <option *ngFor="let r of sku.rangos" [ngValue]="r">{{ r.rango_texto }}</option>
+                    </select>
+                  </td>
+                  <td>
+                    <span class="sim-badge" [ngClass]="badgeAccion(sku.rangoElegido?.tipo_accion??'')">
+                      {{ sku.rangoElegido?.accion_texto ?? '—' }}
+                    </span>
+                  </td>
+                  <td class="sim-num"><strong>S/ {{ fmtDec(sku.rangoElegido?.precio_final??0, 2) }}</strong></td>
+                  <td class="sim-num">
+                    <span *ngIf="sku.rangoElegido?.precio_lista">
+                      {{ fmtPct(((sku.rangoElegido!.precio_lista - sku.rangoElegido!.precio_final) / sku.rangoElegido!.precio_lista) * 100) }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="sim-form-actions sim-form-actions--between">
+          <button class="sim-btn" (click)="pasoActual=1">← Atrás</button>
+          <button class="sim-btn sim-btn--primary" [disabled]="skusSeleccionados.length===0" (click)="avanzarPaso2()">
+            Siguiente → ({{ skusSeleccionados.length }} SKUs)
+          </button>
+        </div>
+      </div>
+
+      <!-- Paso 3: Volumen -->
+      <div *ngIf="pasoActual===3">
+        <div class="sim-card" style="margin-bottom:1rem">
+          <div class="sim-section-title">Volumen estimado de paquetes</div>
+          <div class="sim-table-wrap">
+            <table class="sim-table">
+              <thead>
+                <tr>
+                  <th>SKU</th><th>Negocio</th><th>Acción</th>
+                  <th>Precio paq.</th><th>Precio final</th>
+                  <th style="width:120px">Paq. estimados</th>
+                  <th>TTV est.</th><th>% TS est.</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let sku of skusSeleccionados">
+                  <td>
+                    <div class="sim-fw">{{ sku.sku_gerencial }}</div>
+                    <div class="sim-sub">{{ sku.rangoElegido?.rango_texto }}</div>
+                  </td>
+                  <td>{{ sku.negocio }}</td>
+                  <td>
+                    <span class="sim-badge" [ngClass]="badgeAccion(sku.rangoElegido?.tipo_accion??'')">
+                      {{ sku.rangoElegido?.accion_texto }}
+                    </span>
+                  </td>
+                  <td class="sim-num">S/ {{ fmtDec(sku.rangoElegido?.precio_lista??0, 2) }}</td>
+                  <td class="sim-num"><strong>S/ {{ fmtDec(sku.rangoElegido?.precio_final??0, 2) }}</strong></td>
+                  <td>
+                    <input type="number" min="0" class="sim-input sim-input--num"
+                      [(ngModel)]="sku.paqEstimados" (click)="$event.stopPropagation()">
+                  </td>
+                  <td class="sim-num">S/ {{ fmtDec((sku.paqEstimados??0)*(sku.rangoElegido?.precio_final??0), 0) }}</td>
+                  <td class="sim-num">
+                    <span *ngIf="sku.rangoElegido?.precio_lista">
+                      {{ fmtPct(((sku.rangoElegido!.precio_lista - sku.rangoElegido!.precio_final) / sku.rangoElegido!.precio_lista) * 100) }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="sim-alert sim-alert--warn" *ngIf="errorResultado">{{ errorResultado }}</div>
+        <div class="sim-form-actions sim-form-actions--between">
+          <button class="sim-btn" (click)="pasoActual=2">← Atrás</button>
+          <button class="sim-btn sim-btn--primary" [disabled]="cargandoResultado" (click)="calcularProyeccion()">
+            <span class="sim-spin" *ngIf="cargandoResultado"></span>
+            {{ cargandoResultado ? 'Calculando…' : 'Calcular proyección' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════════════
+         VISTA: RESULTADO
+    ════════════════════════════════════════════════════════════════════════════ -->
+    <div *ngIf="vistaActual==='resultado'">
+
+      <!-- Cargando detalle desde lista -->
+      <div class="sim-loading" *ngIf="cargandoResultado">
+        <span class="sim-spin"></span> Cargando detalle de la simulación…
+      </div>
+
+      <div class="sim-alert sim-alert--err" *ngIf="errorResultado && !cargandoResultado">
+        ⚠ {{ errorResultado }}
+      </div>
+
+      <div *ngIf="!resultado && !cargandoResultado && !errorResultado" class="sim-empty-state">
+        <div class="sim-empty-title">Sin resultado activo</div>
+        <div class="sim-empty-sub">Selecciona una simulación de la lista o crea una nueva</div>
+        <button class="sim-btn sim-btn--primary" style="margin-top:12px" (click)="nuevaSimulacion()">
+          + Nueva simulación
+        </button>
+      </div>
+
+      <ng-container *ngIf="resultado as r">
+        <div class="sim-vista-header">
+          <div>
+            <div class="sim-vista-title">{{ r.nombre ?? 'Resultado' }}</div>
+            <div class="sim-vista-sub" style="display:flex;align-items:center;gap:6px">
+              {{ r.agencia }} · {{ mesesLabels[r.mes] }} {{ r.anio }}
+              <span class="sim-badge" [ngClass]="r.modo==='cierre_real'?'sim-badge--blue':'sim-badge--boni'">
+                {{ r.modo==='cierre_real' ? 'Cierre real' : 'Proyección' }}
+              </span>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button *ngIf="!guardadoOk" class="sim-btn sim-btn--primary"
+              [disabled]="guardando" (click)="guardarSimulacion()">
+              <span class="sim-spin" *ngIf="guardando"></span>
+              {{ guardando ? 'Guardando…' : 'Guardar simulación' }}
+            </button>
+            <span *ngIf="guardadoOk" class="sim-badge sim-badge--green" style="padding:6px 12px;font-size:12px">
+              ✓ Guardado
+            </span>
+            <span *ngIf="errorGuardar" class="sim-error-inline">{{ errorGuardar }}</span>
+            <button class="sim-btn" (click)="nuevaSimulacion()">+ Nueva</button>
+          </div>
+        </div>
+
+        <!-- Métricas -->
+        <div class="sim-metrics">
+          <div class="sim-metric">
+            <div class="sim-metric-label">TTV real (c/IGV)</div>
+            <div class="sim-metric-val">S/ {{ fmt(r.resumen.ttv_real) }}</div>
+          </div>
+          <div class="sim-metric">
+            <div class="sim-metric-label">Fact. teórica</div>
+            <div class="sim-metric-val">S/ {{ fmt(r.resumen.ttv_teorico) }}</div>
+          </div>
+          <div class="sim-metric">
+            <div class="sim-metric-label">Costo Trade Spend</div>
+            <div class="sim-metric-val">S/ {{ fmt(r.resumen.ts_soles) }}</div>
+          </div>
+          <div class="sim-metric">
+            <div class="sim-metric-label">% TS total</div>
+            <div class="sim-metric-val" [class.sim-metric-val--ok]="!r.supera_limite" [class.sim-metric-val--bad]="r.supera_limite">
+              {{ fmtPct(r.resumen.ts_pct) }}
+            </div>
+            <div class="sim-bar" style="margin-top:6px">
+              <div class="sim-bar-fill" [class.sim-bar-fill--danger]="r.supera_limite"
+                [style.width.%]="pctFill(r.resumen.ts_pct, r.limite_ts_pct)"></div>
+            </div>
+            <div class="sim-hint" style="margin-top:2px">Límite: {{ fmtPct(r.limite_ts_pct) }}</div>
+          </div>
+          <div class="sim-metric">
+            <div class="sim-metric-label">SKUs exceden límite</div>
+            <div class="sim-metric-val" [class.sim-metric-val--bad]="skusExceden.length>0">
+              {{ skusExceden.length }} / {{ r.resumen.skus_count }}
+            </div>
+          </div>
+        </div>
+
+        <div class="sim-alert sim-alert--warn" *ngIf="r.supera_limite" style="margin-bottom:1rem">
+          El % TS total ({{ fmtPct(r.resumen.ts_pct) }}) supera el límite de {{ fmtPct(r.limite_ts_pct) }} para {{ r.agencia }}.
+        </div>
+
+        <!-- Toggle negocios / SKUs -->
+        <div class="sim-toggle">
+          <button [class.sim-toggle--active]="vistaResultado==='negocios'" (click)="vistaResultado='negocios'">Por negocio</button>
+          <button [class.sim-toggle--active]="vistaResultado==='skus'" (click)="vistaResultado='skus'">Por SKU</button>
+        </div>
+
+        <!-- Por negocio -->
+        <div *ngIf="vistaResultado==='negocios'" class="sim-card">
+          <div class="sim-empty-state" *ngIf="negociosSummary.length===0">
+            <div class="sim-empty-sub">No hay datos de negocios para este período.</div>
+          </div>
+          <div class="sim-table-wrap" *ngIf="negociosSummary.length>0">
+            <table class="sim-table">
+              <thead>
+                <tr>
+                  <th>Negocio</th><th>SKUs</th><th>Paquetes</th>
+                  <th>TTV real</th><th>Fact. teórica</th><th>Costo TS</th>
+                  <th>% TS</th><th>GAP</th><th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let n of negociosSummary">
+                  <td><strong>{{ n.negocio }}</strong></td>
+                  <td class="sim-num">{{ n.skus_count }}</td>
+                  <td class="sim-num">{{ fmt(n.paquetes) }}</td>
+                  <td class="sim-num">S/ {{ fmt(n.ttv_real) }}</td>
+                  <td class="sim-num">S/ {{ fmt(n.ttv_teorico) }}</td>
+                  <td class="sim-num">S/ {{ fmt(n.ts_soles) }}</td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:5px">
+                      <div class="sim-dot" [ngClass]="colorSemaforo(n.semaforo)"></div>
+                      <span [class.sim-pct--ok]="!n.supera_limite" [class.sim-pct--bad]="n.supera_limite">
+                        {{ fmtPct(n.ts_pct) }}
+                      </span>
+                    </div>
+                    <div class="sim-bar" style="margin-top:3px">
+                      <div class="sim-bar-fill" [class.sim-bar-fill--danger]="n.supera_limite"
+                        [style.width.%]="pctFill(n.ts_pct, r.limite_ts_pct)"></div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="sim-badge" [ngClass]="n.gap>=0?'sim-badge--green':'sim-badge--red'">
+                      {{ n.gap>=0?'+':'' }}S/ {{ fmt(n.gap) }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="sim-badge" [ngClass]="n.supera_limite?'sim-badge--red':'sim-badge--green'">
+                      {{ n.supera_limite ? 'Excede' : 'OK' }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Por SKU -->
+        <div *ngIf="vistaResultado==='skus'">
+          <div class="sim-sku-filter">
+            <select class="sim-select" [(ngModel)]="filtroSkuNegocio"
+              (click)="$event.stopPropagation()">
+              <option value="">Todos los negocios</option>
+              <option *ngFor="let n of negociosResultado" [value]="n">{{ n }}</option>
+            </select>
+          </div>
+          <div class="sim-card">
+            <div class="sim-table-wrap">
+              <table class="sim-table sim-table--sku">
+                <thead>
+                  <tr class="sim-thead-grupo">
+                    <th colspan="3"></th>
+                    <th colspan="3" class="sim-grupo--chess">Chess Base</th>
+                    <th colspan="2" class="sim-grupo--precio">Precios históricos</th>
+                    <th colspan="2" class="sim-grupo--calc">Cálculo</th>
+                    <th colspan="2">Resultado</th>
+                  </tr>
+                  <tr>
+                    <th>SKU</th><th>Negocio</th><th>Canal</th>
+                    <th class="sim-col--chess">cant_tt<br><span class="sim-col-sub">paq totales</span></th>
+                    <th class="sim-col--chess">cant_sc<br><span class="sim-col-sub">bonificados</span></th>
+                    <th class="sim-col--chess">fact_cigv<br><span class="sim-col-sub">cobrado</span></th>
+                    <th class="sim-col--precio">ttv paq.<br><span class="sim-col-sub">precio paq.</span></th>
+                    <th class="sim-col--precio">usa<br><span class="sim-col-sub">trad / mayo</span></th>
+                    <th class="sim-col--calc">fact. teórica<br><span class="sim-col-sub">cant × ttv</span></th>
+                    <th class="sim-col--calc">ts_soles<br><span class="sim-col-sub">teórica − real</span></th>
+                    <th>% TS</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let s of skusMostrados" [class.sim-tr--warn]="s.supera_limite">
+                    <td>
+                      <div class="sim-fw">{{ s.sku_gerencial }}</div>
+                      <div class="sim-sub">{{ s.sku | slice:0:30 }}</div>
+                    </td>
+                    <td>{{ s.negocio }}</td>
+                    <td><span class="sim-badge sim-badge--gray" style="font-size:10px">{{ s.canal }}</span></td>
+                    <td class="sim-num sim-col--chess">{{ fmtDec(s.paquetes_total, 2) }}</td>
+                    <td class="sim-num sim-col--chess">
+                      {{ fmtDec(s.paquetes_bonif, 2) }}
+                      <div class="sim-sub">({{ fmtDec(s.pct_bonif, 1) }}%)</div>
+                    </td>
+                    <td class="sim-num sim-col--chess">S/ {{ fmt(s.ttv_real) }}</td>
+                    <td class="sim-num sim-col--precio">S/ {{ fmtDec(s.ttv_paquete, 4) }}</td>
+                    <td class="sim-col--precio sim-hint">{{ usaTtvMayo(s.canal) ? 'ttv_mayo' : 'ttv_trad' }}</td>
+                    <td class="sim-num sim-col--calc">S/ {{ fmt(s.ttv_teorico) }}</td>
+                    <td class="sim-num sim-col--calc">S/ {{ fmt(s.ts_soles) }}</td>
+                    <td>
+                      <span [class.sim-pct--ok]="!s.supera_limite" [class.sim-pct--bad]="s.supera_limite" style="font-weight:500">
+                        {{ fmtPct(s.ts_pct) }}
+                      </span>
+                    </td>
+                    <td>
+                      <span class="sim-badge" [ngClass]="s.supera_limite?'sim-badge--red':'sim-badge--green'">
+                        {{ s.supera_limite ? 'Revisar' : 'OK' }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════════════
+         VISTA: RESUMEN
+    ════════════════════════════════════════════════════════════════════════════ -->
+    <div *ngIf="vistaActual==='resumen'">
+      <div class="sim-vista-header">
+        <div>
+          <div class="sim-vista-title">Resumen por agencia</div>
+          <div class="sim-vista-sub">Cierre real · Chimbote vs Huaraz</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <select class="sim-select" [(ngModel)]="resumenMes" (ngModelChange)="verResumen()">
             <option *ngFor="let m of mesesOpciones" [value]="m.num">{{ m.label }}</option>
           </select>
-        </div>
-        <div class="sim-form-group">
-          <label>Año</label>
-          <select class="sim-select" [(ngModel)]="formAnio">
+          <select class="sim-select" [(ngModel)]="resumenAnio" (ngModelChange)="verResumen()">
             <option *ngFor="let a of aniosOpciones" [value]="a">{{ a }}</option>
           </select>
         </div>
       </div>
-      <div *ngIf="formModo==='proyeccion'" class="sim-form-row" style="max-width:300px">
-        <div class="sim-form-group">
-          <label>Canal</label>
-          <select class="sim-select" [(ngModel)]="formCanal">
-            <option *ngFor="let c of canales" [value]="c">{{ c }}</option>
-          </select>
-        </div>
-      </div>
-      <div *ngIf="errorResultado" class="sim-alert sim-alert-warn">{{ errorResultado }}</div>
-      <div style="display:flex;justify-content:flex-end;margin-top:1rem">
-        <button class="sim-btn sim-btn-primary" [disabled]="!formNombre.trim()||cargandoResultado"
-          (click)="avanzarPaso1()">
-          {{ cargandoResultado ? 'Calculando…' : formModo==='cierre_real' ? 'Calcular' : 'Siguiente →' }}
-        </button>
-      </div>
-    </div>
 
-    <!-- Paso 2: SKUs -->
-    <div *ngIf="pasoActual===2">
-      <div *ngIf="cargandoPolitica" class="sim-loading">Cargando política comercial…</div>
-      <div *ngIf="!cargandoPolitica" class="sim-card" style="margin-bottom:1rem">
-        <div class="sim-section-title" style="display:flex;justify-content:space-between;align-items:center">
-          <span>{{ skusPolitica.length }} SKUs disponibles</span>
-          <div style="display:flex;gap:8px;align-items:center">
-            <select class="sim-select sim-select-sm" [(ngModel)]="filtroNegocio">
-              <option value="">Todos los negocios</option>
-              <option *ngFor="let n of negociosDisponibles" [value]="n">{{ n }}</option>
-            </select>
-            <span style="font-size:12px;color:var(--color-text-secondary)">{{ skusSeleccionados.length }}
-              seleccionados</span>
+      <div class="sim-loading" *ngIf="cargandoResumen">
+        <span class="sim-spin"></span> Cargando resumen…
+      </div>
+
+      <div *ngIf="!cargandoResumen" class="sim-resumen-grid">
+        <ng-container *ngFor="let res of [resumenCHM, resumenHRZ]">
+          <div class="sim-card" *ngIf="res">
+            <div class="sim-resumen-head">
+              <div class="sim-vista-title" style="font-size:15px">{{ res.agencia }}</div>
+              <span class="sim-badge" [ngClass]="res.supera_limite?'sim-badge--red':'sim-badge--green'"
+                style="font-size:12px;padding:5px 12px">
+                {{ fmtPct(res.ts_pct_total) }} TS
+              </span>
+            </div>
+            <div class="sim-resumen-kpis">
+              <div class="sim-kpi">
+                <div class="sim-metric-label">TTV real</div>
+                <div class="sim-metric-val" style="font-size:16px">S/ {{ fmt(res.ttv_real_total) }}</div>
+              </div>
+              <div class="sim-kpi">
+                <div class="sim-metric-label">Costo TS</div>
+                <div class="sim-metric-val" style="font-size:16px">S/ {{ fmt(res.ts_soles_total) }}</div>
+              </div>
+            </div>
+            <div class="sim-alert sim-alert--warn" *ngIf="res.supera_limite" style="margin-bottom:10px;font-size:12px">
+              Excede el límite del {{ fmtPct(res.limite_ts_pct) }}
+            </div>
+            <div class="sim-table-wrap">
+              <table class="sim-table">
+                <thead><tr><th>Negocio</th><th>Pqts</th><th>TTV</th><th>% TS</th><th>GAP</th></tr></thead>
+                <tbody>
+                  <tr *ngFor="let n of res.negocios">
+                    <td>{{ n.negocio }}</td>
+                    <td class="sim-num">{{ fmt(n.paquetes) }}</td>
+                    <td class="sim-num">S/ {{ fmt(n.ttv_real) }}</td>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:5px">
+                        <div class="sim-dot" [ngClass]="colorSemaforo(n.semaforo)"></div>
+                        {{ fmtPct(n.ts_pct) }}
+                      </div>
+                    </td>
+                    <td>
+                      <span class="sim-badge" [ngClass]="n.gap>=0?'sim-badge--green':'sim-badge--red'">
+                        {{ n.gap>=0?'+':'' }}S/ {{ fmt(n.gap) }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </ng-container>
+        <div *ngIf="!resumenCHM && !resumenHRZ" class="sim-card" style="grid-column:1/-1">
+          <div class="sim-empty-state">
+            <div class="sim-empty-title">Sin datos para {{ mesesLabels[resumenMes] }} {{ resumenAnio }}</div>
+            <div class="sim-empty-sub">Asegúrate de tener Chess Base y precios cargados para este mes.</div>
           </div>
         </div>
-        <div class="sim-table-wrap">
-          <table class="sim-table">
-            <thead>
-              <tr>
-                <th style="width:32px"></th>
-                <th>SKU</th>
-                <th>Negocio</th>
-                <th>Precio lista</th>
-                <th>Rango</th>
-                <th>Acción</th>
-                <th>Precio final</th>
-                <th>% TS</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let sku of skusFiltrados" [class.fila-sel]="sku.seleccionado" (click)="toggleSku(sku)"
-                style="cursor:pointer">
-                <td>
-                  <div class="sim-check" [class.checked]="sku.seleccionado">
-                    <span *ngIf="sku.seleccionado">✓</span>
-                  </div>
-                </td>
-                <td>
-                  <span class="sim-fw">{{ sku.sku_gerencial }}</span>
-                  <span class="sim-sub">{{ sku.nombre_completo | slice:0:38 }}</span>
-                </td>
-                <td>{{ sku.negocio }}</td>
-                <td class="sim-num">S/ {{ fmtDec(sku.rangoElegido?.precio_lista??0, 2) }}</td>
-                <td>
-                  <select class="sim-select sim-select-sm" [(ngModel)]="sku.rangoElegido"
-                    (ngModelChange)="onRangoChange(sku,$event?.politica_id)" (click)="$event.stopPropagation()">
-                    <option *ngFor="let r of sku.rangos" [ngValue]="r">{{ r.rango_texto }}</option>
-                  </select>
-                </td>
-                <td><span class="sim-badge" [ngClass]="badgeAccion(sku.rangoElegido?.tipo_accion??'')">
-                    {{ sku.rangoElegido?.accion_texto ?? '—' }}</span></td>
-                <td class="sim-num"><strong>S/ {{ fmtDec(sku.rangoElegido?.precio_final??0, 2) }}</strong></td>
-                <td class="sim-num">
-                  <span *ngIf="sku.rangoElegido?.precio_lista">
-                    {{
-                    fmtPct(((sku.rangoElegido!.precio_lista-sku.rangoElegido!.precio_final)/sku.rangoElegido!.precio_lista)*100)
-                    }}
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div style="display:flex;justify-content:space-between">
-        <button class="sim-btn sim-btn-ghost" (click)="pasoActual=1">← Atrás</button>
-        <button class="sim-btn sim-btn-primary" [disabled]="skusSeleccionados.length===0" (click)="avanzarPaso2()">
-          Siguiente → ({{ skusSeleccionados.length }} SKUs)
-        </button>
       </div>
     </div>
 
-    <!-- Paso 3: Volumen -->
-    <div *ngIf="pasoActual===3">
-      <div class="sim-card" style="margin-bottom:1rem">
-        <div class="sim-section-title">Volumen estimado de paquetes</div>
-        <div class="sim-table-wrap">
-          <table class="sim-table">
-            <thead>
-              <tr>
-                <th>SKU</th>
-                <th>Negocio</th>
-                <th>Acción</th>
-                <th>Precio paq.</th>
-                <th>Precio final</th>
-                <th style="width:120px">Paq. estimados</th>
-                <th>TTV est.</th>
-                <th>% TS est.</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let sku of skusSeleccionados">
-                <td>
-                  <span class="sim-fw">{{ sku.sku_gerencial }}</span>
-                  <span class="sim-sub">{{ sku.rangoElegido?.rango_texto }}</span>
-                </td>
-                <td>{{ sku.negocio }}</td>
-                <td><span class="sim-badge" [ngClass]="badgeAccion(sku.rangoElegido?.tipo_accion??'')">
-                    {{ sku.rangoElegido?.accion_texto }}</span></td>
-                <td class="sim-num">S/ {{ fmtDec(sku.rangoElegido?.precio_lista??0, 2) }}</td>
-                <td class="sim-num"><strong>S/ {{ fmtDec(sku.rangoElegido?.precio_final??0, 2) }}</strong></td>
-                <td>
-                  <input type="number" min="0" class="sim-input sim-input-num" [(ngModel)]="sku.paqEstimados"
-                    (click)="$event.stopPropagation()">
-                </td>
-                <td class="sim-num">S/ {{ fmtDec((sku.paqEstimados??0)*(sku.rangoElegido?.precio_final??0), 0) }}</td>
-                <td class="sim-num">
-                  <span *ngIf="sku.rangoElegido?.precio_lista">
-                    {{
-                    fmtPct(((sku.rangoElegido!.precio_lista-sku.rangoElegido!.precio_final)/sku.rangoElegido!.precio_lista)*100)
-                    }}
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div *ngIf="errorResultado" class="sim-alert sim-alert-warn">{{ errorResultado }}</div>
-      <div style="display:flex;justify-content:space-between">
-        <button class="sim-btn sim-btn-ghost" (click)="pasoActual=2">← Atrás</button>
-        <button class="sim-btn sim-btn-primary" [disabled]="cargandoResultado" (click)="calcularProyeccion()">
-          {{ cargandoResultado ? 'Calculando…' : 'Calcular proyección' }}
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ════════════ RESULTADO ════════════ -->
-  <div *ngIf="vistaActual==='resultado'">
-
-    <div *ngIf="!resultado" class="sim-empty">
-      <div class="sim-empty-title">Sin resultado activo</div>
-      <div class="sim-empty-sub">Crea una nueva simulación para ver el resultado</div>
-      <button class="sim-btn sim-btn-primary" style="margin-top:12px" (click)="nuevaSimulacion()">+ Nueva
-        simulación</button>
-    </div>
-
-    <ng-container *ngIf="resultado as r">
-      <div class="sim-page-header">
+    <!-- ════════════════════════════════════════════════════════════════════════
+         VISTA: CHESS HISTORIAL
+    ════════════════════════════════════════════════════════════════════════════ -->
+    <div *ngIf="vistaActual==='chess'">
+      <div class="sim-vista-header">
         <div>
-          <div class="sim-page-title">{{ r.nombre ?? 'Resultado' }}</div>
-          <div class="sim-page-sub" style="display:flex;align-items:center;gap:6px">
-            {{ r.agencia }} · {{ mesesLabels[r.mes] }} {{ r.anio }}
-            <span class="sim-badge" [ngClass]="r.modo==='cierre_real'?'badge-blue':'badge-boni'">
-              {{ r.modo==='cierre_real' ? 'Cierre real' : 'Proyección' }}
-            </span>
-          </div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <!-- Botón guardar -->
-          <button *ngIf="!guardadoOk" class="sim-btn sim-btn-primary" [disabled]="guardando"
-            (click)="guardarSimulacion()">
-            {{ guardando ? 'Guardando…' : 'Guardar simulación' }}
-          </button>
-          <span *ngIf="guardadoOk" class="sim-badge badge-pos" style="padding:6px 12px;font-size:12px">
-            Guardado
-          </span>
-          <span *ngIf="errorGuardar" style="font-size:12px;color:#A32D2D">{{ errorGuardar }}</span>
-          <button class="sim-btn sim-btn-ghost" (click)="nuevaSimulacion()">+ Nueva</button>
+          <div class="sim-vista-title">Chess Base cargado</div>
+          <div class="sim-vista-sub">Historial de ventas sincronizadas desde OneDrive</div>
         </div>
       </div>
-
-      <!-- Métricas -->
-      <div class="sim-metrics">
-        <div class="sim-metric">
-          <div class="sim-metric-label">TTV real (c/IGV)</div>
-          <div class="sim-metric-val">S/ {{ fmt(r.resumen.ttv_real) }}</div>
-        </div>
-        <div class="sim-metric">
-          <div class="sim-metric-label">Fact. teórica</div>
-          <div class="sim-metric-val">S/ {{ fmt(r.resumen.ttv_teorico) }}</div>
-        </div>
-        <div class="sim-metric">
-          <div class="sim-metric-label">Costo Trade Spend</div>
-          <div class="sim-metric-val">S/ {{ fmt(r.resumen.ts_soles) }}</div>
-        </div>
-        <div class="sim-metric">
-          <div class="sim-metric-label">% TS total</div>
-          <div class="sim-metric-val" [class.val-ok]="!r.supera_limite" [class.val-bad]="r.supera_limite">
-            {{ fmtPct(r.resumen.ts_pct) }}
-          </div>
-          <div class="sim-bar" style="margin-top:6px">
-            <div class="sim-bar-fill" [class.bar-danger]="r.supera_limite"
-              [style.width.%]="pctFill(r.resumen.ts_pct, r.limite_ts_pct)"></div>
-          </div>
-          <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:2px">
-            Límite: {{ fmtPct(r.limite_ts_pct) }}
-          </div>
-        </div>
-        <div class="sim-metric">
-          <div class="sim-metric-label">SKUs exceden límite</div>
-          <div class="sim-metric-val" [class.val-bad]="skusExceden.length>0">
-            {{ skusExceden.length }} / {{ r.resumen.skus_count }}
-          </div>
-        </div>
+      <div class="sim-loading" *ngIf="cargandoChess">
+        <span class="sim-spin"></span> Cargando historial…
       </div>
-
-      <div *ngIf="r.supera_limite" class="sim-alert sim-alert-warn" style="margin-bottom:1rem">
-        El % TS total ({{ fmtPct(r.resumen.ts_pct) }}) supera el límite de {{ fmtPct(r.limite_ts_pct) }} para {{
-        r.agencia }}.
-      </div>
-
-      <!-- Toggle -->
-      <div class="sim-toggle">
-        <button [class.active]="vistaResultado==='negocios'" (click)="vistaResultado='negocios'">Por negocio</button>
-        <button [class.active]="vistaResultado==='skus'" (click)="vistaResultado='skus'">Por SKU</button>
-      </div>
-
-      <!-- Por negocio -->
-      <div *ngIf="vistaResultado==='negocios'" class="sim-card">
-        <div *ngIf="negociosSummary.length==0 " class="sim-empty" style="padding:1.5rem">
-          <div class="sim-empty-sub">No hay datos de negocios para este periodo.</div>
+      <div *ngIf="!cargandoChess" class="sim-card">
+        <div class="sim-empty-state" *ngIf="chessHistorial.length===0">
+          <div class="sim-empty-title">No hay datos sincronizados</div>
+          <div class="sim-empty-sub">Ve a Carga de Archivos CBC y sincroniza el Chess Base desde OneDrive.</div>
         </div>
-        <div *ngIf="negociosSummary.length>0" class="sim-table-wrap">
+        <div class="sim-table-wrap" *ngIf="chessHistorial.length>0">
           <table class="sim-table">
             <thead>
               <tr>
-                <th>Negocio</th>
-                <th>SKUs</th>
-                <th>Paquetes</th>
-                <th>TTV real</th>
-                <th>Fact. teórica</th>
-                <th>Costo TS</th>
-                <th>% TS</th>
-                <th>GAP</th>
-                <th>Estado</th>
+                <th>Agencia</th><th>Período</th><th>Filas</th>
+                <th>Paquetes totales</th><th>TTV total (c/IGV)</th>
+                <th>Negocios</th><th>Último sync</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let n of negociosSummary">
-                <td><strong>{{ n.negocio }}</strong></td>
-                <td class="sim-num">{{ n.skus_count }}</td>
-                <td class="sim-num">{{ fmt(n.paquetes) }}</td>
-                <td class="sim-num">S/ {{ fmt(n.ttv_real) }}</td>
-                <td class="sim-num">S/ {{ fmt(n.ttv_teorico) }}</td>
-                <td class="sim-num">S/ {{ fmt(n.ts_soles) }}</td>
-                <td>
-                  <div style="display:flex;align-items:center;gap:5px">
-                    <div class="sim-dot" [ngClass]="colorSemaforo(n.semaforo)"></div>
-                    <span [class.sim-pct-ok]="!n.supera_limite" [class.sim-pct-bad]="n.supera_limite">
-                      {{ fmtPct(n.ts_pct) }}
-                    </span>
-                  </div>
-                  <div class="sim-bar" style="margin-top:3px">
-                    <div class="sim-bar-fill" [class.bar-danger]="n.supera_limite"
-                      [style.width.%]="pctFill(n.ts_pct, r.limite_ts_pct)"></div>
-                  </div>
-                </td>
-                <td>
-                  <span class="sim-badge" [ngClass]="n.gap>=0?'badge-pos':'badge-neg'">
-                    {{ n.gap>=0?'+':'' }}S/ {{ fmt(n.gap) }}
-                  </span>
-                </td>
-                <td>
-                  <span class="sim-badge" [ngClass]="n.supera_limite?'badge-neg':'badge-pos'">
-                    {{ n.supera_limite?'Excede':'OK' }}
-                  </span>
-                </td>
+              <tr *ngFor="let c of chessHistorial">
+                <td><strong>{{ c.agencia }}</strong></td>
+                <td>{{ mesesLabels[c.mes] }} {{ c.anio }}</td>
+                <td class="sim-num">{{ fmt(c.total_filas) }}</td>
+                <td class="sim-num">{{ fmt(c.paquetes_total) }}</td>
+                <td class="sim-num">S/ {{ fmt(c.ttv_total) }}</td>
+                <td class="sim-num">{{ c.negocios_count }}</td>
+                <td class="sim-hint">{{ fmtFecha(c.ultimo_sync) }}</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
+    </div>
 
-      <!-- Por SKU -->
-      <div *ngIf="vistaResultado==='skus'">
-        <div class="sim-sku-filter-row">
-          <div class="sim-dropdown sim-dropdown-sm" style="width:200px" (click)="$event.stopPropagation()">
-            <div class="sim-dropdown-trigger" [class.open]="ddSkuOpen" (click)="ddSkuOpen=!ddSkuOpen">
-              <span>{{ filtroSkuNegocio || 'Todos los negocios' }}</span>
-              <svg class="sim-dd-arrow" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m6 9 6 6 6-6" />
-              </svg>
-            </div>
-            <div class="sim-dropdown-panel" *ngIf="ddSkuOpen">
-              <div class="sim-dd-option" [class.selected]="filtroSkuNegocio===''"
-                (click)="filtroSkuNegocio=''; ddSkuOpen=false">
-                Todos los negocios
-              </div>
-              <div class="sim-dd-option" *ngFor="let n of negociosResultado" [class.selected]="filtroSkuNegocio===n"
-                (click)="filtroSkuNegocio=n; ddSkuOpen=false">
-                {{ n }}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="sim-card">
-          <div class="sim-table-wrap">
-            <table class="sim-table">
-              <thead>
-                <tr class="thead-grupo">
-                  <th colspan="3"></th>
-                  <th colspan="3" class="group-chess">Chess Base · ventas_chess</th>
-                  <th colspan="2" class="group-precio">CierreTP · precios_historicos</th>
-                  <th colspan="2" class="group-calc">Cálculo</th>
-                  <th colspan="2">Resultado</th>
-                </tr>
-                <tr>
-                  <th>SKU</th>
-                  <th>Negocio</th>
-                  <th>Canal</th>
-                  <th class="col-chess">cant_tt<br><span class="col-sub">paq totales</span></th>
-                  <th class="col-chess">cant_sc<br><span class="col-sub">bonificados</span></th>
-                  <th class="col-chess">fact_cigv<br><span class="col-sub">cobrado c/IGV</span></th>
-                  <th class="col-precio">ttv_trad/mayo<br><span class="col-sub">precio por paq.</span></th>
-                  <th class="col-precio">usa<br><span class="col-sub">trad o mayo</span></th>
-                  <th class="col-calc">fact_teórica<br><span class="col-sub">cant_tt × ttv</span></th>
-                  <th class="col-calc">ts_soles<br><span class="col-sub">teórica − real</span></th>
-                  <th>% TS<br><span class="col-sub">ts / teórica</span></th>
-                  <th>Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let s of skusMostrados" [class.fila-warn]="s.supera_limite">
-                  <td>
-                    <span class="sim-fw">{{ s.sku_gerencial }}</span>
-                    <span class="sim-sub">{{ s.sku | slice:0:30 }}</span>
-                  </td>
-                  <td>{{ s.negocio }}</td>
-                  <td><span class="sim-badge badge-sin" style="font-size:10px">{{ s.canal }}</span></td>
-                  <td class="sim-num col-chess">{{ fmtDec(s.paquetes_total, 2) }}</td>
-                  <td class="sim-num col-chess">
-                    {{ fmtDec(s.paquetes_bonif, 2) }}
-                    <span class="sim-sub">({{ fmtDec(s.pct_bonif,1) }}%)</span>
-                  </td>
-                  <td class="sim-num col-chess">S/ {{ fmt(s.ttv_real) }}</td>
-                  <td class="sim-num col-precio">S/ {{ fmtDec(s.ttv_paquete, 4) }}</td>
-                  <td class="col-precio" style="font-size:11px;color:var(--color-text-secondary)">
-                    {{ usaTtvMayo(s.canal) ? 'ttv_mayo' : 'ttv_trad' }}
-                  </td>
-                  <td class="sim-num col-calc">S/ {{ fmt(s.ttv_teorico) }}</td>
-                  <td class="sim-num col-calc">S/ {{ fmt(s.ts_soles) }}</td>
-                  <td>
-                    <span [class.sim-pct-ok]="!s.supera_limite" [class.sim-pct-bad]="s.supera_limite"
-                      style="font-weight:500">{{ fmtPct(s.ts_pct) }}</span>
-                  </td>
-                  <td>
-                    <span class="sim-badge" [ngClass]="s.supera_limite?'badge-neg':'badge-pos'">
-                      {{ s.supera_limite?'Revisar':'OK' }}
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </ng-container>
   </div>
-
-  <!-- ════════════ RESUMEN ════════════ -->
-  <div *ngIf="vistaActual==='resumen'">
-    <div class="sim-page-header">
-      <div>
-        <div class="sim-page-title">Resumen por agencia</div>
-        <div class="sim-page-sub">Cierre real · comparativa Chimbote vs Huaraz</div>
-      </div>
-      <div style="display:flex;gap:8px">
-        <select class="sim-select" [(ngModel)]="resumenMes" (ngModelChange)="verResumen()">
-          <option *ngFor="let m of mesesOpciones" [value]="m.num">{{ m.label }}</option>
-        </select>
-        <select class="sim-select" [(ngModel)]="resumenAnio" (ngModelChange)="verResumen()">
-          <option *ngFor="let a of aniosOpciones" [value]="a">{{ a }}</option>
-        </select>
-      </div>
-    </div>
-
-    <div *ngIf="cargandoResumen" class="sim-loading">Cargando resumen…</div>
-
-    <div *ngIf="!cargandoResumen" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-      <ng-container *ngFor="let res of [resumenCHM, resumenHRZ]; let i = index">
-        <div class="sim-card" *ngIf="res">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-            <div style="font-size:15px;font-weight:500">{{ res.agencia }}</div>
-            <span class="sim-badge" [ngClass]="res.supera_limite?'badge-neg':'badge-pos'"
-              style="font-size:12px;padding:4px 10px">
-              {{ fmtPct(res.ts_pct_total) }} TS
-            </span>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
-            <div class="sim-mini-metric">
-              <div class="sim-metric-label">TTV real</div>
-              <div class="sim-metric-val" style="font-size:16px">S/ {{ fmt(res.ttv_real_total) }}</div>
-            </div>
-            <div class="sim-mini-metric">
-              <div class="sim-metric-label">Costo TS</div>
-              <div class="sim-metric-val" style="font-size:16px">S/ {{ fmt(res.ts_soles_total) }}</div>
-            </div>
-          </div>
-          <div *ngIf="res.supera_limite" class="sim-alert sim-alert-warn" style="margin-bottom:10px;font-size:12px">
-            Excede el límite del {{ fmtPct(res.limite_ts_pct) }}
-          </div>
-          <div class="sim-table-wrap">
-            <table class="sim-table">
-              <thead>
-                <tr>
-                  <th>Negocio</th>
-                  <th>Pqts</th>
-                  <th>TTV</th>
-                  <th>% TS</th>
-                  <th>GAP</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let n of res.negocios">
-                  <td>{{ n.negocio }}</td>
-                  <td class="sim-num">{{ fmt(n.paquetes) }}</td>
-                  <td class="sim-num">S/ {{ fmt(n.ttv_real) }}</td>
-                  <td>
-                    <div style="display:flex;align-items:center;gap:5px">
-                      <div class="sim-dot" [ngClass]="colorSemaforo(n.semaforo)"></div>
-                      {{ fmtPct(n.ts_pct) }}
-                    </div>
-                  </td>
-                  <td>
-                    <span class="sim-badge" [ngClass]="n.gap>=0?'badge-pos':'badge-neg'">
-                      {{ n.gap>=0?'+':'' }}S/ {{ fmt(n.gap) }}
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </ng-container>
-      <div *ngIf="!resumenCHM && !resumenHRZ" class="sim-card" style="grid-column:1/-1">
-        <div class="sim-empty">
-          <div class="sim-empty-title">Sin datos para {{ mesesLabels[resumenMes] }} {{ resumenAnio }}</div>
-          <div class="sim-empty-sub">Asegúrate de tener Chess Base y precios cargados para este mes.</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ════════════ CHESS HISTORIAL ════════════ -->
-  <div *ngIf="vistaActual==='chess'">
-    <div class="sim-page-header">
-      <div>
-        <div class="sim-page-title">Chess Base cargado</div>
-        <div class="sim-page-sub">Historial de ventas sincronizadas desde OneDrive</div>
-      </div>
-    </div>
-
-    <div *ngIf="cargandoChess" class="sim-loading">Cargando historial…</div>
-
-    <div *ngIf="!cargandoChess" class="sim-card">
-      <div *ngIf="chessHistorial.length===0" class="sim-empty">
-        <div class="sim-empty-title">No hay datos sincronizados</div>
-        <div class="sim-empty-sub">Ve a Carga de Archivos CBC y sincroniza el Chess Base desde OneDrive.</div>
-      </div>
-      <div *ngIf="chessHistorial.length>0" class="sim-table-wrap">
-        <table class="sim-table">
-          <thead>
-            <tr>
-              <th>Agencia</th>
-              <th>Periodo</th>
-              <th>Filas</th>
-              <th>Paquetes totales</th>
-              <th>TTV total (c/IGV)</th>
-              <th>Negocios</th>
-              <th>Último sync</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let c of chessHistorial">
-              <td><strong>{{ c.agencia }}</strong></td>
-              <td>{{ mesesLabels[c.mes] }} {{ c.anio }}</td>
-              <td class="sim-num">{{ fmt(c.total_filas) }}</td>
-              <td class="sim-num">{{ fmt(c.paquetes_total) }}</td>
-              <td class="sim-num">S/ {{ fmt(c.ttv_total) }}</td>
-              <td class="sim-num">{{ c.negocios_count }}</td>
-              <td style="font-size:12px;color:var(--color-text-secondary)">{{ fmtFecha(c.ultimo_sync) }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
 </div>

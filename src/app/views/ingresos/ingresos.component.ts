@@ -19,8 +19,8 @@ const BANCO_KEY: Record<number, string> = {
 };
 const IDS_USD = new Set([54]);
 const VALORES_DEFAULT: Record<number, number> = {
-  49: 567027.27,
-  52: 366400.00
+  51: 567027.27,
+  54: 366400.00
 };
 
 interface Concepto {

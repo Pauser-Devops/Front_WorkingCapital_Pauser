@@ -1050,3 +1050,356 @@
   cursor: pointer; display: flex; align-items: center; gap: 8px;
 }
 .ing-btn-eliminar-confirm:disabled { opacity: 0.6; cursor: not-allowed; }
+/* ══════════════════════════════════════════════════════════
+   AÑADIR al final de egresos.component.css
+   Tabs + Vista Provisiones
+══════════════════════════════════════════════════════════ */
+
+/* ── TABS ──────────────────────────────────────────────── */
+.eg-tabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid var(--warm-200, #ece9e5);
+  padding-bottom: 0;
+}
+
+.eg-tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--warm-400, #a09a92);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  border-radius: 6px 6px 0 0;
+  transition: color .15s, border-color .15s, background .15s;
+  white-space: nowrap;
+}
+
+.eg-tab:hover {
+  color: var(--warm-700, #3d3730);
+  background: var(--warm-100, #f5f4f2);
+}
+
+.eg-tab-activo {
+  color: var(--red-900, #7a1c1c) !important;
+  border-bottom-color: var(--red-900, #7a1c1c) !important;
+  font-weight: 700;
+  background: none !important;
+}
+
+/* ── PROVISIONES WRAP ──────────────────────────────────── */
+.prov-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── SUELDO BASE CARD ──────────────────────────────────── */
+.prov-base-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  background: white;
+  border: 1px solid var(--warm-200, #ece9e5);
+  border-radius: 12px;
+  padding: 18px 24px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+}
+
+.prov-base-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.prov-base-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--warm-900, #1c1917);
+}
+
+.prov-base-hint {
+  font-size: 12px;
+  color: var(--warm-400, #a09a92);
+}
+
+.prov-base-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.prov-base-prefix {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--warm-400, #a09a92);
+}
+
+.prov-base-input {
+  width: 160px;
+  padding: 9px 14px;
+  border: 2px solid var(--warm-200, #ece9e5);
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--warm-900, #1c1917);
+  text-align: right;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+
+.prov-base-input:focus {
+  border-color: var(--red-900, #7a1c1c);
+  box-shadow: 0 0 0 3px rgba(122,28,28,.10);
+}
+
+.prov-base-save {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  background: var(--red-900, #7a1c1c);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .15s, box-shadow .15s;
+  white-space: nowrap;
+}
+
+.prov-base-save:hover {
+  background: var(--red-500, #c43a3a);
+}
+
+.prov-base-save.saved {
+  background: #16a34a;
+}
+
+/* ── GRID DE CARDS ─────────────────────────────────────── */
+.prov-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .prov-grid { grid-template-columns: 1fr; }
+}
+
+/* ── CARD BASE ─────────────────────────────────────────── */
+.prov-card {
+  background: white;
+  border: 1px solid var(--warm-200, #ece9e5);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+}
+
+.prov-card-resumen {
+  border-color: var(--red-900, #7a1c1c);
+  background: linear-gradient(135deg, #fdf7f7 0%, #fff 100%);
+}
+
+/* ── CARD HEADER ───────────────────────────────────────── */
+.prov-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.prov-card-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: white;
+}
+
+.prov-icon-grat  { background: var(--red-900, #7a1c1c); }
+.prov-icon-cts   { background: #1e3a5f; }
+.prov-icon-total { background: #15803d; }
+
+.prov-card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--warm-900, #1c1917);
+}
+
+.prov-card-subtitle {
+  font-size: 11px;
+  color: var(--warm-400, #a09a92);
+  margin-top: 2px;
+}
+
+/* ── DESGLOSE ──────────────────────────────────────────── */
+.prov-desglose {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  background: var(--warm-50, #fafaf9);
+  border-radius: 8px;
+  border: 1px solid var(--warm-200, #ece9e5);
+}
+
+.prov-desglose-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.prov-desglose-label { color: var(--warm-400, #a09a92); }
+
+.prov-desglose-val {
+  font-weight: 600;
+  color: var(--warm-700, #3d3730);
+  font-variant-numeric: tabular-nums;
+}
+
+.prov-desglose-subtotal {
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--warm-200, #ece9e5);
+}
+
+.prov-desglose-subtotal .prov-desglose-label {
+  font-weight: 700;
+  color: var(--warm-700, #3d3730);
+}
+
+.prov-desglose-subtotal .prov-desglose-val {
+  color: var(--warm-900, #1c1917);
+  font-size: 13px;
+}
+
+/* ── MÉTRICAS (mensual / diario) ───────────────────────── */
+.prov-metricas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.prov-metrica {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px;
+  background: var(--warm-100, #f5f4f2);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.prov-metrica-accent {
+  background: var(--red-900, #7a1c1c);
+}
+
+.prov-metrica-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--warm-400, #a09a92);
+}
+
+.prov-metrica-accent .prov-metrica-label { color: rgba(255,255,255,.6); }
+
+.prov-metrica-val {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--warm-900, #1c1917);
+  font-variant-numeric: tabular-nums;
+}
+
+.prov-metrica-accent .prov-metrica-val { color: #fff; }
+
+.prov-metrica-hint {
+  font-size: 10px;
+  color: var(--warm-400, #a09a92);
+}
+
+.prov-metrica-accent .prov-metrica-hint { color: rgba(255,255,255,.5); }
+
+/* ── RESUMEN CARD ──────────────────────────────────────── */
+.prov-resumen-metricas {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.prov-resumen-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--warm-700, #3d3730);
+  padding: 8px 12px;
+  background: var(--warm-50, #fafaf9);
+  border-radius: 7px;
+}
+
+.prov-resumen-row strong {
+  font-variant-numeric: tabular-nums;
+  color: var(--warm-900, #1c1917);
+}
+
+.prov-resumen-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--red-900, #7a1c1c);
+  color: white;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.prov-resumen-total strong {
+  font-size: 15px;
+  color: #fca5a5;
+  font-variant-numeric: tabular-nums;
+}
+
+.prov-resumen-mensual {
+  background: #15803d;
+}
+
+.prov-resumen-mensual strong {
+  color: #bbf7d0;
+}
+
+.prov-uso-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--warm-400, #a09a92);
+  padding: 10px 12px;
+  background: var(--warm-50, #fafaf9);
+  border-radius: 7px;
+  border: 1px solid var(--warm-200, #ece9e5);
+  line-height: 1.5;
+}
+
+.prov-uso-hint svg { flex-shrink: 0; margin-top: 1px; }
+.prov-uso-hint strong { color: var(--warm-700, #3d3730); }

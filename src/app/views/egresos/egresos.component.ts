@@ -13,6 +13,8 @@ const ID_FACTURAS = 8;
 const ID_ENVASES = 9;
 const ID_SALARIOS = 19;
 const ID_MOVILIDADES = 20;
+const ID_PROV_CTS = 21;
+const ID_PROV_GRAT = 22;
 // IMPUESTOS
 const ID_IMP_ITAN = 33;
 const ID_IMP_IGV = 34;
@@ -21,6 +23,11 @@ const ID_IMP_PERCEPCIONES = 36;
 const ID_IMP_ESSALUD = 37;
 const ID_IMP_AFP = 38;
 // IMP TOTAL = 39
+
+const ID_QUALA = 102;
+const ID_HOMEPERU = 101;
+const ID_PAPELERA = 103;
+const ID_SOFTCAR = 104;
 
 // RENTA
 const ID_VENTA_MES_CERRADO = 41;
@@ -40,30 +47,30 @@ const ID_ITAN_RENTA = 54;
 const ID_PERCEPCIONES_RENTA = 55;
 const ID_RTA_2DA = 56;
 const ID_TOTAL_PAGAR = 57;
-
+const ID_TRUJILLO = 100;
 const IDS_CALCULADOS = new Set([
   ID_BACKUS,
+  ID_TRUJILLO,
   ID_TOTAL_VENTAS, ID_TOTAL_COMPRAS,
   ID_IGV_VENTAS, ID_IGV_COMPRAS, ID_IGV_POR_PAGAR,
   ID_RENTA_PRELIQ, ID_IGV_PRELIQ,
-  ID_TOTAL_PAGAR
+  ID_TOTAL_PAGAR,
+  33, 34, 35, 36
 ]);
 
-
+// 21 y 22 eliminados — se calculan dinámicamente por fecha
 const DEFAULTS_FIJOS: Record<number, number> = {
-  15: 66528,          // Corporación San Francisco
-  16: 22176,          // Representaciones San Santiago
-  21: 205000,         // Provisión CTS
-  22: 148966.67,      // Provisión Gratificación
-  27: 130272.01,      // INTERBANK
-  28: 37903.02,       // PICHINCHA
-  29: 31368.71,       // BCP
-  30: 19928.59,       // CONTRATO MUTUO
+  15: 66528,        // Corporación San Francisco
+  16: 22176,        // Representaciones San Santiago
+  27: 130272.01,    // INTERBANK
+  28: 37903.02,     // PICHINCHA
+  29: 31368.71,     // BCP
+  30: 19928.59,     // CONTRATO MUTUO
 };
-
 
 const MOVILIDADES_DEFAULT = 61000;
 const SALARIO_BASE = 820000;
+
 interface Concepto {
   id: number;
   nombre: string;
@@ -106,8 +113,15 @@ export class EgresosComponent implements OnInit {
   filtroHasta = '';
 
   readonly IDS_CALCULADOS = IDS_CALCULADOS;
-
   readonly IDS_SNACKS = new Set([5]);
+
+  // ── Tab activo ─────────────────────────────────────────────
+  tabActivo: 'tabla' | 'provisiones' = 'tabla';
+
+  // ── Sueldo base ────────────────────────────────────────────
+  sueldoBase = 820000;
+  sueldoBaseSaved = false;
+  private sueldoBaseRaw = '820000';
 
   constructor(
     private http: HttpClient,
@@ -115,8 +129,12 @@ export class EgresosComponent implements OnInit {
     private wkRefresh: WkRefreshService
   ) { }
 
-  ngOnInit() { this.cargarConceptos(); }
-  // Después de:  columnas: Columna[] = [];
+  ngOnInit() {
+    this.cargarConceptos();
+    this.cargarSueldoBase();
+  }
+
+  // ── Columnas filtradas ────────────────────────────────────
   get columnasFiltradas(): Columna[] {
     if (!this.filtroDesde && !this.filtroHasta) return this.columnas;
     return this.columnas.filter(col => {
@@ -125,27 +143,95 @@ export class EgresosComponent implements OnInit {
       return ok1 && ok2;
     });
   }
-  // ── Defaults ──────────────────────────────────────────
+
+  // ── Exportar ──────────────────────────────────────────────
   exportar() {
     if (!this.columnasFiltradas.length) return;
     const fechas = this.columnasFiltradas.map(c => c.fecha).join(',');
     window.open(`${API}/exportar/egresos?fechas=${fechas}`, '_blank');
   }
+
+  // ── Parseo seguro sin conversión de timezone ──────────────
+  private parseFechaUTC(fecha: string): Date {
+    const [y, m, d] = fecha.split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, d));
+  }
+
+  // ── Días acumulados para provisiones ─────────────────────
+
+  /**
+   * Días desde el inicio del semestre de Gratificación hasta `fecha` (inclusivo).
+   * Semestre Ene–Jun → inicio 1 Ene
+   * Semestre Jul–Dic → inicio 1 Jul
+   */
+  diasGratAcumulados(fecha: string): number {
+    const [y, m] = fecha.split('-').map(Number); // m es 1-based
+    const inicioMes = m <= 6 ? 1 : 7;            // 1=Ene, 7=Jul
+    const d = this.parseFechaUTC(fecha);
+    const ini = new Date(Date.UTC(y, inicioMes - 1, 1));
+    const diff = Math.round((d.getTime() - ini.getTime()) / 86400000) + 1;
+    return Math.max(diff, 1);
+  }
+
+  /**
+   * Días desde el inicio del semestre de CTS hasta `fecha` (inclusivo).
+   * Semestre Nov–Abr → inicio 1 Nov (año anterior si Ene–Abr)
+   * Semestre May–Oct → inicio 1 May
+   */
+  diasCtsAcumulados(fecha: string): number {
+    const [y, m] = fecha.split('-').map(Number); // m es 1-based
+    let iniYear: number;
+    let iniMes: number; // 1-based
+
+    if (m >= 11) {
+      // Nov o Dic: inicio = 1 Nov de este año
+      iniYear = y;
+      iniMes = 11;
+    } else if (m <= 4) {
+      // Ene–Abr: inicio = 1 Nov del año anterior
+      iniYear = y - 1;
+      iniMes = 11;
+    } else {
+      // May–Oct: inicio = 1 May de este año
+      iniYear = y;
+      iniMes = 5;
+    }
+
+    const d = this.parseFechaUTC(fecha);
+    const ini = new Date(Date.UTC(iniYear, iniMes - 1, 1));
+    const diff = Math.round((d.getTime() - ini.getTime()) / 86400000) + 1;
+    return Math.max(diff, 1);
+  }
+
+  /** Provisión Gratificación acumulada hasta la fecha */
+  provGratAcumulada(fecha: string): number {
+    return Math.round(this.gratDiario * this.diasGratAcumulados(fecha) * 100) / 100;
+  }
+
+  /** Provisión CTS acumulada hasta la fecha */
+  provCtsAcumulada(fecha: string): number {
+    return Math.round(this.ctsDiario * this.diasCtsAcumulados(fecha) * 100) / 100;
+  }
+
+  // ── Defaults ──────────────────────────────────────────────
   aplicarDefaults() {
     if (!this.nuevaFecha) return;
-    const d = new Date(this.nuevaFecha + 'T00:00:00');
-    const dia = d.getDate();
-    const diasMes = dia;
+    const [, , dStr] = this.nuevaFecha.split('-');
+    const dia = parseInt(dStr);
 
-    // Salarios proporcional
-    this.valoresPanel[ID_SALARIOS] = Math.round((SALARIO_BASE / 30) * diasMes * 100) / 100;
-
+    const sueldo = this.sueldoBase || 0;
+    this.valoresPanel[ID_SALARIOS] =
+      Math.round((sueldo / 30) * dia * 100) / 100;
     // Movilidades SOLO si es día 5
     if (dia === 5) {
       this.valoresPanel[ID_MOVILIDADES] = MOVILIDADES_DEFAULT;
     }
 
-    // Fijos
+    // Provisiones calculadas según fecha
+    this.valoresPanel[ID_PROV_CTS] = this.provCtsAcumulada(this.nuevaFecha);
+    this.valoresPanel[ID_PROV_GRAT] = this.provGratAcumulada(this.nuevaFecha);
+
+    // Fijos (21 y 22 ya no están aquí)
     for (const [id, valor] of Object.entries(DEFAULTS_FIJOS)) {
       const numId = parseInt(id);
       if (this.valoresPanel[numId] == null) {
@@ -154,12 +240,20 @@ export class EgresosComponent implements OnInit {
     }
   }
 
-  // ── Cálculos automáticos ──────────────────────────────
+  // ── Cálculos automáticos ──────────────────────────────────
 
   recalcularBackus() {
     const facturas = this.valoresPanel[ID_FACTURAS] ?? 0;
     const envases = this.valoresPanel[ID_ENVASES] ?? 0;
     this.valoresPanel[ID_BACKUS] = Math.round((facturas + envases) * 100) / 100;
+  }
+
+  recalcularTrujillo() {
+    const quala = this.valoresPanel[ID_QUALA] ?? 0;
+    const homePeru = this.valoresPanel[ID_HOMEPERU] ?? 0;
+    const papelera = this.valoresPanel[ID_PAPELERA] ?? 0;
+    const softcar = this.valoresPanel[ID_SOFTCAR] ?? 0;
+    this.valoresPanel[ID_TRUJILLO] = Math.round((quala + homePeru + papelera + softcar) * 100) / 100;
   }
 
   recalcularRenta() {
@@ -174,23 +268,15 @@ export class EgresosComponent implements OnInit {
     const percepciones = v(ID_PERCEPCIONES_RENTA);
     const rta2da = v(ID_RTA_2DA);
 
-    // Totales
     const totalVentas = ventaCerrado + ventaCurso;
     const totalCompras = comprasCerrado + comprasCurso;
 
-    // IGV
     const igvVentas = totalVentas * 0.18;
     const igvCompras = totalCompras * 0.18;
     const igvPorPagar = igvVentas - igvCompras;
 
-    // Renta
-    const renta3ra = 0.015;  // solo el factor, no se calcula
     const rentaPreliq = (totalVentas * 0.015) - credRta;
-
-    // IGV Preliq = igual a IGV por Pagar
     const igvPreliq = igvPorPagar;
-
-    // Total a Pagar
     const totalPagar = igvPreliq + rentaPreliq + itan + percepciones + rta2da;
 
     const r = (n: number) => Math.round(n * 100) / 100;
@@ -199,12 +285,19 @@ export class EgresosComponent implements OnInit {
     this.valoresPanel[ID_IGV_VENTAS] = r(igvVentas);
     this.valoresPanel[ID_IGV_COMPRAS] = r(igvCompras);
     this.valoresPanel[ID_IGV_POR_PAGAR] = r(igvPorPagar);
-    this.valoresPanel[ID_RENTA_3RA] = renta3ra;
+    this.valoresPanel[ID_RENTA_3RA] = 0.015;
     this.valoresPanel[ID_RENTA_PRELIQ] = r(rentaPreliq);
     this.valoresPanel[ID_IGV_PRELIQ] = r(igvPreliq);
     this.valoresPanel[ID_TOTAL_PAGAR] = r(totalPagar);
+
+    // Autocompletar sección IMPUESTOS desde RENTA
+    this.valoresPanel[34] = r(igvPorPagar);
+    this.valoresPanel[33] = r(itan);
+    this.valoresPanel[35] = r(rentaPreliq + rta2da);
+    this.valoresPanel[36] = r(percepciones);
   }
-  // ── Carga ─────────────────────────────────────────────
+
+  // ── Carga ─────────────────────────────────────────────────
 
   cargarConceptos() {
     this.cargando = true;
@@ -227,7 +320,6 @@ export class EgresosComponent implements OnInit {
           this.columnas = Array.from(fechasSet).sort().map(f => ({
             fecha: f, label: this.formatFechaCorta(f)
           }));
-
           this.datos = {};
           for (const d of r.datos) {
             if (!this.datos[d.concepto_id]) this.datos[d.concepto_id] = {};
@@ -258,17 +350,21 @@ export class EgresosComponent implements OnInit {
       next: r => {
         this.cargandoFecha = false;
         if (r.estado === 'OK' && r.fecha_existente) {
+          // Fecha existente: cargar valores guardados
           this.fechaExistente = true;
           for (const d of r.datos) this.valoresPanel[d.concepto_id] = d.valor;
           this.recalcularBackus();
+          this.recalcularTrujillo();
           this.recalcularRenta();
         } else {
           this.aplicarDefaults();
+          this.recalcularProvisiones();
         }
       },
       error: () => { this.cargandoFecha = false; }
     });
   }
+
   setValorPanel(concepto_id: number, val: string) {
     const clean = val.replace(/[^0-9.]/g, '');
     const num = clean === '' ? null : parseFloat(clean);
@@ -277,7 +373,9 @@ export class EgresosComponent implements OnInit {
     if (concepto_id === ID_FACTURAS || concepto_id === ID_ENVASES) {
       this.recalcularBackus();
     }
-
+    if (concepto_id === ID_QUALA || concepto_id === ID_HOMEPERU || concepto_id === ID_PAPELERA || concepto_id === ID_SOFTCAR) {
+      this.recalcularTrujillo();
+    }
     const RENTA_INPUTS = [
       ID_VENTA_MES_CERRADO, ID_VENTA_MES_CURSO,
       ID_COMPRAS_MES_CERRADO, ID_COMPRAS_MES_CURSO,
@@ -287,6 +385,7 @@ export class EgresosComponent implements OnInit {
       this.recalcularRenta();
     }
   }
+
   onInputFocus(e: FocusEvent, concepto_id: number) {
     this.editandoPanelId = concepto_id;
     const v = this.valoresPanel[concepto_id];
@@ -319,7 +418,6 @@ export class EgresosComponent implements OnInit {
     if (!this.nuevaFecha) return;
     this.guardandoFecha = true;
 
-    // Recalcular todo antes de guardar
     this.recalcularRenta();
     this.recalcularBackus();
 
@@ -348,25 +446,22 @@ export class EgresosComponent implements OnInit {
     });
   }
 
-  // ── Tabla ──────────────────────────────────────────────
+  // ── Tabla ─────────────────────────────────────────────────
 
   getValor(concepto_id: number, fecha: string): number | null {
     return this.datos[concepto_id]?.[fecha] ?? null;
   }
 
   getTotal(concepto: Concepto, fecha: string): number {
-    // Para totales con valor guardado en BD, úsalo directo
     const valorGuardado = this.getValor(concepto.id, fecha);
     if (valorGuardado !== null) return valorGuardado;
 
-    // Para totales sin valor en BD, suma items hacia atrás
-    // pero para en el primer total anterior (no solo en sección)
     const idx = this.conceptos.indexOf(concepto);
     let suma = 0;
     for (let i = idx - 1; i >= 0; i--) {
       const c = this.conceptos[i];
       if (c.tipo_fila === 'seccion') break;
-      if (c.tipo_fila === 'total') break; // ← CLAVE: para en el total anterior
+      if (c.tipo_fila === 'total') break;
       if (c.tipo_fila === 'item') suma += this.getValor(c.id, fecha) || 0;
     }
     return suma;
@@ -378,23 +473,25 @@ export class EgresosComponent implements OnInit {
     for (let i = idx - 1; i >= 0; i--) {
       const c = this.conceptos[i];
       if (c.tipo_fila === 'seccion') break;
-      if (c.tipo_fila === 'total') break; // ← mismo fix
+      if (c.tipo_fila === 'total') break;
       if (c.tipo_fila === 'item') suma += this.valoresPanel[c.id] || 0;
     }
     return suma;
   }
+
   getTotalPagar(fecha: string): number {
     const v = (id: number) => this.getValor(id, fecha) || 0;
     return v(ID_IGV_PRELIQ) + v(ID_RENTA_PRELIQ) + v(ID_ITAN_RENTA) +
       v(ID_PERCEPCIONES_RENTA) + v(ID_RTA_2DA);
   }
+
   esSeccion(c: Concepto) { return c.tipo_fila === 'seccion'; }
   esTotal(c: Concepto) { return c.tipo_fila === 'total'; }
   esItem(c: Concepto) { return c.tipo_fila === 'item'; }
   esSubitem(c: Concepto) { return c.tipo_fila === 'subitem'; }
   esCalculado(c: Concepto) { return IDS_CALCULADOS.has(c.id); }
 
-  // ── Edición inline ────────────────────────────────────
+  // ── Edición inline ────────────────────────────────────────
 
   iniciarEdicion(concepto_id: number, fecha: string) {
     if (this.editandoCelda) this.confirmarEdicion();
@@ -447,12 +544,12 @@ export class EgresosComponent implements OnInit {
       this.editandoCelda?.fecha === fecha;
   }
 
-  // ── Utils ──────────────────────────────────────────────
+  // ── Utils ─────────────────────────────────────────────────
 
   formatFechaCorta(fecha: string): string {
     const m = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-    const d = new Date(fecha + 'T00:00:00');
-    return `${String(d.getDate()).padStart(2, '0')} ${m[d.getMonth()]}`;
+    const [, mo, d] = fecha.split('-').map(Number);
+    return `${String(d).padStart(2, '0')} ${m[mo - 1]}`;
   }
 
   fmt(n: number | null): string {
@@ -490,6 +587,7 @@ export class EgresosComponent implements OnInit {
     };
   }
 
+  // ── Modal eliminar ────────────────────────────────────────
 
   mostrarModalEliminar = false;
   fechaAEliminar = '';
@@ -519,5 +617,111 @@ export class EgresosComponent implements OnInit {
       },
       error: () => { this.eliminando = false; }
     });
+  }
+
+  // ── Sueldo base (BD) ──────────────────────────────────────
+
+  cargarSueldoBase() {
+    this.http.get<any>(`${API}/parametros/sueldo_base`).subscribe({
+      next: r => {
+        if (r.estado === 'OK' && r.valor !== null) {
+          const val = parseFloat(r.valor);
+          if (!isNaN(val) && val > 0) this.sueldoBase = val;
+        }
+      },
+      error: () => { /* falla silenciosa, usa el valor por defecto 820000 */ }
+    });
+  }
+
+  fmtProvBase(n: number): string {
+    return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  onProvBaseFocus(e: FocusEvent) {
+    const input = e.target as HTMLInputElement;
+    input.value = this.sueldoBase.toString();
+    setTimeout(() => input.select(), 0);
+  }
+
+  onProvBaseBlur(e: FocusEvent) {
+    const input = e.target as HTMLInputElement;
+    const val = parseFloat(input.value.replace(/,/g, ''));
+    if (!isNaN(val) && val > 0) this.sueldoBase = val;
+    input.value = this.fmtProvBase(this.sueldoBase);
+    this.sueldoBaseSaved = false;
+    this.recalcularProvisiones();
+  }
+
+  onProvBaseInput(e: Event) {
+    this.sueldoBaseRaw = (e.target as HTMLInputElement).value;
+    this.sueldoBaseSaved = false;
+  }
+
+  guardarSueldoBase() {
+    const val = parseFloat(this.sueldoBaseRaw.replace(/,/g, ''));
+    if (!isNaN(val) && val > 0) this.sueldoBase = val;
+
+    this.http.post<any>(`${API}/parametros/sueldo_base`, { valor: this.sueldoBase }).subscribe({
+      next: r => {
+        if (r.estado === 'OK') {
+          this.sueldoBaseSaved = true;
+          setTimeout(() => this.sueldoBaseSaved = false, 2500);
+        }
+      },
+      error: () => { /* falla silenciosa */ }
+    });
+  }
+
+  // ── Cálculos Gratificación ────────────────────────────────
+
+  get gratEssalud(): number {
+    return Math.round(this.sueldoBase * 0.09 * 100) / 100;
+  }
+
+  get gratSemestral(): number {
+    return Math.round((this.sueldoBase + this.gratEssalud) * 100) / 100;
+  }
+
+  get gratMensual(): number {
+    return Math.round((this.gratSemestral / 6) * 100) / 100;
+  }
+
+  get gratDiario(): number {
+    return Math.round((this.gratMensual / 30) * 100) / 100;
+  }
+
+  // ── Cálculos CTS ─────────────────────────────────────────
+
+  get ctsSemestral(): number {
+    return Math.round((this.sueldoBase / 2) * 100) / 100;
+  }
+
+  get ctsMensual(): number {
+    return Math.round((this.ctsSemestral / 6) * 100) / 100;
+  }
+
+  get ctsDiario(): number {
+    return Math.round((this.ctsMensual / 30) * 100) / 100;
+  }
+
+  // ── Totales combinados ────────────────────────────────────
+
+  get totalDiario(): number {
+    return Math.round((this.gratDiario + this.ctsDiario) * 100) / 100;
+  }
+
+  get totalMensual(): number {
+    return Math.round((this.gratMensual + this.ctsMensual) * 100) / 100;
+  }
+
+
+  recalcularProvisiones() {
+    if (!this.nuevaFecha) return;
+
+    this.valoresPanel[ID_PROV_CTS] =
+      Math.round(this.ctsDiario * this.diasCtsAcumulados(this.nuevaFecha) * 100) / 100;
+
+    this.valoresPanel[ID_PROV_GRAT] =
+      Math.round(this.gratDiario * this.diasGratAcumulados(this.nuevaFecha) * 100) / 100;
   }
 }
