@@ -81,11 +81,22 @@ export class SidebarComponent {
       abierto: true,
       modulos: [
         { id: 'simuladorTS', label: 'TS - Simulador CBC' ,roles: ['admin', 'gerencia']},
-        { id: 'dashBackus', label: 'Descuentos Backus' ,roles: ['admin', 'gerencia']},
+        { id: 'simuladorOptimoCBC', label: 'Simulador CBC' ,roles: ['admin', 'gerencia']},
         { id: 'cargaTS', label: 'Carga de Archivos CBC' ,roles: ['admin', 'gerencia']},
+         { id: 'dashBackus', label: 'Descuentos Backus' ,roles: ['admin', 'gerencia']},
         { id: 'cargaBackus', label: 'Carga de Archivos Backus' ,roles: ['admin', 'gerencia']},
         { id: 'cargaMondelez', label: 'Carga de Archivos Mondelez' ,roles: ['admin', 'gerencia']},
-        { id: 'simuladorOptimoCBC', label: 'Simulador CBC' ,roles: ['admin', 'gerencia']},
+        
+      ]
+    },
+    {
+      label: 'Inventario',
+      icono: 'bar_chart',
+      abierto: true,
+      modulos: [
+        { id: 'cargaDatosInventario', label: 'Carga de Datos' },
+        { id: 'dashInventario',  label: 'Conciliación Inventario'  }
+
       ]
     },
     {

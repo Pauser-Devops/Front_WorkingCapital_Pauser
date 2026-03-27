@@ -3,252 +3,653 @@
   <!-- ── Cabecera ──────────────────────────────────────────────────────────── -->
   <div class="dbb-header">
     <div>
-      <div class="dbb-title">Simulador Óptimo · Trade Spend CBC</div>
-      <div class="dbb-subtitle">
-        ¿Cuánto más puedo vender sin exceder el límite de TS?
-      </div>
+      <div class="dbb-title">Trade Spend CBC</div>
+      <div class="dbb-subtitle">Simulador óptimo · Historial de precios · Chess Base · Cierre CP</div>
     </div>
-    <button class="dbb-btn" (click)="cargar()" [disabled]="cargando">
-      <span class="dbb-spin" *ngIf="cargando"></span>
-      <span *ngIf="!cargando">↻</span>
+    <button class="dbb-btn" (click)="refrescar()" [disabled]="cargando || cargandoCierre">
+      <span class="dbb-spin" *ngIf="cargando || cargandoCierre"></span>
+      <span *ngIf="!cargando && !cargandoCierre">↻</span>
       Refrescar
     </button>
   </div>
 
-  <!-- ── Barra de filtros ───────────────────────────────────────────────────── -->
-  <div class="dbb-filterbar">
-
-    <div class="dbb-filter-group">
-      <span class="dbb-filter-label">Agencia</span>
-      <select class="dbb-select" [(ngModel)]="formAgencia" style="min-width:130px">
-        <option value="CHM">Chimbote</option>
-        <option value="HRZ">Huaraz</option>
-      </select>
-    </div>
-
-    <div class="dbb-filter-divider"></div>
-
-    <div class="dbb-filter-group">
-      <span class="dbb-filter-label">Mes</span>
-      <select class="dbb-select" [(ngModel)]="formMes" style="min-width:110px">
-        <option *ngFor="let m of mesesOpciones" [value]="m.num">{{ m.label }}</option>
-      </select>
-    </div>
-
-    <div class="dbb-filter-group">
-      <span class="dbb-filter-label">Año</span>
-      <select class="dbb-select" [(ngModel)]="formAnio" style="min-width:80px">
-        <option *ngFor="let a of aniosOpciones" [value]="a">{{ a }}</option>
-      </select>
-    </div>
-
-    <div class="dbb-filter-divider"></div>
-
-    <div class="dbb-filter-group">
-      <span class="dbb-filter-label">Negocio</span>
-      <select class="dbb-select" [(ngModel)]="formNegocio" style="min-width:130px">
-        <option value="">Todos</option>
-        <option *ngFor="let n of negociosDisponibles" [value]="n">{{ n }}</option>
-      </select>
-    </div>
-
-    <div class="dbb-filter-actions">
-      <button class="dbb-btn dbb-btn--primary" (click)="cargar()" [disabled]="cargando">
-        Calcular
-      </button>
-    </div>
-
+  <!-- ── Tabs ──────────────────────────────────────────────────────────────── -->
+  <div class="sop-tabs">
+    <button class="sop-tab" [class.active]="tabActual==='simulador'" (click)="cambiarTab('simulador')">
+      Simulador
+    </button>
+    <button class="sop-tab" [class.active]="tabActual==='cierre'" (click)="cambiarTab('cierre')">
+      Cierre CP
+    </button>
+    <button class="sop-tab" [class.active]="tabActual==='precios'" (click)="cambiarTab('precios')">
+      Precios cargados
+    </button>
+    <button class="sop-tab" [class.active]="tabActual==='chess'" (click)="cambiarTab('chess')">
+      Chess Base
+    </button>
   </div>
 
-  <!-- ── Contenido ─────────────────────────────────────────────────────────── -->
-  <div class="dbb-content">
-
-    <div class="dbb-loading-full" *ngIf="cargando">
-      <span class="dbb-spin dbb-spin--lg"></span>
-      <span>Calculando margen disponible…</span>
+  <!-- ══════════════════════════════════════════════════════
+       TAB 1: SIMULADOR ÓPTIMO (sin cambios)
+  ══════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="tabActual==='simulador'">
+    <div class="dbb-filterbar">
+      <div class="dbb-filter-group">
+        <span class="dbb-filter-label">Agencia</span>
+        <select class="dbb-select" [(ngModel)]="formAgencia" style="min-width:130px">
+          <option value="CHM">Chimbote</option>
+          <option value="HRZ">Huaraz</option>
+        </select>
+      </div>
+      <div class="dbb-filter-divider"></div>
+      <div class="dbb-filter-group">
+        <span class="dbb-filter-label">Mes</span>
+        <select class="dbb-select" [(ngModel)]="formMes" style="min-width:110px">
+          <option *ngFor="let m of mesesOpciones" [value]="m.num">{{ m.label }}</option>
+        </select>
+      </div>
+      <div class="dbb-filter-group">
+        <span class="dbb-filter-label">Año</span>
+        <select class="dbb-select" [(ngModel)]="formAnio" style="min-width:80px">
+          <option *ngFor="let a of aniosOpciones" [value]="a">{{ a }}</option>
+        </select>
+      </div>
+      <div class="dbb-filter-divider"></div>
+      <div class="dbb-filter-group">
+        <span class="dbb-filter-label">Negocio</span>
+        <select class="dbb-select" [(ngModel)]="formNegocio" style="min-width:130px">
+          <option value="">Todos</option>
+          <option *ngFor="let n of negociosDisponibles" [value]="n">{{ n }}</option>
+        </select>
+      </div>
+      <div class="dbb-filter-actions">
+        <button class="dbb-btn dbb-btn--primary" (click)="cargar()" [disabled]="cargando">Calcular</button>
+      </div>
     </div>
 
-    <div class="dbb-alert" *ngIf="error && !cargando">⚠ {{ error }}</div>
-
-    <ng-container *ngIf="data && !cargando">
-
-      <!-- ── KPIs estado actual ─────────────────────────────────────────────── -->
-      <div class="dbb-kpi-row" style="grid-template-columns: 1fr 1fr 1fr 1fr 1fr">
-
-        <div class="dbb-kpi" [class.dbb-kpi--total]="!data.estado_actual.ya_excede_limite"
-          [class.sop-kpi--danger]="data.estado_actual.ya_excede_limite">
-          <div class="dbb-kpi-label">% TS actual</div>
-          <div class="dbb-kpi-val" [class.sop-val-ok]="!data.estado_actual.ya_excede_limite"
-            [class.sop-val-bad]="data.estado_actual.ya_excede_limite">
-            {{ fmtPct(data.estado_actual.ts_pct) }}
-          </div>
-          <div class="dbb-kpi-bar-wrap">
-            <div class="dbb-kpi-bar" [class.dbb-kpi-bar--pauser]="!data.estado_actual.ya_excede_limite"
-              [class.sop-bar-danger]="data.estado_actual.ya_excede_limite"
-              [style.width.%]="barPct(data.estado_actual.ts_pct, data.limite_ts_pct)"></div>
-          </div>
-          <div class="dbb-kpi-sub">Límite: {{ fmtPct(data.limite_ts_pct) }}</div>
-        </div>
-
-        <div class="dbb-kpi">
-          <div class="dbb-kpi-label">Fact. teórica actual</div>
-          <div class="dbb-kpi-val dbb-kpi-val--sm">{{ fmtMoney(data.estado_actual.fact_teorica) }}</div>
-          <div class="dbb-kpi-sub">Base de cálculo s/IGV</div>
-        </div>
-
-        <div class="dbb-kpi">
-          <div class="dbb-kpi-label">TS gastado</div>
-          <div class="dbb-kpi-val dbb-kpi-val--sm">{{ fmtMoney(data.estado_actual.ts_soles) }}</div>
-          <div class="dbb-kpi-sub">En soles s/IGV</div>
-        </div>
-
-        <div class="dbb-kpi" [class.sop-kpi--ok]="data.margen_disponible.positivo"
-          [class.sop-kpi--danger]="!data.margen_disponible.positivo">
-          <div class="dbb-kpi-label">Margen disponible</div>
-          <div class="dbb-kpi-val dbb-kpi-val--sm"
-            [class.sop-val-ok]="data.margen_disponible.positivo"
-            [class.sop-val-bad]="!data.margen_disponible.positivo">
-            {{ fmtMoney(data.margen_disponible.margen_soles) }}
-          </div>
-          <div class="dbb-kpi-sub">
-            {{ data.margen_disponible.positivo ? 'Puedes gastar más TS' : 'Ya excediste el límite' }}
-          </div>
-        </div>
-
-        <div class="dbb-kpi">
-          <div class="dbb-kpi-label">TS máximo permitido</div>
-          <div class="dbb-kpi-val dbb-kpi-val--sm">{{ fmtMoney(data.margen_disponible.ts_maximo_soles) }}</div>
-          <div class="dbb-kpi-sub">{{ fmtPct(data.limite_ts_pct) }} × fact. teórica</div>
-        </div>
-
+    <div class="dbb-content">
+      <div class="dbb-loading-full" *ngIf="cargando">
+        <span class="dbb-spin dbb-spin--lg"></span>
+        <span>Calculando margen disponible…</span>
       </div>
+      <div class="dbb-alert" *ngIf="error && !cargando">⚠ {{ error }}</div>
 
-      <!-- ── Alerta si ya excedió ───────────────────────────────────────────── -->
-      <div class="dbb-alert" *ngIf="data.estado_actual.ya_excede_limite" style="margin-bottom:1rem">
-        ⚠ Ya excediste el límite de {{ fmtPct(data.limite_ts_pct) }} TS.
-        No puedes ofrecer más bonificaciones ni descuentos este mes.
-      </div>
+      <ng-container *ngIf="data && !cargando">
+        <div class="dbb-kpi-row" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr">
+          <div class="dbb-kpi" [class.dbb-kpi--total]="!data.estado_actual.ya_excede" [class.sop-kpi--danger]="data.estado_actual.ya_excede">
+            <div class="dbb-kpi-label">% TS actual</div>
+            <div class="dbb-kpi-val" [class.sop-val-ok]="!data.estado_actual.ya_excede" [class.sop-val-bad]="data.estado_actual.ya_excede">
+              {{ fmtPct(data.estado_actual.ts_pct) }}
+            </div>
+            <div class="dbb-kpi-bar-wrap">
+              <div class="dbb-kpi-bar" [class.dbb-kpi-bar--pauser]="!data.estado_actual.ya_excede" [class.sop-bar-danger]="data.estado_actual.ya_excede" [style.width.%]="barPct(data.estado_actual.ts_pct, data.limite_ts_pct)"></div>
+            </div>
+            <div class="dbb-kpi-sub">Límite: {{ fmtPct(data.limite_ts_pct) }}</div>
+          </div>
+          <div class="dbb-kpi">
+            <div class="dbb-kpi-label">Fact. teórica actual</div>
+            <div class="dbb-kpi-val dbb-kpi-val--sm">{{ fmtMoney(data.estado_actual.fact_teorica) }}</div>
+            <div class="dbb-kpi-sub">Base de cálculo s/IGV</div>
+          </div>
+          <div class="dbb-kpi">
+            <div class="dbb-kpi-label">TS gastado</div>
+            <div class="dbb-kpi-val dbb-kpi-val--sm">{{ fmtMoney(data.estado_actual.ts_soles) }}</div>
+            <div class="dbb-kpi-sub">En soles s/IGV</div>
+          </div>
+          <div class="dbb-kpi" [class.sop-kpi--ok]="data.margen_disponible.positivo" [class.sop-kpi--danger]="!data.margen_disponible.positivo">
+            <div class="dbb-kpi-label">Margen disponible</div>
+            <div class="dbb-kpi-val dbb-kpi-val--sm" [class.sop-val-ok]="data.margen_disponible.positivo" [class.sop-val-bad]="!data.margen_disponible.positivo">
+              {{ fmtMoney(data.margen_disponible.margen_soles) }}
+            </div>
+            <div class="dbb-kpi-sub">{{ data.margen_disponible.positivo ? 'Puedes gastar más TS' : 'Ya excediste el límite' }}</div>
+          </div>
+          <div class="dbb-kpi">
+            <div class="dbb-kpi-label">TS máximo permitido</div>
+            <div class="dbb-kpi-val dbb-kpi-val--sm">{{ fmtMoney(data.margen_disponible.ts_maximo_soles) }}</div>
+            <div class="dbb-kpi-sub">{{ fmtPct(data.limite_ts_pct) }} × fact. teórica</div>
+          </div>
+        </div>
 
-      <!-- ── Tabla de SKUs sugeridos ───────────────────────────────────────── -->
-      <div class="dbb-card">
-        <div class="dbb-card-header">
-          <div>
-            <div class="dbb-card-title">SKUs disponibles — ordenados por margen (MC)</div>
-            <div class="dbb-kpi-sub" style="margin-top:3px">
-              {{ data.total_skus }} SKUs · Margen disponible: {{ fmtMoney(data.margen_disponible.margen_soles) }}
+        <div class="dbb-alert" *ngIf="data.estado_actual.ya_excede">
+          ⚠ Ya excediste el límite de {{ fmtPct(data.limite_ts_pct) }} TS. No puedes ofrecer más bonificaciones ni descuentos este mes.
+        </div>
+
+        <div class="dbb-card">
+          <div class="dbb-card-header">
+            <div>
+              <div class="dbb-card-title">SKUs disponibles — ordenados por margen (MC)</div>
+              <div class="dbb-kpi-sub" style="margin-top:3px">{{ data.total_skus }} SKUs · Margen: {{ fmtMoney(data.margen_disponible.margen_soles) }}</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="dbb-filter-label">Filtrar</span>
+              <select class="dbb-select" [(ngModel)]="filtroNegocioTabla" style="min-width:130px">
+                <option value="">Todos</option>
+                <option *ngFor="let n of negociosDisponibles" [value]="n">{{ n }}</option>
+              </select>
             </div>
           </div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <span class="dbb-filter-label">Filtrar negocio</span>
-            <select class="dbb-select" [(ngModel)]="filtroNegocioTabla" style="min-width:130px">
-              <option value="">Todos</option>
-              <option *ngFor="let n of negociosDisponibles" [value]="n">{{ n }}</option>
-            </select>
+          <div class="dbb-table-wrap">
+            <table class="dbb-table">
+              <thead>
+                <tr>
+                  <th>#</th><th>SKU</th><th>Negocio</th>
+                  <th class="sop-th-right">MC/und</th>
+                  <th>Acción</th><th>Rango</th>
+                  <th class="sop-th-right">Precio Trad</th>
+                  <th class="sop-th-right">TS/paq</th>
+                  <th class="sop-th-right">Paq máx Trad</th>
+                  <th class="sop-th-right">TTV pot. Trad</th>
+                  <th class="sop-th-right">Precio Mayo</th>
+                  <th class="sop-th-right">Paq máx Mayo</th>
+                  <th class="sop-th-right">TTV pot. Mayo</th>
+                </tr>
+              </thead>
+              <tbody>
+                <ng-container *ngFor="let sku of skusFiltrados; let i=index">
+                  <tr [class.sop-tr-best]="i<5">
+                    <td style="color:#aaa;font-size:11px">{{ i+1 }}</td>
+                    <td>
+                      <div class="dbb-td-name">{{ sku.sku_gerencial }}</div>
+                      <div style="font-size:10px;color:#aaa">{{ sku.nombre | slice:0:28 }}</div>
+                    </td>
+                    <td><span class="sop-badge sop-badge-neg">{{ sku.negocio||'—' }}</span></td>
+                    <td class="sop-td-right"><span class="sop-mc">S/ {{ fmtNum(sku.mc,2) }}</span></td>
+                    <ng-container *ngIf="getTrad(sku) as trad">
+                      <td><span class="sop-badge" [ngClass]="badgeAccion(trad.tipo_accion)">{{ trad.accion_texto||'—' }}</span></td>
+                      <td style="font-size:11px;color:#888">{{ trad.rango_texto||'—' }}</td>
+                      <td class="sop-td-right">S/ {{ fmtNum(trad.precio_base,2) }}</td>
+                      <td class="sop-td-right" style="color:#dc2626;font-weight:500">{{ trad.ts_por_paquete>0 ? 'S/ '+fmtNum(trad.ts_por_paquete,3) : '—' }}</td>
+                      <td class="sop-td-right">
+                        <span *ngIf="trad.paq_max!==null" class="sop-paq-max">{{ fmtNum(trad.paq_max,0) }}</span>
+                        <span *ngIf="trad.paq_max===null" style="color:#aaa">∞</span>
+                      </td>
+                      <td class="sop-td-right">
+                        <span *ngIf="trad.ttv_potencial!==null" class="sop-ttv">S/ {{ fmtNum(trad.ttv_potencial,0) }}</span>
+                        <span *ngIf="trad.ttv_potencial===null" style="color:#aaa">—</span>
+                      </td>
+                    </ng-container>
+                    <ng-container *ngIf="getMayo(sku) as mayo">
+                      <td class="sop-td-right">S/ {{ fmtNum(mayo.precio_base,2) }}</td>
+                      <td class="sop-td-right">
+                        <span *ngIf="mayo.paq_max!==null" class="sop-paq-max">{{ fmtNum(mayo.paq_max,0) }}</span>
+                        <span *ngIf="mayo.paq_max===null" style="color:#aaa">∞</span>
+                      </td>
+                      <td class="sop-td-right">
+                        <span *ngIf="mayo.ttv_potencial!==null" class="sop-ttv">S/ {{ fmtNum(mayo.ttv_potencial,0) }}</span>
+                        <span *ngIf="mayo.ttv_potencial===null" style="color:#aaa">—</span>
+                      </td>
+                    </ng-container>
+                    <ng-container *ngIf="!getMayo(sku)">
+                      <td class="sop-td-right" style="color:#aaa">—</td>
+                      <td class="sop-td-right" style="color:#aaa">—</td>
+                      <td class="sop-td-right" style="color:#aaa">—</td>
+                    </ng-container>
+                  </tr>
+                </ng-container>
+                <tr *ngIf="skusFiltrados.length===0">
+                  <td colspan="13" class="dbb-empty">Sin SKUs disponibles.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </ng-container>
+
+      <div class="dbb-empty" *ngIf="!data && !cargando && !error">
+        Selecciona agencia y mes, luego presiona <strong>Calcular</strong>.
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ══════════════════════════════════════════════════════
+       TAB 2: CIERRE CP  (replica estructura Excel CP CB / CP HU)
+  ══════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="tabActual==='cierre'">
+
+    <!-- Filtros -->
+    <div class="dbb-filterbar">
+      <div class="dbb-filter-group">
+        <span class="dbb-filter-label">Agencia</span>
+        <select class="dbb-select" [(ngModel)]="cierreAgencia" style="min-width:130px">
+          <option value="CHM">Chimbote</option>
+          <option value="HRZ">Huaraz</option>
+        </select>
+      </div>
+      <div class="dbb-filter-divider"></div>
+      <div class="dbb-filter-group">
+        <span class="dbb-filter-label">Mes</span>
+        <select class="dbb-select" [(ngModel)]="cierreMes" style="min-width:110px">
+          <option *ngFor="let m of mesesOpciones" [value]="m.num">{{ m.label }}</option>
+        </select>
+      </div>
+      <div class="dbb-filter-group">
+        <span class="dbb-filter-label">Año</span>
+        <select class="dbb-select" [(ngModel)]="cierreAnio" style="min-width:80px">
+          <option *ngFor="let a of aniosOpciones" [value]="a">{{ a }}</option>
+        </select>
+      </div>
+      <div class="dbb-filter-divider"></div>
+      <!-- Toggle modo cifras -->
+      <div class="dbb-filter-group">
+        <span class="dbb-filter-label">Cifras</span>
+        <div class="cp-toggle-wrap">
+          <button class="cp-toggle" [class.cp-toggle--on]="modoTTV==='sigv'" (click)="modoTTV='sigv'">S/IGV (motor)</button>
+          <button class="cp-toggle" [class.cp-toggle--on]="modoTTV==='cigv'" (click)="modoTTV='cigv'">C/IGV (Excel)</button>
+        </div>
+      </div>
+      <div class="dbb-filter-divider"></div>
+      <div class="dbb-filter-group">
+        <span class="dbb-filter-label">Negocio</span>
+        <select class="dbb-select" [(ngModel)]="filtroCierreNegocio" style="min-width:130px">
+          <option value="">Todos</option>
+          <option *ngFor="let n of cierreNegociosDisponibles" [value]="n">{{ n }}</option>
+        </select>
+      </div>
+      <div class="dbb-filter-actions">
+        <button class="dbb-btn dbb-btn--primary" (click)="cargarCierre()" [disabled]="cargandoCierre">Calcular</button>
+      </div>
+    </div>
+
+    <div class="dbb-content">
+      <div class="dbb-loading-full" *ngIf="cargandoCierre">
+        <span class="dbb-spin dbb-spin--lg"></span>
+        <span>Cargando cierre de precios…</span>
+      </div>
+      <div class="dbb-alert" *ngIf="errorCierre && !cargandoCierre">⚠ {{ errorCierre }}</div>
+
+      <ng-container *ngIf="cierreRows.length > 0 && !cargandoCierre">
+
+        <!-- KPIs resumen total -->
+        <div class="dbb-kpi-row" style="grid-template-columns:repeat(5,1fr);margin-bottom:1rem" *ngIf="cierreResumen">
+          <div class="dbb-kpi">
+            <div class="dbb-kpi-label">Paquetes TT</div>
+            <div class="dbb-kpi-val dbb-kpi-val--sm">{{ fmtNum(cierreResumen.tt_pqts,0) }}</div>
+            <div class="dbb-kpi-sub">OFF: {{ fmtNum(cierreResumen.off_pqts,0) }} · Mayo: {{ fmtNum(cierreResumen.mayo_pqts,0) }}</div>
+          </div>
+          <div class="dbb-kpi">
+            <div class="dbb-kpi-label">TTV TP {{ modoTTV==='cigv' ? 'c/IGV' : 's/IGV' }}</div>
+            <div class="dbb-kpi-val dbb-kpi-val--sm">
+              {{ modoTTV==='cigv' ? fmtMoney(cierreResumen.excel_ttv_tp) : fmtMoney(cierreResumen.ttv_tp) }}
+            </div>
+            <div class="dbb-kpi-sub">Facturación teórica</div>
+          </div>
+          <div class="dbb-kpi">
+            <div class="dbb-kpi-label">TTV Real {{ modoTTV==='cigv' ? 'c/IGV' : 's/IGV' }}</div>
+            <div class="dbb-kpi-val dbb-kpi-val--sm">
+              {{ modoTTV==='cigv' ? fmtMoney(cierreResumen.excel_ttv_real) : fmtMoney(cierreResumen.ttv_real) }}
+            </div>
+            <div class="dbb-kpi-sub">Facturación real</div>
+          </div>
+          <div class="dbb-kpi"
+            [class.sop-kpi--danger]="semaforoCierre(modoTTV==='cigv' ? cierreResumen.excel_ts_pct : cierreResumen.ts_pct)==='rojo'"
+            [class.dbb-kpi--total]="semaforoCierre(modoTTV==='cigv' ? cierreResumen.excel_ts_pct : cierreResumen.ts_pct)==='verde'">
+            <div class="dbb-kpi-label">TS Soles</div>
+            <div class="dbb-kpi-val dbb-kpi-val--sm"
+              [class.sop-val-bad]="semaforoCierre(modoTTV==='cigv' ? cierreResumen.excel_ts_pct : cierreResumen.ts_pct)==='rojo'"
+              [class.sop-val-ok]="semaforoCierre(modoTTV==='cigv' ? cierreResumen.excel_ts_pct : cierreResumen.ts_pct)==='verde'">
+              {{ modoTTV==='cigv' ? fmtMoney(cierreResumen.excel_ts_soles) : fmtMoney(cierreResumen.ts_soles) }}
+            </div>
+            <div class="dbb-kpi-sub">Límite: {{ fmtPct(limiteTs) }}</div>
+          </div>
+          <div class="dbb-kpi"
+            [class.sop-kpi--danger]="semaforoCierre(modoTTV==='cigv' ? cierreResumen.excel_ts_pct : cierreResumen.ts_pct)==='rojo'"
+            [class.dbb-kpi--total]="semaforoCierre(modoTTV==='cigv' ? cierreResumen.excel_ts_pct : cierreResumen.ts_pct)==='verde'">
+            <div class="dbb-kpi-label">% TS</div>
+            <div class="dbb-kpi-val"
+              [class.sop-val-bad]="semaforoCierre(modoTTV==='cigv' ? cierreResumen.excel_ts_pct : cierreResumen.ts_pct)==='rojo'"
+              [class.sop-val-ok]="semaforoCierre(modoTTV==='cigv' ? cierreResumen.excel_ts_pct : cierreResumen.ts_pct)==='verde'">
+              {{ fmtPct(modoTTV==='cigv' ? cierreResumen.excel_ts_pct : cierreResumen.ts_pct) }}
+            </div>
+            <div class="dbb-kpi-bar-wrap">
+              <div class="dbb-kpi-bar"
+                [class.dbb-kpi-bar--pauser]="semaforoCierre(modoTTV==='cigv' ? cierreResumen.excel_ts_pct : cierreResumen.ts_pct)!=='rojo'"
+                [class.sop-bar-danger]="semaforoCierre(modoTTV==='cigv' ? cierreResumen.excel_ts_pct : cierreResumen.ts_pct)==='rojo'"
+                [style.width.%]="barPct(modoTTV==='cigv' ? cierreResumen.excel_ts_pct : cierreResumen.ts_pct, limiteTs)">
+              </div>
+            </div>
+            <div class="dbb-kpi-sub">{{ modoTTV==='cigv' ? 'Fórmula Excel' : 'Fórmula motor' }}</div>
           </div>
         </div>
 
-        <div class="dbb-table-wrap">
+        <!-- Nota modo -->
+        <div class="cp-modo-nota" *ngIf="modoTTV==='cigv'">
+          📋 Modo Excel: TTV TP = cant_tt × trad_pnd_sigv × 1.18 · TTV Real ≈ fact_sigv × 1.2036 · Igual al Cierre_de_Precios.xlsx
+        </div>
+        <div class="cp-modo-nota cp-modo-nota--motor" *ngIf="modoTTV==='sigv'">
+          ⚙ Modo motor: TTV TP = cant_tt × precio_canal (OFF→trad / Mayo→mayo) · TTV Real = fact_sigv · Sin IGV ni percepción
+        </div>
+
+        <!-- Tabla por negocio (igual que Excel: subtotal por negocio) -->
+        <div *ngFor="let grupo of cierreGrupos">
+          <div class="dbb-card" *ngIf="!filtroCierreNegocio || filtroCierreNegocio===grupo.negocio">
+
+            <!-- Header del negocio con subtotal -->
+            <div class="cp-negocio-header">
+              <span class="cp-negocio-label">{{ grupo.negocio }}</span>
+              <div class="cp-negocio-stats">
+                <span class="cp-stat">{{ fmtNum(grupo.sub.tt_pqts,0) }} paq</span>
+                <span class="cp-stat-sep">·</span>
+                <span class="cp-stat">TTV TP {{ modoTTV==='cigv' ? fmtMoney(grupo.sub.excel_ttv_tp) : fmtMoney(grupo.sub.ttv_tp) }}</span>
+                <span class="cp-stat-sep">·</span>
+                <span class="cp-stat">TS {{ fmtMoney(modoTTV==='cigv' ? grupo.sub.excel_ts_soles : grupo.sub.ts_soles) }}</span>
+                <span class="cp-semaforo"
+                  [class.cp-sem-verde]="semaforoCierre(modoTTV==='cigv' ? grupo.sub.excel_ts_pct : grupo.sub.ts_pct)==='verde'"
+                  [class.cp-sem-amarillo]="semaforoCierre(modoTTV==='cigv' ? grupo.sub.excel_ts_pct : grupo.sub.ts_pct)==='amarillo'"
+                  [class.cp-sem-rojo]="semaforoCierre(modoTTV==='cigv' ? grupo.sub.excel_ts_pct : grupo.sub.ts_pct)==='rojo'">
+                  {{ fmtPct(modoTTV==='cigv' ? grupo.sub.excel_ts_pct : grupo.sub.ts_pct) }}
+                </span>
+              </div>
+            </div>
+
+            <div class="dbb-table-wrap">
+              <table class="dbb-table cp-table">
+                <thead>
+                  <!-- Fila 1: grupos de columnas (como Excel) -->
+                  <tr class="cp-thead-group">
+                    <th colspan="3" class="cp-th-fixed"></th>
+                    <th colspan="1" class="cp-th-fixed cp-th-mc"></th>
+                    <!-- Bloque OFF+TELSELL -->
+                    <th colspan="5" class="cp-th-bloque cp-bloque-off">
+                      {{ cierreAgencia==='CHM' ? 'CHIMBOTE' : 'HUARAZ' }} — OFF + TELSELL
+                    </th>
+                    <!-- Bloque MAYO+SUB -->
+                    <th colspan="5" class="cp-th-bloque cp-bloque-mayo">Mayo + Sub Dist.</th>
+                    <!-- Bloque TT -->
+                    <th colspan="4" class="cp-th-bloque cp-bloque-tt">TT PLAZA</th>
+                    <!-- Resumen -->
+                    <th colspan="2" class="cp-th-bloque cp-bloque-res">Desglose Gap</th>
+                    <th colspan="3" class="cp-th-bloque cp-bloque-ttv">
+                      {{ modoTTV==='cigv' ? 'Totales c/IGV (Excel)' : 'Totales s/IGV (Motor)' }}
+                    </th>
+                    <th colspan="1" class="cp-th-fixed cp-th-mc"></th>
+                  </tr>
+                  <!-- Fila 2: columnas individuales -->
+                  <tr class="cp-thead-cols">
+                    <th class="cp-th-fixed" style="width:82px">CBC</th>
+                    <th class="cp-th-fixed" style="width:52px">Código</th>
+                    <th class="cp-th-fixed" style="min-width:140px;max-width:180px">Descripción</th>
+                    <th class="cp-th-fixed sop-th-right" style="width:56px">MC</th>
+                    <!-- OFF -->
+                    <th class="sop-th-right cp-off" style="width:72px">CFs</th>
+                    <th class="sop-th-right cp-off" style="width:72px">Pqts</th>
+                    <th class="sop-th-right cp-off" style="width:60px">TTV</th>
+                    <th class="sop-th-right cp-off" style="width:80px">Gap</th>
+                    <th class="sop-th-right cp-off" style="width:50px">Peso</th>
+                    <!-- MAYO -->
+                    <th class="sop-th-right cp-mayo" style="width:72px">CFs</th>
+                    <th class="sop-th-right cp-mayo" style="width:72px">Pqts</th>
+                    <th class="sop-th-right cp-mayo" style="width:60px">TTV</th>
+                    <th class="sop-th-right cp-mayo" style="width:80px">Gap</th>
+                    <th class="sop-th-right cp-mayo" style="width:50px">Peso</th>
+                    <!-- TT -->
+                    <th class="sop-th-right cp-tt" style="width:72px">CFs</th>
+                    <th class="sop-th-right cp-tt" style="width:72px">Pqts</th>
+                    <th class="sop-th-right cp-tt" style="width:60px">TTV</th>
+                    <th class="sop-th-right cp-tt" style="width:90px">Gap</th>
+                    <!-- Resumen gap desglose -->
+                    <th class="sop-th-right cp-res" style="width:90px">Por Precio</th>
+                    <th class="sop-th-right cp-res" style="width:80px">Por Canal</th>
+                    <!-- TTV totales -->
+                    <th class="sop-th-right cp-ttv" style="width:90px">TTV TP</th>
+                    <th class="sop-th-right cp-ttv" style="width:90px">TTV Real</th>
+                    <th class="sop-th-right cp-ttv" style="width:80px">% TS</th>
+                    <!-- Flete -->
+                    <th class="sop-th-right cp-th-fixed" style="width:60px">Flete</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let sku of grupo.rows"
+                    [class.cp-tr-excede]="semaforoCierre(modoTTV==='cigv' ? sku.excel_ts_pct : sku.ts_pct)==='rojo'"
+                    [class.cp-tr-warn]="semaforoCierre(modoTTV==='cigv' ? sku.excel_ts_pct : sku.ts_pct)==='amarillo'">
+
+                    <!-- Columnas fijas -->
+                    <td class="cp-td-cod" style="font-size:10px;color:#888">—</td>
+                    <td class="cp-td-cod" style="color:#666;font-weight:500">{{ sku.cod_sku }}</td>
+                    <td>
+                      <div class="cp-sku-name">{{ sku.sku_gerencial }}</div>
+                      <div class="cp-sku-desc">{{ sku.sku | slice:0:30 }}</div>
+                    </td>
+                    <td class="sop-td-right cp-mc-val">{{ fmtNum(sku.mc,4) }}</td>
+
+                    <!-- OFF -->
+                    <td class="sop-td-right cp-off-cell">{{ sku.off_pqts > 0 ? fmtNum(sku.off_cfs,3) : '—' }}</td>
+                    <td class="sop-td-right cp-off-cell">{{ sku.off_pqts > 0 ? fmtNum(sku.off_pqts,4) : '—' }}</td>
+                    <td class="sop-td-right cp-off-cell">{{ sku.off_pqts > 0 ? fmtNum(sku.off_ttv,2) : '—' }}</td>
+                    <td class="sop-td-right cp-off-cell" [class.cp-gap-neg]="sku.off_gap < 0">
+                      {{ sku.off_pqts > 0 ? fmtGap(sku.off_gap) : '—' }}
+                    </td>
+                    <td class="sop-td-right cp-off-cell cp-peso">{{ sku.off_pqts > 0 ? fmtNum(sku.off_peso,1)+'%' : '—' }}</td>
+
+                    <!-- MAYO -->
+                    <td class="sop-td-right cp-mayo-cell">{{ sku.mayo_pqts > 0 ? fmtNum(sku.mayo_cfs,3) : '—' }}</td>
+                    <td class="sop-td-right cp-mayo-cell">{{ sku.mayo_pqts > 0 ? fmtNum(sku.mayo_pqts,4) : '—' }}</td>
+                    <td class="sop-td-right cp-mayo-cell">{{ sku.mayo_pqts > 0 ? fmtNum(sku.mayo_ttv,2) : '—' }}</td>
+                    <td class="sop-td-right cp-mayo-cell" [class.cp-gap-neg]="sku.mayo_gap < 0">
+                      {{ sku.mayo_pqts > 0 ? fmtGap(sku.mayo_gap) : '—' }}
+                    </td>
+                    <td class="sop-td-right cp-mayo-cell cp-peso">{{ sku.mayo_pqts > 0 ? fmtNum(sku.mayo_peso,1)+'%' : '—' }}</td>
+
+                    <!-- TT -->
+                    <td class="sop-td-right cp-tt-cell">{{ fmtNum(sku.tt_cfs,3) }}</td>
+                    <td class="sop-td-right cp-tt-cell cp-pqts-bold">{{ fmtNum(sku.tt_pqts,4) }}</td>
+                    <td class="sop-td-right cp-tt-cell">{{ fmtNum(sku.tt_ttv,2) }}</td>
+                    <td class="sop-td-right cp-tt-cell" [class.cp-gap-neg]="sku.tt_gap < 0">
+                      {{ fmtGap(sku.tt_gap) }}
+                    </td>
+
+                    <!-- Desglose gap -->
+                    <td class="sop-td-right cp-res-cell" [class.cp-gap-neg]="sku.por_precio < 0">
+                      {{ fmtGap(sku.por_precio) }}
+                    </td>
+                    <td class="sop-td-right cp-res-cell" [class.cp-gap-neg]="sku.por_canal < 0">
+                      {{ sku.por_canal !== 0 ? fmtGap(sku.por_canal) : '—' }}
+                    </td>
+
+                    <!-- TTV TP / Real / %TS — cambia según modo -->
+                    <ng-container *ngIf="modoTTV==='sigv'">
+                      <td class="sop-td-right cp-ttv-cell">{{ fmtNum(sku.ttv_tp,0) }}</td>
+                      <td class="sop-td-right cp-ttv-cell">{{ fmtNum(sku.ttv_real,0) }}</td>
+                      <td class="sop-td-right cp-ts-pct"
+                        [class.cp-ts-rojo]="semaforoCierre(sku.ts_pct)==='rojo'"
+                        [class.cp-ts-amarillo]="semaforoCierre(sku.ts_pct)==='amarillo'"
+                        [class.cp-ts-verde]="semaforoCierre(sku.ts_pct)==='verde'">
+                        {{ fmtPct(sku.ts_pct) }}
+                      </td>
+                    </ng-container>
+                    <ng-container *ngIf="modoTTV==='cigv'">
+                      <td class="sop-td-right cp-ttv-cell">{{ fmtNum(sku.excel_ttv_tp,0) }}</td>
+                      <td class="sop-td-right cp-ttv-cell">{{ fmtNum(sku.excel_ttv_real,0) }}</td>
+                      <td class="sop-td-right cp-ts-pct"
+                        [class.cp-ts-rojo]="semaforoCierre(sku.excel_ts_pct)==='rojo'"
+                        [class.cp-ts-amarillo]="semaforoCierre(sku.excel_ts_pct)==='amarillo'"
+                        [class.cp-ts-verde]="semaforoCierre(sku.excel_ts_pct)==='verde'">
+                        {{ fmtPct(sku.excel_ts_pct) }}
+                      </td>
+                    </ng-container>
+
+                    <!-- Flete -->
+                    <td class="sop-td-right" style="color:#999;font-size:11px">{{ fmtNum(sku.flete,4) }}</td>
+                  </tr>
+
+                  <!-- Subtotal negocio -->
+                  <tr class="cp-tr-subtotal">
+                    <td colspan="3" style="font-weight:700;color:#333;padding-left:10px">{{ grupo.negocio }}</td>
+                    <td></td>
+                    <!-- OFF  descomentar cuando se arregle
+                    <td class="sop-td-right cp-sub-num">{{ fmtNum(grupo.sub.off_pqts > 0 ? grupo.rows.reduce(sumCfs, 0) : 0, 3) }}</td> --> 
+                    <td class="sop-td-right cp-sub-num">{{ fmtNum(grupo.sub.off_pqts, 0) }}</td>
+                    <td></td>
+                    <td class="sop-td-right cp-sub-num" [class.cp-gap-neg]="grupo.sub.off_gap < 0">{{ fmtGap(grupo.sub.off_gap) }}</td>
+                    <td></td>
+                    <!-- MAYO -->
+                    <td></td>
+                    <td class="sop-td-right cp-sub-num">{{ fmtNum(grupo.sub.mayo_pqts, 0) }}</td>
+                    <td></td>
+                    <td class="sop-td-right cp-sub-num" [class.cp-gap-neg]="grupo.sub.mayo_gap < 0">{{ fmtGap(grupo.sub.mayo_gap) }}</td>
+                    <td></td>
+                    <!-- TT -->
+                    <td></td>
+                    <td class="sop-td-right cp-sub-num cp-pqts-bold">{{ fmtNum(grupo.sub.tt_pqts, 0) }}</td>
+                    <td></td>
+                    <td class="sop-td-right cp-sub-num" [class.cp-gap-neg]="grupo.sub.tt_gap < 0">{{ fmtGap(grupo.sub.tt_gap) }}</td>
+                    <!-- Desglose -->
+                    <td></td><td></td>
+                    <!-- TTV TP / Real / %TS -->
+                    <td class="sop-td-right cp-sub-num">{{ modoTTV==='cigv' ? fmtNum(grupo.sub.excel_ttv_tp,0) : fmtNum(grupo.sub.ttv_tp,0) }}</td>
+                    <td class="sop-td-right cp-sub-num">{{ modoTTV==='cigv' ? fmtNum(grupo.sub.excel_ttv_real,0) : fmtNum(grupo.sub.ttv_real,0) }}</td>
+                    <td class="sop-td-right cp-ts-pct cp-sub-num"
+                      [class.cp-ts-rojo]="semaforoCierre(modoTTV==='cigv' ? grupo.sub.excel_ts_pct : grupo.sub.ts_pct)==='rojo'"
+                      [class.cp-ts-verde]="semaforoCierre(modoTTV==='cigv' ? grupo.sub.excel_ts_pct : grupo.sub.ts_pct)==='verde'">
+                      {{ fmtPct(modoTTV==='cigv' ? grupo.sub.excel_ts_pct : grupo.sub.ts_pct) }}
+                    </td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fila TOTAL TT (igual que la fila TT del Excel al final) -->
+        <div class="cp-total-bar" *ngIf="cierreResumen">
+          <span class="cp-total-label">TT TOTAL</span>
+          <div class="cp-total-stats">
+            <span class="cp-total-item">
+              <span class="cp-total-item-label">OFF</span>
+              <span class="cp-total-item-val">{{ fmtNum(cierreResumen.off_pqts,0) }} paq</span>
+            </span>
+            <span class="cp-total-sep">+</span>
+            <span class="cp-total-item">
+              <span class="cp-total-item-label">Mayo</span>
+              <span class="cp-total-item-val">{{ fmtNum(cierreResumen.mayo_pqts,0) }} paq</span>
+            </span>
+            <span class="cp-total-sep">=</span>
+            <span class="cp-total-item">
+              <span class="cp-total-item-label">TT</span>
+              <span class="cp-total-item-val">{{ fmtNum(cierreResumen.tt_pqts,0) }} paq</span>
+            </span>
+            <span class="cp-total-divider"></span>
+            <span class="cp-total-item">
+              <span class="cp-total-item-label">TTV TP</span>
+              <span class="cp-total-item-val">{{ modoTTV==='cigv' ? fmtMoney(cierreResumen.excel_ttv_tp) : fmtMoney(cierreResumen.ttv_tp) }}</span>
+            </span>
+            <span class="cp-total-item">
+              <span class="cp-total-item-label">TTV Real</span>
+              <span class="cp-total-item-val">{{ modoTTV==='cigv' ? fmtMoney(cierreResumen.excel_ttv_real) : fmtMoney(cierreResumen.ttv_real) }}</span>
+            </span>
+            <span class="cp-total-item">
+              <span class="cp-total-item-label">TS Soles</span>
+              <span class="cp-total-item-val" style="color:#dc2626;font-weight:700">{{ modoTTV==='cigv' ? fmtMoney(cierreResumen.excel_ts_soles) : fmtMoney(cierreResumen.ts_soles) }}</span>
+            </span>
+            <span class="cp-total-divider"></span>
+            <span class="cp-total-item">
+              <span class="cp-total-item-label">Trade Spend</span>
+              <span class="cp-ts-badge"
+                [class.cp-ts-badge-rojo]="semaforoCierre(modoTTV==='cigv' ? cierreResumen.excel_ts_pct : cierreResumen.ts_pct)==='rojo'"
+                [class.cp-ts-badge-amarillo]="semaforoCierre(modoTTV==='cigv' ? cierreResumen.excel_ts_pct : cierreResumen.ts_pct)==='amarillo'"
+                [class.cp-ts-badge-verde]="semaforoCierre(modoTTV==='cigv' ? cierreResumen.excel_ts_pct : cierreResumen.ts_pct)==='verde'">
+                {{ fmtPct(modoTTV==='cigv' ? cierreResumen.excel_ts_pct : cierreResumen.ts_pct) }}
+              </span>
+              <span style="font-size:10px;color:#888;margin-left:4px">/ {{ fmtPct(limiteTs) }} lím.</span>
+            </span>
+          </div>
+        </div>
+
+      </ng-container>
+
+      <div class="dbb-empty" *ngIf="!cierreRows.length && !cargandoCierre && !errorCierre">
+        Selecciona agencia y mes, luego presiona <strong>Calcular</strong>.
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- ══════════════════════════════════════════════════════
+       TAB 3: PRECIOS CARGADOS
+  ══════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="tabActual==='precios'">
+    <div class="dbb-content">
+      <div class="dbb-loading-full" *ngIf="cargandoPrecios">
+        <span class="dbb-spin dbb-spin--lg"></span>
+        <span>Cargando historial de precios…</span>
+      </div>
+      <div class="dbb-card" *ngIf="!cargandoPrecios">
+        <div class="dbb-card-header">
+          <div>
+            <div class="dbb-card-title">Historial de precios CBC cargados</div>
+            <div class="dbb-kpi-sub" style="margin-top:3px">Archivos Bebidas_MesAño.xlsx subidos al sistema</div>
+          </div>
+        </div>
+        <div *ngIf="historialPrecios.length===0" class="dbb-empty">No hay precios cargados aún. Ve a Carga de Archivos CBC.</div>
+        <div *ngIf="historialPrecios.length>0" class="dbb-table-wrap">
           <table class="dbb-table">
             <thead>
               <tr>
-                <th style="width:5%">#</th>
-                <th style="width:14%">SKU</th>
-                <th style="width:8%">Negocio</th>
-                <th style="width:6%" class="sop-th-right">MC/und</th>
-                <th style="width:8%">Acción</th>
-                <th style="width:7%">Rango</th>
-                <th style="width:8%" class="sop-th-right">Precio Trad</th>
-                <th style="width:8%" class="sop-th-right">TS/paq</th>
-                <th style="width:8%" class="sop-th-right">Paq máx Trad</th>
-                <th style="width:8%" class="sop-th-right">TTV pot. Trad</th>
-                <th style="width:8%" class="sop-th-right">Precio Mayo</th>
-                <th style="width:8%" class="sop-th-right">Paq máx Mayo</th>
-                <th style="width:8%" class="sop-th-right">TTV pot. Mayo</th>
+                <th>Agencia</th><th>Periodo</th>
+                <th class="sop-th-right">SKUs cargados</th>
+                <th class="sop-th-right">Fecha de carga</th>
+                <th>Archivo</th><th>Estado</th>
               </tr>
             </thead>
             <tbody>
-              <ng-container *ngFor="let sku of skusFiltrados; let i = index">
-                <tr [class.sop-tr-best]="sku.mejor_canal === 'Tradicional' && i < 5">
-                  <td style="color:#aaa;font-size:11px">{{ i + 1 }}</td>
-                  <td>
-                    <div class="dbb-td-name">{{ sku.sku_gerencial }}</div>
-                    <div style="font-size:10px;color:#aaa">{{ sku.nombre | slice:0:28 }}</div>
-                  </td>
-                  <td>
-                    <span class="sop-badge sop-badge-neg">{{ sku.negocio || '—' }}</span>
-                  </td>
-                  <td class="sop-td-right">
-                    <span class="sop-mc">S/ {{ fmtNum(sku.mc, 2) }}</span>
-                  </td>
-
-                  <!-- Acción y rango -->
-                  <ng-container *ngIf="getTrad(sku) as trad">
-                    <td>
-                      <span class="sop-badge" [ngClass]="badgeAccion(trad.tipo_accion)">
-                        {{ trad.accion_texto || '—' }}
-                      </span>
-                    </td>
-                    <td style="font-size:11px;color:#888">{{ trad.rango_texto || '—' }}</td>
-
-                    <!-- Canal TRAD -->
-                    <td class="sop-td-right">S/ {{ fmtNum(trad.precio_base, 2) }}</td>
-                    <td class="sop-td-right" style="color:#dc2626;font-weight:500">
-                      {{ trad.ts_por_paquete > 0 ? 'S/ ' + fmtNum(trad.ts_por_paquete, 3) : '—' }}
-                    </td>
-                    <td class="sop-td-right">
-                      <span *ngIf="trad.paq_max !== null" class="sop-paq-max">
-                        {{ fmtNum(trad.paq_max, 0) }}
-                      </span>
-                      <span *ngIf="trad.paq_max === null" style="color:#aaa">∞</span>
-                    </td>
-                    <td class="sop-td-right">
-                      <span *ngIf="trad.ttv_potencial !== null" class="sop-ttv">
-                        S/ {{ fmtNum(trad.ttv_potencial, 0) }}
-                      </span>
-                      <span *ngIf="trad.ttv_potencial === null" style="color:#aaa">—</span>
-                    </td>
-                  </ng-container>
-
-                  <!-- Canal MAYO -->
-                  <ng-container *ngIf="getMayo(sku) as mayo">
-                    <td class="sop-td-right">S/ {{ fmtNum(mayo.precio_base, 2) }}</td>
-                    <td class="sop-td-right">
-                      <span *ngIf="mayo.paq_max !== null" class="sop-paq-max">
-                        {{ fmtNum(mayo.paq_max, 0) }}
-                      </span>
-                      <span *ngIf="mayo.paq_max === null" style="color:#aaa">∞</span>
-                    </td>
-                    <td class="sop-td-right">
-                      <span *ngIf="mayo.ttv_potencial !== null" class="sop-ttv">
-                        S/ {{ fmtNum(mayo.ttv_potencial, 0) }}
-                      </span>
-                      <span *ngIf="mayo.ttv_potencial === null" style="color:#aaa">—</span>
-                    </td>
-                  </ng-container>
-
-                  <!-- Si no hay mayo -->
-                  <ng-container *ngIf="!getMayo(sku)">
-                    <td class="sop-td-right" style="color:#aaa">—</td>
-                    <td class="sop-td-right" style="color:#aaa">—</td>
-                    <td class="sop-td-right" style="color:#aaa">—</td>
-                  </ng-container>
-
-                </tr>
-              </ng-container>
-
-              <tr *ngIf="skusFiltrados.length === 0">
-                <td colspan="13" class="dbb-empty">Sin SKUs disponibles para este filtro.</td>
+              <tr *ngFor="let p of historialPrecios">
+                <td><strong>{{ p.agencia }}</strong></td>
+                <td>{{ mesesLabels[p.mes] }} {{ p.anio }}</td>
+                <td class="sop-td-right">{{ p.skus_count | number }}</td>
+                <td class="sop-td-right" style="font-size:11px;color:#888">{{ fmtFecha(p.fecha_carga) }}</td>
+                <td style="font-size:11px;color:#888;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.archivo || '—' }}</td>
+                <td><span class="sop-badge" [ngClass]="p.skus_count>0 ? 'sop-badge-ok' : 'sop-badge-sin'">{{ p.skus_count>0 ? 'OK' : 'Vacío' }}</span></td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
-
-    </ng-container>
-
-    <div class="dbb-empty" *ngIf="!data && !cargando && !error">
-      Selecciona agencia y mes, luego presiona <strong>Calcular</strong>.
     </div>
+  </ng-container>
 
-  </div>
+  <!-- ══════════════════════════════════════════════════════
+       TAB 4: CHESS BASE
+  ══════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="tabActual==='chess'">
+    <div class="dbb-content">
+      <div class="dbb-loading-full" *ngIf="cargandoChess">
+        <span class="dbb-spin dbb-spin--lg"></span>
+        <span>Cargando historial Chess Base…</span>
+      </div>
+      <div class="dbb-card" *ngIf="!cargandoChess">
+        <div class="dbb-card-header">
+          <div>
+            <div class="dbb-card-title">Chess Base sincronizado</div>
+            <div class="dbb-kpi-sub" style="margin-top:3px">Ventas reales cargadas desde OneDrive por mes y agencia</div>
+          </div>
+        </div>
+        <div *ngIf="historialChess.length===0" class="dbb-empty">No hay datos sincronizados. Ve a Carga de Archivos CBC y sincroniza el Chess Base.</div>
+        <div *ngIf="historialChess.length>0" class="dbb-table-wrap">
+          <table class="dbb-table">
+            <thead>
+              <tr>
+                <th>Agencia</th><th>Periodo</th>
+                <th class="sop-th-right">Filas</th>
+                <th class="sop-th-right">Paquetes totales</th>
+                <th class="sop-th-right">TTV total (s/IGV)</th>
+                <th class="sop-th-right">Negocios</th>
+                <th class="sop-th-right">Último sync</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let c of historialChess">
+                <td><strong>{{ c.agencia }}</strong></td>
+                <td>{{ mesesLabels[c.mes] }} {{ c.anio }}</td>
+                <td class="sop-td-right">{{ c.total_filas | number }}</td>
+                <td class="sop-td-right">{{ fmtNum(c.paquetes_total, 0) }}</td>
+                <td class="sop-td-right">{{ fmtMoney(c.ttv_total) }}</td>
+                <td class="sop-td-right">{{ c.negocios_count }}</td>
+                <td class="sop-td-right" style="font-size:11px;color:#888">{{ fmtFecha(c.ultimo_sync) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
 </div>

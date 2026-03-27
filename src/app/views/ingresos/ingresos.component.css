@@ -1009,3 +1009,120 @@
   color: #1e3a5f;
   border-color: #bfdbfe;
 }
+
+/* ── Botón variación ── */
+.ing-btn-variacion {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1.5px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.ing-btn-variacion:hover { background: #dcfce7; border-color: #86efac; }
+
+/* ── Modal variación (más ancho) ── */
+.ing-modal-variacion {
+  width: 1000px;
+  max-width: 97vw;
+}
+
+/* ── Selector de fechas ── */
+.var-fecha-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.var-fecha-field { flex: 1; }
+.var-flecha {
+  font-size: 22px;
+  color: #94a3b8;
+  padding-bottom: 8px;
+  flex-shrink: 0;
+}
+
+/* ── Tabla variación ── */
+.var-tabla-wrap {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+.var-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.var-th-concepto {
+  background: #0d1f3c;
+  color: white;
+  padding: 11px 16px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 12px;
+  min-width: 220px;
+  position: sticky;
+  left: 0;
+}
+.var-th-num {
+  background: #0d1f3c;
+  color: white;
+  padding: 11px 14px;
+  text-align: right;
+  font-weight: 600;
+  font-size: 12px;
+  min-width: 120px;
+  white-space: nowrap;
+}
+.var-row-seccion td {
+  background: #1a3260;
+  color: #93c5fd;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  padding: 7px 16px;
+  text-transform: uppercase;
+}
+.var-row-total td {
+  background: #f1f5f9;
+  font-weight: 700;
+  color: #0f172a;
+  border-top: 2px solid #e2e8f0;
+  border-bottom: 2px solid #e2e8f0;
+}
+.var-row-item:hover td { background: #f8fafc; }
+.var-td-label {
+  padding: 8px 16px;
+  color: #334155;
+  font-weight: 500;
+  border-bottom: 1px solid #f1f5f9;
+  white-space: nowrap;
+}
+.var-td-num {
+  padding: 8px 14px;
+  text-align: right;
+  color: #334155;
+  border-bottom: 1px solid #f1f5f9;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.var-positivo { color: #15803d !important; font-weight: 600; }
+.var-negativo { color: #dc2626 !important; font-weight: 600; }
+
+/* ── Aviso ── */
+.var-aviso {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #94a3b8;
+  font-size: 13px;
+  padding: 32px;
+  justify-content: center;
+}

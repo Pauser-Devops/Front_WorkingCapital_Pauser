@@ -55,7 +55,9 @@ const VISTA_NOMBRES: Record<string, string> = {
   cargaBackus: 'Carga de Archivos Backus',
   dashBackus: 'Dashboard de Ventas Uniflex Backus',
   cargaMondelez: 'Carga de Archivos Lima Mondelez',
-  simuladorOptimoCBC: 'Simulador de predicción CBC'
+  simuladorOptimoCBC: 'Simulador de predicción CBC',
+  dashInventario: 'Dashboard de Conciliación de Inventario',
+  cargaDatosInventario: 'Carga de Datos de Inventario'
 };
 
 @Component({

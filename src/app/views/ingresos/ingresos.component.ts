@@ -272,8 +272,8 @@ export class IngresosComponent implements OnInit {
         if (r.estado === 'OK') {
           const sedes = r.sedes;
           this.prosegurDetalle.punoBilletes = sedes?.puno_billetes?.total ?? null;
-          this.prosegurDetalle.limaOlivos   = sedes?.lima_olivos?.total  ?? null;
-          this.prosegurDetalle.chimbote     = sedes?.chimbote?.total     ?? null;
+          this.prosegurDetalle.limaOlivos = sedes?.lima_olivos?.total ?? null;
+          this.prosegurDetalle.chimbote = sedes?.chimbote?.total ?? null;
           this.prosegurDetalle.ingresos_dia = r.total_ingresos_dia ?? null;
         }
       });
@@ -296,19 +296,19 @@ export class IngresosComponent implements OnInit {
     }).subscribe(results => {
       this.calculandoProsegur = false;
 
-      const puno     = results.puno.estado     === 'OK' ? (results.puno.total_puno         ?? 0) : null;
-      const huaraz   = results.huaraz.estado   === 'OK' ? (results.huaraz.total_huaraz     ?? 0) : null;
+      const puno = results.puno.estado === 'OK' ? (results.puno.total_puno ?? 0) : null;
+      const huaraz = results.huaraz.estado === 'OK' ? (results.huaraz.total_huaraz ?? 0) : null;
       const trujillo = results.trujillo.estado === 'OK' ? (results.trujillo.total_trujillo ?? 0) : null;
 
       const ingresosDiaRes = results.ingresos_dia;
-      const ingresos_dia   = ingresosDiaRes.estado === 'OK' ? (ingresosDiaRes.total_ingresos_dia ?? 0) : null;
+      const ingresos_dia = ingresosDiaRes.estado === 'OK' ? (ingresosDiaRes.total_ingresos_dia ?? 0) : null;
 
       // Desglose de sedes viene del propio endpoint ingresos_dia, no de puno/huaraz/trujillo
       const sedes = ingresosDiaRes.sedes;
       this.prosegurDetalle = {
         punoBilletes: sedes?.puno_billetes?.total ?? null,
-        limaOlivos:   sedes?.lima_olivos?.total   ?? null,
-        chimbote:     sedes?.chimbote?.total       ?? null,
+        limaOlivos: sedes?.lima_olivos?.total ?? null,
+        chimbote: sedes?.chimbote?.total ?? null,
         ingresos_dia,
       };
 
@@ -601,5 +601,59 @@ export class IngresosComponent implements OnInit {
       },
       error: () => { this.eliminando = false; }
     });
+  }
+
+
+
+  // ── VARIACIÓN ──────────────────────────────────────────
+  mostrarVariacion = false;
+  varFecha1 = '';
+  varFecha2 = '';
+
+  abrirVariacion() {
+    this.mostrarVariacion = true;
+    // Pre-seleccionar las últimas 2 fechas si existen
+    if (this.columnas.length >= 2) {
+      this.varFecha1 = this.columnas[this.columnas.length - 2].fecha;
+      this.varFecha2 = this.columnas[this.columnas.length - 1].fecha;
+    } else if (this.columnas.length === 1) {
+      this.varFecha1 = this.columnas[0].fecha;
+      this.varFecha2 = '';
+    }
+  }
+
+  cerrarVariacion() { this.mostrarVariacion = false; }
+
+  get filasVariacion() {
+    if (!this.varFecha1 || !this.varFecha2) return [];
+    return this.conceptos
+      .filter(c => c.tipo_fila === 'item' || c.tipo_fila === 'total')
+      .map(c => {
+        const v1 = c.tipo_fila === 'total'
+          ? this.getTotal(c, this.varFecha1)
+          : (this.getValor(c.id, this.varFecha1) ?? 0);
+        const v2 = c.tipo_fila === 'total'
+          ? this.getTotal(c, this.varFecha2)
+          : (this.getValor(c.id, this.varFecha2) ?? 0);
+        const diff = v2 - v1;
+        const pct = v1 !== 0 ? (diff / Math.abs(v1)) * 100 : null;
+        return { concepto: c, v1, v2, diff, pct };
+      });
+  }
+
+  get seccionesVariacion(): string[] {
+    const secciones = new Set<string>();
+    this.conceptos
+      .filter(c => c.tipo_fila === 'item' || c.tipo_fila === 'total')
+      .forEach(c => secciones.add(c.seccion));
+    return Array.from(secciones);
+  }
+
+  filasDeSeccion(seccion: string) {
+    return this.filasVariacion.filter(f => f.concepto.seccion === seccion);
+  }
+
+  labelFecha(fecha: string): string {
+    return this.columnas.find(c => c.fecha === fecha)?.label ?? fecha;
   }
 }

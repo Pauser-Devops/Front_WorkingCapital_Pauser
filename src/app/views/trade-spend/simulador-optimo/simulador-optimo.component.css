@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════
    simulador-optimo.component.css
-   CSS completo — incluye todo el sistema dbb- + sop-
+   CSS completo — incluye todo el sistema dbb- + sop- + cp-
 ═══════════════════════════════════════════════════════ */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -27,20 +27,10 @@
   padding: 0 1.5rem;
   flex-shrink: 0;
 }
+.sop-wrapper .dbb-title    { font-size: 15px; font-weight: 600; color: #111; }
+.sop-wrapper .dbb-subtitle { font-size: 11px; color: #999; margin-top: 1px; }
 
-.sop-wrapper .dbb-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: #111;
-}
-
-.sop-wrapper .dbb-subtitle {
-  font-size: 11px;
-  color: #999;
-  margin-top: 1px;
-}
-
-/* ── Barra de filtros ─────────────────────────────────── */
+/* ── Filtros ──────────────────────────────────────────── */
 .sop-wrapper .dbb-filterbar {
   display: flex;
   align-items: center;
@@ -52,37 +42,10 @@
   overflow-x: auto;
   gap: 0;
 }
-
-.sop-wrapper .dbb-filter-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-  padding: 0 16px 0 0;
-}
-
-.sop-wrapper .dbb-filter-label {
-  font-size: 11px;
-  color: #aaa;
-  white-space: nowrap;
-  font-weight: 500;
-}
-
-.sop-wrapper .dbb-filter-divider {
-  width: 0.5px;
-  height: 24px;
-  background: #e2e2e0;
-  margin: 0 16px 0 0;
-  flex-shrink: 0;
-}
-
-.sop-wrapper .dbb-filter-actions {
-  display: flex;
-  gap: 6px;
-  margin-left: auto;
-  flex-shrink: 0;
-  padding-left: 16px;
-}
+.sop-wrapper .dbb-filter-group   { display: flex; align-items: center; gap: 8px; flex-shrink: 0; padding: 0 16px 0 0; }
+.sop-wrapper .dbb-filter-label   { font-size: 11px; color: #aaa; white-space: nowrap; font-weight: 500; }
+.sop-wrapper .dbb-filter-divider { width: 0.5px; height: 24px; background: #e2e2e0; margin: 0 16px 0 0; flex-shrink: 0; }
+.sop-wrapper .dbb-filter-actions { display: flex; gap: 6px; margin-left: auto; flex-shrink: 0; padding-left: 16px; }
 
 /* ── Select ───────────────────────────────────────────── */
 .sop-wrapper .dbb-select {
@@ -101,10 +64,7 @@
   min-width: 100px;
   transition: border-color 0.13s;
 }
-
-.sop-wrapper .dbb-select:focus {
-  border-color: #1a56db;
-}
+.sop-wrapper .dbb-select:focus { border-color: #1a56db; }
 
 /* ── Botones ──────────────────────────────────────────── */
 .sop-wrapper .dbb-btn {
@@ -122,306 +82,302 @@
   transition: background 0.13s;
   white-space: nowrap;
 }
-
-.sop-wrapper .dbb-btn:hover:not(:disabled) {
-  background: #f5f5f4;
-}
-
-.sop-wrapper .dbb-btn:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-
-.sop-wrapper .dbb-btn--primary {
-  background: #1a56db;
-  color: #fff;
-  border-color: #1a56db;
-}
-
-.sop-wrapper .dbb-btn--primary:hover:not(:disabled) {
-  background: #1447b8;
-}
+.sop-wrapper .dbb-btn:hover:not(:disabled) { background: #f5f5f4; }
+.sop-wrapper .dbb-btn:disabled             { opacity: 0.45; cursor: default; }
+.sop-wrapper .dbb-btn--primary             { background: #1a56db; color: #fff; border-color: #1a56db; }
+.sop-wrapper .dbb-btn--primary:hover:not(:disabled) { background: #1447b8; }
 
 /* ── Contenido ────────────────────────────────────────── */
-.sop-wrapper .dbb-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 1.25rem 1.5rem;
-}
+.sop-wrapper .dbb-content { flex: 1; overflow-y: auto; padding: 1.25rem 1.5rem; }
 
 /* ── KPIs ─────────────────────────────────────────────── */
-.sop-wrapper .dbb-kpi-row {
-  display: grid;
-  gap: 10px;
-  margin-bottom: 1rem;
-}
-
-.sop-wrapper .dbb-kpi {
-  background: #fff;
-  border-radius: 10px;
-  border: 0.5px solid #e2e2e0;
-  padding: 12px 14px;
-}
-
-.sop-wrapper .dbb-kpi--total {
-  background: #f0f9ff;
-  border-color: #bae6fd;
-}
-
-.sop-wrapper .dbb-kpi-label {
-  font-size: 11px;
-  color: #888;
-  margin-bottom: 5px;
-}
-
-.sop-wrapper .dbb-kpi-val {
-  font-size: 18px;
-  font-weight: 700;
-  color: #111;
-  margin-bottom: 6px;
-}
-
-.sop-wrapper .dbb-kpi-val--sm {
-  font-size: 15px;
-}
-
-.sop-wrapper .dbb-kpi-sub {
-  font-size: 10px;
-  color: #aaa;
-}
-
-.sop-wrapper .dbb-kpi-bar-wrap {
-  height: 4px;
-  background: #e5e7eb;
-  border-radius: 4px;
-  overflow: hidden;
-  margin-bottom: 5px;
-}
-
-.sop-wrapper .dbb-kpi-bar {
-  height: 100%;
-  border-radius: 4px;
-  transition: width 0.4s ease;
-}
-
-.sop-wrapper .dbb-kpi-bar--pauser {
-  background: #1a56db;
-}
+.sop-wrapper .dbb-kpi-row    { display: grid; gap: 10px; margin-bottom: 1rem; }
+.sop-wrapper .dbb-kpi        { background: #fff; border-radius: 10px; border: 0.5px solid #e2e2e0; padding: 12px 14px; }
+.sop-wrapper .dbb-kpi--total { background: #f0f9ff; border-color: #bae6fd; }
+.sop-wrapper .dbb-kpi-label  { font-size: 11px; color: #888; margin-bottom: 5px; }
+.sop-wrapper .dbb-kpi-val    { font-size: 18px; font-weight: 700; color: #111; margin-bottom: 6px; }
+.sop-wrapper .dbb-kpi-val--sm { font-size: 15px; }
+.sop-wrapper .dbb-kpi-sub    { font-size: 10px; color: #aaa; }
+.sop-wrapper .dbb-kpi-bar-wrap { height: 4px; background: #e5e7eb; border-radius: 4px; overflow: hidden; margin-bottom: 5px; }
+.sop-wrapper .dbb-kpi-bar    { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+.sop-wrapper .dbb-kpi-bar--pauser { background: #1a56db; }
 
 /* ── Cards ────────────────────────────────────────────── */
-.sop-wrapper .dbb-card {
+.sop-wrapper .dbb-card         { background: #fff; border-radius: 12px; border: 0.5px solid #e2e2e0; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+.sop-wrapper .dbb-card-header  { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+.sop-wrapper .dbb-card-title   { font-size: 13px; font-weight: 600; color: #111; }
+
+/* ── Tabla base ───────────────────────────────────────── */
+.sop-wrapper .dbb-table-wrap { overflow-x: auto; }
+.sop-wrapper .dbb-table      { width: 100%; border-collapse: collapse; font-size: 12px; }
+.sop-wrapper .dbb-table thead tr   { border-bottom: 0.5px solid #e2e2e0; }
+.sop-wrapper .dbb-table th         { text-align: left; padding: 8px 10px; font-size: 11px; color: #999; font-weight: 500; white-space: nowrap; background: #fafafa; }
+.sop-wrapper .dbb-table td         { padding: 9px 10px; border-bottom: 0.5px solid #f0f0ef; vertical-align: middle; }
+.sop-wrapper .dbb-table tbody tr:last-child td { border-bottom: none; }
+.sop-wrapper .dbb-table tbody tr:hover td      { background: #fafafa; }
+.sop-wrapper .dbb-td-name          { font-weight: 500; color: #222; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 160px; }
+
+/* ── Alertas ──────────────────────────────────────────── */
+.sop-wrapper .dbb-alert { background: #fff1f2; color: #991b1b; border: 0.5px solid #fecdd3; border-radius: 8px; padding: 10px 14px; font-size: 12px; margin-bottom: 1rem; }
+
+/* ── Loading / Empty ──────────────────────────────────── */
+.sop-wrapper .dbb-loading-full { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 4rem; color: #999; }
+.sop-wrapper .dbb-empty        { text-align: center; padding: 3rem; color: #bbb; font-size: 13px; }
+
+/* ── Spinner ──────────────────────────────────────────── */
+.sop-wrapper .dbb-spin     { display: inline-block; width: 13px; height: 13px; border: 2px solid #d4d4d2; border-top-color: #1a56db; border-radius: 50%; animation: sop-rotate 0.7s linear infinite; flex-shrink: 0; }
+.sop-wrapper .dbb-spin--lg { width: 20px; height: 20px; }
+@keyframes sop-rotate { to { transform: rotate(360deg); } }
+
+/* ── Tabs ─────────────────────────────────────────────── */
+.sop-wrapper .sop-tabs {
+  display: flex;
+  gap: 0;
   background: #fff;
-  border-radius: 12px;
-  border: 0.5px solid #e2e2e0;
-  padding: 1rem 1.25rem;
-  margin-bottom: 1rem;
+  border-bottom: 0.5px solid #e2e2e0;
+  padding: 0 1.5rem;
+  flex-shrink: 0;
+}
+.sop-wrapper .sop-tab         { padding: 10px 18px; font-size: 12px; font-weight: 500; color: #888; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; transition: color 0.13s, border-color 0.13s; white-space: nowrap; }
+.sop-wrapper .sop-tab:hover   { color: #333; }
+.sop-wrapper .sop-tab.active  { color: #1a56db; border-bottom-color: #1a56db; }
+
+/* ── KPI variantes ────────────────────────────────────── */
+.sop-wrapper .sop-kpi--ok     { background: #f0fdf4; border-color: #bbf7d0; }
+.sop-wrapper .sop-kpi--danger { background: #fff1f2; border-color: #fecdd3; }
+.sop-wrapper .sop-val-ok      { color: #16a34a; font-weight: 700; }
+.sop-wrapper .sop-val-bad     { color: #dc2626; font-weight: 700; }
+.sop-wrapper .sop-bar-danger  { background: #dc2626 !important; }
+
+/* ── Tabla helpers ────────────────────────────────────── */
+.sop-wrapper .sop-th-right    { text-align: right !important; }
+.sop-wrapper .sop-td-right    { text-align: right; font-size: 12px; }
+.sop-wrapper .sop-tr-best td  { background: #fffbeb !important; }
+.sop-wrapper .sop-tr-best:hover td { background: #fef3c7 !important; }
+
+/* ── Badges ───────────────────────────────────────────── */
+.sop-wrapper .sop-badge        { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 5px; font-size: 10px; font-weight: 600; white-space: nowrap; }
+.sop-wrapper .sop-badge-neg    { background: #f1f5f9; color: #475569; }
+.sop-wrapper .sop-badge-boni   { background: #fef9c3; color: #854d0e; }
+.sop-wrapper .sop-badge-dscto  { background: #ede9fe; color: #6d28d9; }
+.sop-wrapper .sop-badge-sin    { background: #f1f5f9; color: #94a3b8; }
+.sop-wrapper .sop-badge-ok     { background: #dcfce7; color: #166534; }
+
+/* ── Valores destacados ───────────────────────────────── */
+.sop-wrapper .sop-mc      { font-weight: 600; color: #1a56db; font-size: 12px; }
+.sop-wrapper .sop-paq-max { font-weight: 700; color: #16a34a; font-size: 12px; }
+.sop-wrapper .sop-ttv     { font-weight: 500; color: #1a56db; font-size: 12px; }
+
+/* ── Scrollbar ────────────────────────────────────────── */
+.sop-wrapper .dbb-content::-webkit-scrollbar        { width: 4px; }
+.sop-wrapper .dbb-content::-webkit-scrollbar-track  { background: #f5f5f4; }
+.sop-wrapper .dbb-content::-webkit-scrollbar-thumb  { background: #d4d4d2; border-radius: 99px; }
+.sop-wrapper .dbb-table-wrap::-webkit-scrollbar       { height: 4px; }
+.sop-wrapper .dbb-table-wrap::-webkit-scrollbar-track { background: #f5f5f4; }
+.sop-wrapper .dbb-table-wrap::-webkit-scrollbar-thumb { background: #d4d4d2; border-radius: 99px; }
+
+/* ══════════════════════════════════════════════════════════════════
+   CIERRE CP  — Sistema de clases cp-
+   Replica la estructura visual de CP CB / CP HU del Excel
+══════════════════════════════════════════════════════════════════ */
+
+/* ── Toggle s/igv ↔ c/igv ────────────────────────────── */
+.sop-wrapper .cp-toggle-wrap {
+  display: flex;
+  border: 0.5px solid #d4d4d2;
+  border-radius: 7px;
+  overflow: hidden;
+}
+.sop-wrapper .cp-toggle {
+  padding: 5px 11px;
+  font-size: 11px;
+  font-weight: 500;
+  border: none;
+  background: #fff;
+  color: #888;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+.sop-wrapper .cp-toggle + .cp-toggle {
+  border-left: 0.5px solid #d4d4d2;
+}
+.sop-wrapper .cp-toggle--on {
+  background: #1a56db;
+  color: #fff;
 }
 
-.sop-wrapper .dbb-card-header {
+/* ── Nota modo activo ─────────────────────────────────── */
+.sop-wrapper .cp-modo-nota {
+  background: #eff6ff;
+  border: 0.5px solid #bfdbfe;
+  color: #1e40af;
+  border-radius: 7px;
+  padding: 7px 12px;
+  font-size: 11px;
+  margin-bottom: 1rem;
+}
+.sop-wrapper .cp-modo-nota--motor {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+/* ── Header de negocio ────────────────────────────────── */
+.sop-wrapper .cp-negocio-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+  gap: 6px;
 }
-
-.sop-wrapper .dbb-card-title {
+.sop-wrapper .cp-negocio-label {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   color: #111;
+  letter-spacing: -0.01em;
 }
-
-/* ── Tabla ────────────────────────────────────────────── */
-.sop-wrapper .dbb-table-wrap {
-  overflow-x: auto;
-}
-
-.sop-wrapper .dbb-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-}
-
-.sop-wrapper .dbb-table thead tr {
-  border-bottom: 0.5px solid #e2e2e0;
-}
-
-.sop-wrapper .dbb-table th {
-  text-align: left;
-  padding: 8px 10px;
-  font-size: 11px;
-  color: #999;
-  font-weight: 500;
-  white-space: nowrap;
-  background: #fafafa;
-}
-
-.sop-wrapper .dbb-table td {
-  padding: 9px 10px;
-  border-bottom: 0.5px solid #f0f0ef;
-  vertical-align: middle;
-}
-
-.sop-wrapper .dbb-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.sop-wrapper .dbb-table tbody tr:hover td {
-  background: #fafafa;
-}
-
-.sop-wrapper .dbb-td-name {
-  font-weight: 500;
-  color: #222;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 160px;
-}
-
-/* ── Alertas ──────────────────────────────────────────── */
-.sop-wrapper .dbb-alert {
-  background: #fff1f2;
-  color: #991b1b;
-  border: 0.5px solid #fecdd3;
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-size: 12px;
-  margin-bottom: 1rem;
-}
-
-/* ── Loading & Empty ──────────────────────────────────── */
-.sop-wrapper .dbb-loading-full {
+.sop-wrapper .cp-negocio-stats {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 4rem;
-  color: #999;
+  gap: 8px;
+  flex-wrap: wrap;
 }
+.sop-wrapper .cp-stat       { font-size: 11px; color: #555; font-weight: 500; }
+.sop-wrapper .cp-stat-sep   { font-size: 11px; color: #ccc; }
+.sop-wrapper .cp-semaforo   { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 5px; }
+.sop-wrapper .cp-sem-verde   { background: #dcfce7; color: #166534; }
+.sop-wrapper .cp-sem-amarillo { background: #fef9c3; color: #854d0e; }
+.sop-wrapper .cp-sem-rojo    { background: #fee2e2; color: #991b1b; }
 
-.sop-wrapper .dbb-empty {
-  text-align: center;
-  padding: 3rem;
-  color: #bbb;
-  font-size: 13px;
-}
+/* ── Tabla CP ─────────────────────────────────────────── */
+.sop-wrapper .cp-table { font-size: 11.5px; }
 
-/* ── Spinner ──────────────────────────────────────────── */
-.sop-wrapper .dbb-spin {
-  display: inline-block;
-  width: 13px;
-  height: 13px;
-  border: 2px solid #d4d4d2;
-  border-top-color: #1a56db;
-  border-radius: 50%;
-  animation: sop-rotate 0.7s linear infinite;
-  flex-shrink: 0;
-}
-
-.sop-wrapper .dbb-spin--lg {
-  width: 20px;
-  height: 20px;
-}
-
-@keyframes sop-rotate {
-  to { transform: rotate(360deg); }
-}
-
-/* ══════════════════════════════════════════════════════
-   CLASES PROPIAS sop-
-══════════════════════════════════════════════════════ */
-
-/* ── KPI variantes ────────────────────────────────────── */
-.sop-wrapper .sop-kpi--ok {
-  background: #f0fdf4;
-  border-color: #bbf7d0;
-}
-
-.sop-wrapper .sop-kpi--danger {
-  background: #fff1f2;
-  border-color: #fecdd3;
-}
-
-.sop-wrapper .sop-val-ok  { color: #16a34a; font-weight: 700; }
-.sop-wrapper .sop-val-bad { color: #dc2626; font-weight: 700; }
-
-.sop-wrapper .sop-bar-danger { background: #dc2626 !important; }
-
-/* ── Tabla columnas ───────────────────────────────────── */
-.sop-wrapper .sop-th-right { text-align: right !important; }
-.sop-wrapper .sop-td-right {
-  text-align: right;
-  font-size: 12px;
-}
-
-/* Fila top 5 más rentables */
-.sop-wrapper .sop-tr-best td {
-  background: #fffbeb !important;
-}
-.sop-wrapper .sop-tr-best:hover td {
-  background: #fef3c7 !important;
-}
-
-/* ── Badges ───────────────────────────────────────────── */
-.sop-wrapper .sop-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 7px;
-  border-radius: 5px;
+/* Fila de grupos de columnas (fila 1 del thead) */
+.sop-wrapper .cp-thead-group th {
+  padding: 5px 8px;
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 700;
+  text-align: center !important;
+  border-bottom: none;
+  letter-spacing: 0.02em;
+}
+/* Fila de nombres de columna (fila 2) */
+.sop-wrapper .cp-thead-cols th {
+  padding: 6px 8px;
+  font-size: 10px;
+  border-top: 0.5px solid #e2e2e0;
+}
+.sop-wrapper .cp-th-fixed { background: #f8f8f7 !important; }
+.sop-wrapper .cp-th-mc    { background: #f8f8f7 !important; }
+
+/* Colores de bloque en el header agrupado */
+.sop-wrapper .cp-th-bloque { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.sop-wrapper .cp-bloque-off   { background: #eff6ff !important; color: #1d4ed8 !important; border-left: 2px solid #bfdbfe; border-right: 1px solid #dbeafe; }
+.sop-wrapper .cp-bloque-mayo  { background: #fdf4ff !important; color: #7e22ce !important; border-left: 2px solid #e9d5ff; border-right: 1px solid #f3e8ff; }
+.sop-wrapper .cp-bloque-tt    { background: #f0fdf4 !important; color: #15803d !important; border-left: 2px solid #bbf7d0; border-right: 1px solid #dcfce7; }
+.sop-wrapper .cp-bloque-res   { background: #fff7ed !important; color: #c2410c !important; border-left: 2px solid #fed7aa; }
+.sop-wrapper .cp-bloque-ttv   { background: #f8fafc !important; color: #334155 !important; border-left: 2px solid #cbd5e1; }
+
+/* Celdas de datos por bloque */
+.sop-wrapper .cp-off-cell    { background: #f8fbff; border-left: 0.5px solid #e0eaff; color: #1e3a8a; }
+.sop-wrapper .cp-mayo-cell   { background: #fdf8ff; border-left: 0.5px solid #f0e0ff; color: #5b21b6; }
+.sop-wrapper .cp-tt-cell     { background: #f6fef9; border-left: 0.5px solid #d0f0df; color: #14532d; font-weight: 500; }
+.sop-wrapper .cp-res-cell    { background: #fffaf5; border-left: 0.5px solid #ffe8cc; color: #92400e; }
+.sop-wrapper .cp-ttv-cell    { background: #f9fafb; border-left: 0.5px solid #e2e8f0; color: #334155; font-weight: 500; }
+
+/* Celda % TS con color según semáforo */
+.sop-wrapper .cp-ts-pct   { font-weight: 700; font-size: 11.5px; }
+.sop-wrapper .cp-ts-verde  { color: #166534; }
+.sop-wrapper .cp-ts-amarillo { color: #854d0e; }
+.sop-wrapper .cp-ts-rojo   { color: #991b1b; }
+
+/* SKU name en tabla cp */
+.sop-wrapper .cp-sku-name { font-weight: 500; color: #111; font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px; }
+.sop-wrapper .cp-sku-desc { font-size: 10px; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px; }
+.sop-wrapper .cp-td-cod   { font-size: 10.5px; }
+.sop-wrapper .cp-mc-val   { font-weight: 600; color: #1a56db; font-size: 11px; }
+.sop-wrapper .cp-peso     { font-size: 10.5px; color: #999; }
+.sop-wrapper .cp-pqts-bold { font-weight: 700; }
+
+/* Gap negativo (descuento real) */
+.sop-wrapper .cp-gap-neg  { color: #dc2626 !important; }
+
+/* Filas con exceso/warning */
+.sop-wrapper .cp-tr-excede td { background: #fff1f2 !important; }
+.sop-wrapper .cp-tr-excede:hover td { background: #fee2e2 !important; }
+.sop-wrapper .cp-tr-warn td   { background: #fffbeb !important; }
+.sop-wrapper .cp-tr-warn:hover td { background: #fef3c7 !important; }
+
+/* Fila subtotal por negocio */
+.sop-wrapper .cp-tr-subtotal td {
+  background: #f8f8f7 !important;
+  border-top: 1px solid #e2e2e0;
+  border-bottom: 2px solid #d4d4d2;
+  font-size: 11px;
+}
+.sop-wrapper .cp-sub-num { font-weight: 700; color: #111; }
+
+/* ── Barra total (fila TT al fondo, como el Excel) ──── */
+.sop-wrapper .cp-total-bar {
+  background: #1a56db;
+  color: #fff;
+  border-radius: 10px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+.sop-wrapper .cp-total-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.7;
   white-space: nowrap;
 }
-
-.sop-wrapper .sop-badge-neg   { background: #f1f5f9; color: #475569; }
-.sop-wrapper .sop-badge-boni  { background: #fef9c3; color: #854d0e; }
-.sop-wrapper .sop-badge-dscto { background: #ede9fe; color: #6d28d9; }
-.sop-wrapper .sop-badge-sin   { background: #f1f5f9; color: #94a3b8; }
-
-/* ── Valores destacados ───────────────────────────────── */
-.sop-wrapper .sop-mc {
-  font-weight: 600;
-  color: #1a56db;
-  font-size: 12px;
+.sop-wrapper .cp-total-stats {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  flex: 1;
 }
-
-.sop-wrapper .sop-paq-max {
-  font-weight: 700;
-  color: #16a34a;
-  font-size: 12px;
+.sop-wrapper .cp-total-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
 }
+.sop-wrapper .cp-total-item-label { font-size: 9px; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.05em; }
+.sop-wrapper .cp-total-item-val   { font-size: 13px; font-weight: 600; white-space: nowrap; }
+.sop-wrapper .cp-total-sep        { font-size: 16px; opacity: 0.4; }
+.sop-wrapper .cp-total-divider    { width: 0.5px; height: 32px; background: rgba(255,255,255,0.25); margin: 0 4px; }
 
-.sop-wrapper .sop-ttv {
-  font-weight: 500;
-  color: #1a56db;
-  font-size: 12px;
+/* Badge % TS en la barra total */
+.sop-wrapper .cp-ts-badge {
+  font-size: 16px;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 8px;
+  white-space: nowrap;
 }
-
-/* ── Scrollbar ────────────────────────────────────────── */
-.sop-wrapper .dbb-content::-webkit-scrollbar       { width: 4px; }
-.sop-wrapper .dbb-content::-webkit-scrollbar-track { background: #f5f5f4; }
-.sop-wrapper .dbb-content::-webkit-scrollbar-thumb { background: #d4d4d2; border-radius: 99px; }
-.sop-wrapper .dbb-table-wrap::-webkit-scrollbar        { height: 4px; }
-.sop-wrapper .dbb-table-wrap::-webkit-scrollbar-track  { background: #f5f5f4; }
-.sop-wrapper .dbb-table-wrap::-webkit-scrollbar-thumb  { background: #d4d4d2; border-radius: 99px; }
+.sop-wrapper .cp-ts-badge-verde   { background: #dcfce7; color: #166534; }
+.sop-wrapper .cp-ts-badge-amarillo { background: #fef9c3; color: #854d0e; }
+.sop-wrapper .cp-ts-badge-rojo    { background: #fee2e2; color: #991b1b; }
 
 /* ── Responsive ───────────────────────────────────────── */
 @media (max-width: 1100px) {
-  .sop-wrapper .dbb-kpi-row {
-    grid-template-columns: repeat(3, 1fr) !important;
-  }
+  .sop-wrapper .dbb-kpi-row { grid-template-columns: repeat(3, 1fr) !important; }
 }
-
 @media (max-width: 750px) {
-  .sop-wrapper .dbb-kpi-row {
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
-  .sop-wrapper .dbb-filterbar {
-    height: auto;
-    padding: 10px 1rem;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
+  .sop-wrapper .dbb-kpi-row { grid-template-columns: repeat(2, 1fr) !important; }
+  .sop-wrapper .dbb-filterbar { height: auto; padding: 10px 1rem; flex-wrap: wrap; gap: 8px; }
   .sop-wrapper .dbb-filter-divider { display: none; }
   .sop-wrapper .dbb-content { padding: 1rem; }
+  .sop-wrapper .cp-total-bar { flex-direction: column; align-items: flex-start; gap: 10px; }
 }
