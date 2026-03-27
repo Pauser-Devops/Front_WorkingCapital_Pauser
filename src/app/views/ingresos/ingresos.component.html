@@ -28,7 +28,7 @@
         </svg>
         {{ sincronizando ? 'Sincronizando...' : 'PROSEGUR' }}
       </button>
-
+      <!--
       <button class="ing-btn-variacion" (click)="abrirVariacion()">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -36,7 +36,7 @@
           <polyline points="16 7 22 7 22 13" />
         </svg>
         Variación
-      </button>
+      </button> -->
       <button class="ing-btn-nueva" (click)="abrirPanel()">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -396,10 +396,10 @@
       <span class="ing-modal-title">Variación entre fechas</span>
     </div>
     <button class="ing-panel-close" (click)="cerrarVariacion()">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="18" y1="6" x2="6" y2="18"/>
-        <line x1="6" y1="6" x2="18" y2="18"/>
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18" />
+        <line x1="6" y1="6" x2="18" y2="18" />
       </svg>
     </button>
   </div>
@@ -446,21 +446,17 @@
             <!-- Filas de la sección -->
             <ng-container *ngFor="let fila of filasDeSeccion(seccion)">
               <tr [class.var-row-total]="fila.concepto.tipo_fila === 'total'"
-                  [class.var-row-item]="fila.concepto.tipo_fila === 'item'">
+                [class.var-row-item]="fila.concepto.tipo_fila === 'item'">
                 <td class="var-td-label"
-                    [style.paddingLeft.px]="fila.concepto.tipo_fila === 'total' ? 16 : 16 + (fila.concepto.indent || 0) * 10">
+                  [style.paddingLeft.px]="fila.concepto.tipo_fila === 'total' ? 16 : 16 + (fila.concepto.indent || 0) * 10">
                   {{ fila.concepto.nombre }}
                 </td>
                 <td class="var-td-num">{{ fmt(fila.v1) }}</td>
                 <td class="var-td-num">{{ fmt(fila.v2) }}</td>
-                <td class="var-td-num"
-                    [class.var-positivo]="fila.diff > 0"
-                    [class.var-negativo]="fila.diff < 0">
+                <td class="var-td-num" [class.var-positivo]="fila.diff > 0" [class.var-negativo]="fila.diff < 0">
                   {{ fila.diff >= 0 ? '+' : '' }}{{ fmt(fila.diff) }}
                 </td>
-                <td class="var-td-num"
-                    [class.var-positivo]="fila.diff > 0"
-                    [class.var-negativo]="fila.diff < 0">
+                <td class="var-td-num" [class.var-positivo]="fila.diff > 0" [class.var-negativo]="fila.diff < 0">
                   <ng-container *ngIf="fila.pct !== null">
                     {{ fila.diff >= 0 ? '+' : '' }}{{ fila.pct | number:'1.1-1' }}%
                   </ng-container>
@@ -475,11 +471,11 @@
 
     <!-- Aviso si fechas no seleccionadas o iguales -->
     <div class="var-aviso" *ngIf="!varFecha1 || !varFecha2 || varFecha1 === varFecha2">
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-        fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"/>
-        <line x1="12" y1="8" x2="12" y2="12"/>
-        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8"
+        stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
       </svg>
       Selecciona dos fechas distintas para ver la variación
     </div>

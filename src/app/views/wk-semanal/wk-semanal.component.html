@@ -8,190 +8,449 @@
     </div>
   </div>
 
+  <!-- PESTAÑAS -->
+  <div class="wk-tabs">
+    <button class="wk-tab" [class.wk-tab-activa]="pestanaActiva === 'tabla'"
+      (click)="pestanaActiva = 'tabla'">
+      <span class="material-icons" style="font-size:16px">table_chart</span>
+      Tabla por fecha
+    </button>
+    <button class="wk-tab" [class.wk-tab-activa]="pestanaActiva === 'variacion'"
+      (click)="pestanaActiva = 'variacion'">
+      <span class="material-icons" style="font-size:16px">trending_up</span>
+      Variación
+    </button>
+  </div>
+
   <div *ngIf="cargando" class="estado-msg">Cargando...</div>
   <div *ngIf="error" class="estado-msg error">{{ error }}</div>
 
-  <div class="nav-fechas" *ngIf="!cargando && fechas.length > 0">
-    <div class="eg-filtro-rango">
-      <label class="eg-filtro-label">Desde</label>
-      <input class="eg-filtro-input" type="date" [(ngModel)]="filtroDesde" />
-      <label class="eg-filtro-label">Hasta</label>
-      <input class="eg-filtro-input" type="date" [(ngModel)]="filtroHasta" />
-      <button class="eg-filtro-clear" (click)="filtroDesde=''; filtroHasta=''; indiceActivo=0"
-        *ngIf="filtroDesde || filtroHasta">✕ Limpiar</button>
+  <!-- ══════════════════ PESTAÑA TABLA ══════════════════ -->
+  <ng-container *ngIf="pestanaActiva === 'tabla'">
+
+    <div class="nav-fechas" *ngIf="!cargando && fechas.length > 0">
+      <div class="eg-filtro-rango">
+        <label class="eg-filtro-label">Desde</label>
+        <input class="eg-filtro-input" type="date" [(ngModel)]="filtroDesde" />
+        <label class="eg-filtro-label">Hasta</label>
+        <input class="eg-filtro-input" type="date" [(ngModel)]="filtroHasta" />
+        <button class="eg-filtro-clear" (click)="filtroDesde=''; filtroHasta=''; indiceActivo=0"
+          *ngIf="filtroDesde || filtroHasta">✕ Limpiar</button>
+      </div>
+      <button class="btn-export" (click)="exportar()">
+        <span class="material-icons">download</span>
+        Exportar Excel
+      </button>
     </div>
 
-    <button class="btn-export" (click)="exportar()">
-      <span class="material-icons">download</span>
-      Exportar Excel
-    </button>
-  </div>
-  <div class="wk-kpi-bar" *ngIf="fechasFiltradas.length > 0">
-    <div class="wk-kpi activo">
-      <span class="wk-kpi-lbl">Total Activo Corriente</span>
-      <span class="wk-kpi-val">{{ fmt(sumarKpi('activo')) }}</span>
+    <div class="wk-kpi-bar" *ngIf="fechasFiltradas.length > 0">
+      <div class="wk-kpi activo">
+        <span class="wk-kpi-lbl">Total Activo Corriente</span>
+        <span class="wk-kpi-val">{{ fmt(sumarKpi('activo')) }}</span>
+      </div>
+      <div class="wk-kpi pasivo">
+        <span class="wk-kpi-lbl">Total Pasivo Corriente</span>
+        <span class="wk-kpi-val">{{ fmt(sumarKpi('pasivo')) }}</span>
+      </div>
+      <div class="wk-kpi" [class.wk-pos]="sumarKpi('wk') >= 0" [class.wk-neg]="sumarKpi('wk') < 0">
+        <span class="wk-kpi-lbl">Working Capital</span>
+        <span class="wk-kpi-val">{{ fmt(sumarKpi('wk')) }}</span>
+      </div>
     </div>
-    <div class="wk-kpi pasivo">
-      <span class="wk-kpi-lbl">Total Pasivo Corriente</span>
-      <span class="wk-kpi-val">{{ fmt(sumarKpi('pasivo')) }}</span>
+
+    <div class="wk-tabla-wrap" *ngIf="!cargando && fechasFiltradas.length > 0">
+      <table class="wk-tabla">
+        <thead>
+          <tr>
+            <th class="wk-th-concepto">Concepto</th>
+            <th class="wk-th-fecha" *ngFor="let f of fechasFiltradas">{{ formatFecha(f) }}</th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <!-- ACTIVO -->
+          <tr class="wk-row-bloque activo-bloque">
+            <td [attr.colspan]="fechasFiltradas.length + 1">ACTIVO CORRIENTE</td>
+          </tr>
+
+          <!-- BANCOS -->
+          <tr class="wk-row-sec wk-row-toggle" (click)="toggleSeccion('bancos')">
+            <td class="wk-concepto">
+              <span class="wk-toggle-icon">{{ estaColapsada('bancos') ? '▶' : '▼' }}</span>
+              BANCOS
+            </td>
+            <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gBancosTotal(f)) }}</td>
+          </tr>
+          <ng-container *ngIf="!estaColapsada('bancos')">
+            <tr class="wk-row-item" *ngFor="let k of allBancoKeys">
+              <td class="wk-concepto wk-ind1">{{ k }}</td>
+              <td class="wk-val" *ngFor="let f of fechasFiltradas"
+                [class.pos]="(gBancosItem(f,k) ?? 0) > 0" [class.neg]="(gBancosItem(f,k) ?? 0) < 0">
+                {{ fmt(gBancosItem(f, k)) }}
+              </td>
+            </tr>
+          </ng-container>
+
+          <!-- PROSEGUR (sin items) -->
+          <tr class="wk-row-sec">
+            <td class="wk-concepto">PROSEGUR</td>
+            <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gProsegur(f)) }}</td>
+          </tr>
+
+          <!-- INVENTARIOS -->
+          <tr class="wk-row-sec wk-row-toggle" (click)="toggleSeccion('inv')">
+            <td class="wk-concepto">
+              <span class="wk-toggle-icon">{{ estaColapsada('inv') ? '▶' : '▼' }}</span>
+              INVENTARIOS
+            </td>
+            <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gInvTotal(f)) }}</td>
+          </tr>
+          <ng-container *ngIf="!estaColapsada('inv')">
+            <tr class="wk-row-item" *ngFor="let k of allInvKeys">
+              <td class="wk-concepto wk-ind1">{{ k }}</td>
+              <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gInvItem(f, k)) }}</td>
+            </tr>
+          </ng-container>
+
+          <!-- CUENTAS POR COBRAR -->
+          <tr class="wk-row-sec wk-row-toggle" (click)="toggleSeccion('cxc')">
+            <td class="wk-concepto">
+              <span class="wk-toggle-icon">{{ estaColapsada('cxc') ? '▶' : '▼' }}</span>
+              CUENTAS POR COBRAR
+            </td>
+            <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gCxcTotal(f)) }}</td>
+          </tr>
+          <ng-container *ngIf="!estaColapsada('cxc')">
+            <tr class="wk-row-item" *ngFor="let k of allCxcKeys">
+              <td class="wk-concepto wk-ind1">{{ k }}</td>
+              <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gCxcItem(f, k)) }}</td>
+            </tr>
+          </ng-container>
+
+          <tr class="wk-row-sec">
+            <td class="wk-concepto">VENTA EN RUTA</td>
+            <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gVentaRuta(f)) }}</td>
+          </tr>
+          <tr class="wk-row-sec">
+            <td class="wk-concepto">CRÉDITOS FISCALES</td>
+            <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gCredFiscal(f)) }}</td>
+          </tr>
+
+          <tr class="wk-row-total wk-total-activo">
+            <td class="wk-concepto">TOTAL ACTIVO CORRIENTE</td>
+            <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gTotalActivo(f)) }}</td>
+          </tr>
+
+          <tr class="wk-row-espacio"><td [attr.colspan]="fechasFiltradas.length + 1"></td></tr>
+
+          <!-- PASIVO -->
+          <tr class="wk-row-bloque pasivo-bloque">
+            <td [attr.colspan]="fechasFiltradas.length + 1">PASIVO CORRIENTE</td>
+          </tr>
+
+          <!-- CTAS POR PAGAR -->
+          <tr class="wk-row-sec wk-sec-pasivo wk-row-toggle" (click)="toggleSeccion('cxp')">
+            <td class="wk-concepto">
+              <span class="wk-toggle-icon">{{ estaColapsada('cxp') ? '▶' : '▼' }}</span>
+              CTAS POR PAGAR
+            </td>
+            <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gCtasPagarTotal(f)) }}</td>
+          </tr>
+          <ng-container *ngIf="!estaColapsada('cxp')">
+            <tr class="wk-row-item">
+              <td class="wk-concepto wk-ind1 wk-sublabel">Proveedores Principales</td>
+              <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gProvPrincTotal(f)) }}</td>
+            </tr>
+            <tr class="wk-row-item" *ngFor="let k of allProvKeys">
+              <td class="wk-concepto wk-ind2">{{ k }}</td>
+              <td class="wk-val" *ngFor="let f of fechasFiltradas"
+                [class.pos]="(gProvPrincItem(f,k) ?? 0) > 0" [class.neg]="(gProvPrincItem(f,k) ?? 0) < 0">
+                {{ fmt(gProvPrincItem(f, k)) }}
+              </td>
+            </tr>
+            <tr class="wk-row-item">
+              <td class="wk-concepto wk-ind1 wk-sublabel">Proveedores Secundarios</td>
+              <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gProvSec(f)) }}</td>
+            </tr>
+            <tr class="wk-row-item">
+              <td class="wk-concepto wk-ind1 wk-sublabel">Comodato Envases</td>
+              <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gComodato(f)) }}</td>
+            </tr>
+          </ng-container>
+
+          <!-- G&G -->
+          <tr class="wk-row-sec wk-sec-pasivo wk-row-toggle" (click)="toggleSeccion('gg')">
+            <td class="wk-concepto">
+              <span class="wk-toggle-icon">{{ estaColapsada('gg') ? '▶' : '▼' }}</span>
+              G&amp;G — Gente y Gestión
+            </td>
+            <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gGgTotal(f)) }}</td>
+          </tr>
+          <ng-container *ngIf="!estaColapsada('gg')">
+            <tr class="wk-row-item" *ngFor="let k of allGgKeys">
+              <td class="wk-concepto wk-ind1">{{ k }}</td>
+              <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gGgItem(f, k)) }}</td>
+            </tr>
+          </ng-container>
+
+          <!-- IMPUESTOS -->
+          <tr class="wk-row-sec wk-sec-pasivo wk-row-toggle" (click)="toggleSeccion('imp')">
+            <td class="wk-concepto">
+              <span class="wk-toggle-icon">{{ estaColapsada('imp') ? '▶' : '▼' }}</span>
+              IMPUESTOS
+            </td>
+            <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gImpTotal(f)) }}</td>
+          </tr>
+          <ng-container *ngIf="!estaColapsada('imp')">
+            <tr class="wk-row-item" *ngFor="let k of allImpKeys">
+              <td class="wk-concepto wk-ind1">{{ k }}</td>
+              <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gImpItem(f, k)) }}</td>
+            </tr>
+          </ng-container>
+
+          <tr class="wk-row-sec wk-sec-pasivo">
+            <td class="wk-concepto">DETRACCIONES</td>
+            <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gDetracciones(f)) }}</td>
+          </tr>
+
+          <!-- OBLIGACIONES FINANCIERAS -->
+          <tr class="wk-row-sec wk-sec-pasivo wk-row-toggle" (click)="toggleSeccion('oblig')">
+            <td class="wk-concepto">
+              <span class="wk-toggle-icon">{{ estaColapsada('oblig') ? '▶' : '▼' }}</span>
+              OBLIGACIONES FINANCIERAS
+            </td>
+            <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gObligTotal(f)) }}</td>
+          </tr>
+          <ng-container *ngIf="!estaColapsada('oblig')">
+            <tr class="wk-row-item" *ngFor="let k of allObligKeys">
+              <td class="wk-concepto wk-ind1">{{ k }}</td>
+              <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gObligItem(f, k)) }}</td>
+            </tr>
+          </ng-container>
+
+          <tr class="wk-row-total wk-total-pasivo">
+            <td class="wk-concepto">TOTAL PASIVO CORRIENTE</td>
+            <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gTotalPasivo(f)) }}</td>
+          </tr>
+
+          <tr class="wk-row-espacio"><td [attr.colspan]="fechasFiltradas.length + 1"></td></tr>
+
+          <tr class="wk-row-wk">
+            <td class="wk-concepto">WORKING CAPITAL (WK)</td>
+            <td class="wk-val" *ngFor="let f of fechasFiltradas"
+              [class.pos]="(gWk(f) ?? 0) > 0" [class.neg]="(gWk(f) ?? 0) < 0">
+              {{ fmt(gWk(f)) }}
+            </td>
+          </tr>
+          <tr class="wk-row-pago">
+            <td class="wk-concepto">PAGO A CUENTA RENTA</td>
+            <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gPago(f)) }}</td>
+          </tr>
+
+        </tbody>
+      </table>
     </div>
-    <div class="wk-kpi" [class.wk-pos]="sumarKpi('wk') >= 0" [class.wk-neg]="sumarKpi('wk') < 0">
-      <span class="wk-kpi-lbl">Working Capital</span>
-      <span class="wk-kpi-val">{{ fmt(sumarKpi('wk')) }}</span>
+  </ng-container>
+
+  <!-- ══════════════════ PESTAÑA VARIACIÓN ══════════════════ -->
+  <ng-container *ngIf="pestanaActiva === 'variacion'">
+
+    <div class="var-selector">
+      <div class="var-fecha-field">
+        <label class="eg-filtro-label">Fecha base</label>
+        <select class="eg-filtro-input" [(ngModel)]="varFecha1">
+          <option value="">— Seleccionar —</option>
+          <option *ngFor="let f of fechas" [value]="f">{{ formatFecha(f) }}</option>
+        </select>
+      </div>
+      <div class="var-flecha">→</div>
+      <div class="var-fecha-field">
+        <label class="eg-filtro-label">Fecha comparación</label>
+        <select class="eg-filtro-input" [(ngModel)]="varFecha2">
+          <option value="">— Seleccionar —</option>
+          <option *ngFor="let f of fechas" [value]="f">{{ formatFecha(f) }}</option>
+        </select>
+      </div>
     </div>
-  </div>
-  <div class="wk-tabla-wrap" *ngIf="!cargando && fechasFiltradas.length > 0">
-    <table class="wk-tabla">
-      <thead>
-        <tr>
-          <th class="wk-th-concepto">Concepto</th>
-          <th class="wk-th-fecha" *ngFor="let f of fechasFiltradas">{{ formatFecha(f) }}</th>
-        </tr>
-      </thead>
-      <tbody>
 
-        <!-- ACTIVO -->
-        <tr class="wk-row-bloque activo-bloque">
-          <td [attr.colspan]="fechasFiltradas.length + 1">ACTIVO CORRIENTE</td>
-        </tr>
+    <div class="var-aviso" *ngIf="!varFechasListas">
+      <span class="material-icons" style="color:#94a3b8;font-size:20px">info</span>
+      Selecciona dos fechas distintas para ver la variación
+    </div>
 
-        <tr class="wk-row-sec">
-          <td class="wk-concepto">BANCOS</td>
-          <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gBancosTotal(f)) }}</td>
-        </tr>
-        <tr class="wk-row-item" *ngFor="let k of allBancoKeys">
-          <td class="wk-concepto wk-ind1">{{ k }}</td>
-          <td class="wk-val" *ngFor="let f of fechasFiltradas" [class.pos]="(gBancosItem(f,k) ?? 0) > 0"
-            [class.neg]="(gBancosItem(f,k) ?? 0) < 0">
-            {{ fmt(gBancosItem(f, k)) }}
-          </td>
-        </tr>
+    <div class="wk-tabla-wrap" *ngIf="varFechasListas && varDatos1 && varDatos2">
+      <table class="wk-tabla">
+        <thead>
+          <tr>
+            <th class="wk-th-concepto">Concepto</th>
+            <th class="wk-th-fecha">{{ formatFecha(varFecha1) }}</th>
+            <th class="wk-th-fecha">{{ formatFecha(varFecha2) }}</th>
+            <th class="wk-th-fecha">Diferencia</th>
+            <th class="wk-th-fecha">%</th>
+          </tr>
+        </thead>
+        <tbody>
 
-        <tr class="wk-row-sec">
-          <td class="wk-concepto">PROSEGUR</td>
-          <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gProsegur(f)) }}</td>
-        </tr>
+          <tr class="wk-row-bloque activo-bloque">
+            <td colspan="5">ACTIVO CORRIENTE</td>
+          </tr>
 
-        <tr class="wk-row-sec">
-          <td class="wk-concepto">INVENTARIOS</td>
-          <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gInvTotal(f)) }}</td>
-        </tr>
-        <tr class="wk-row-item" *ngFor="let k of allInvKeys">
-          <td class="wk-concepto wk-ind1">{{ k }}</td>
-          <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gInvItem(f, k)) }}</td>
-        </tr>
+          <!-- BANCOS -->
+          <tr class="wk-row-sec wk-row-toggle" (click)="toggleSeccion('vbancos')">
+            <td class="wk-concepto"><span class="wk-toggle-icon">{{ estaColapsada('vbancos') ? '▶' : '▼' }}</span>BANCOS</td>
+            <ng-container *ngTemplateOutlet="varCells; context: { r: varDiff(gBancosTotal.bind(this)) }"></ng-container>
+          </tr>
+          <ng-container *ngIf="!estaColapsada('vbancos')">
+            <tr class="wk-row-item" *ngFor="let k of allBancoKeys">
+              <td class="wk-concepto wk-ind1">{{ k }}</td>
+              <ng-container *ngTemplateOutlet="varCells; context: { r: varItem(varDatos1!.activo.bancos.items, varDatos2!.activo.bancos.items, k) }"></ng-container>
+            </tr>
+          </ng-container>
 
-        <tr class="wk-row-sec">
-          <td class="wk-concepto">CUENTAS POR COBRAR</td>
-          <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gCxcTotal(f)) }}</td>
-        </tr>
-        <tr class="wk-row-item" *ngFor="let k of allCxcKeys">
-          <td class="wk-concepto wk-ind1">{{ k }}</td>
-          <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gCxcItem(f, k)) }}</td>
-        </tr>
+          <tr class="wk-row-sec">
+            <td class="wk-concepto">PROSEGUR</td>
+            <ng-container *ngTemplateOutlet="varCells; context: { r: varDiff(gProsegur.bind(this)) }"></ng-container>
+          </tr>
 
-        <tr class="wk-row-sec">
-          <td class="wk-concepto">VENTA EN RUTA</td>
-          <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gVentaRuta(f)) }}</td>
-        </tr>
-        <tr class="wk-row-sec">
-          <td class="wk-concepto">CRÉDITOS FISCALES</td>
-          <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gCredFiscal(f)) }}</td>
-        </tr>
-        <tr class="wk-row-total wk-total-activo">
-          <td class="wk-concepto">TOTAL ACTIVO CORRIENTE</td>
-          <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gTotalActivo(f)) }}</td>
-        </tr>
+          <!-- INVENTARIOS -->
+          <tr class="wk-row-sec wk-row-toggle" (click)="toggleSeccion('vinv')">
+            <td class="wk-concepto"><span class="wk-toggle-icon">{{ estaColapsada('vinv') ? '▶' : '▼' }}</span>INVENTARIOS</td>
+            <ng-container *ngTemplateOutlet="varCells; context: { r: varDiff(gInvTotal.bind(this)) }"></ng-container>
+          </tr>
+          <ng-container *ngIf="!estaColapsada('vinv')">
+            <tr class="wk-row-item" *ngFor="let k of allInvKeys">
+              <td class="wk-concepto wk-ind1">{{ k }}</td>
+              <ng-container *ngTemplateOutlet="varCells; context: { r: varItem(varDatos1!.activo.inventarios.items, varDatos2!.activo.inventarios.items, k) }"></ng-container>
+            </tr>
+          </ng-container>
 
-        <tr class="wk-row-espacio">
-          <td [attr.colspan]="fechasFiltradas.length + 1"></td>
-        </tr>
+          <!-- CXC -->
+          <tr class="wk-row-sec wk-row-toggle" (click)="toggleSeccion('vcxc')">
+            <td class="wk-concepto"><span class="wk-toggle-icon">{{ estaColapsada('vcxc') ? '▶' : '▼' }}</span>CUENTAS POR COBRAR</td>
+            <ng-container *ngTemplateOutlet="varCells; context: { r: varDiff(gCxcTotal.bind(this)) }"></ng-container>
+          </tr>
+          <ng-container *ngIf="!estaColapsada('vcxc')">
+            <tr class="wk-row-item" *ngFor="let k of allCxcKeys">
+              <td class="wk-concepto wk-ind1">{{ k }}</td>
+              <ng-container *ngTemplateOutlet="varCells; context: { r: varItem(varDatos1!.activo.cxc.items, varDatos2!.activo.cxc.items, k) }"></ng-container>
+            </tr>
+          </ng-container>
 
-        <!-- PASIVO -->
-        <tr class="wk-row-bloque pasivo-bloque">
-          <td [attr.colspan]="fechasFiltradas.length + 1">PASIVO CORRIENTE</td>
-        </tr>
+          <tr class="wk-row-sec">
+            <td class="wk-concepto">VENTA EN RUTA</td>
+            <ng-container *ngTemplateOutlet="varCells; context: { r: varDiff(gVentaRuta.bind(this)) }"></ng-container>
+          </tr>
+          <tr class="wk-row-sec">
+            <td class="wk-concepto">CRÉDITOS FISCALES</td>
+            <ng-container *ngTemplateOutlet="varCells; context: { r: varDiff(gCredFiscal.bind(this)) }"></ng-container>
+          </tr>
 
-        <tr class="wk-row-sec wk-sec-pasivo">
-          <td class="wk-concepto">CTAS POR PAGAR</td>
-          <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gCtasPagarTotal(f)) }}</td>
-        </tr>
-        <tr class="wk-row-item">
-          <td class="wk-concepto wk-ind1 wk-sublabel">Proveedores Principales</td>
-          <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gProvPrincTotal(f)) }}</td>
-        </tr>
-        <tr class="wk-row-item" *ngFor="let k of allProvKeys">
-          <td class="wk-concepto wk-ind2">{{ k }}</td>
-          <td class="wk-val" *ngFor="let f of fechasFiltradas" [class.pos]="(gProvPrincItem(f,k) ?? 0) > 0"
-            [class.neg]="(gProvPrincItem(f,k) ?? 0) < 0">
-            {{ fmt(gProvPrincItem(f, k)) }}
-          </td>
-        </tr>
-        <tr class="wk-row-item">
-          <td class="wk-concepto wk-ind1 wk-sublabel">Proveedores Secundarios</td>
-          <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gProvSec(f)) }}</td>
-        </tr>
-        <tr class="wk-row-item">
-          <td class="wk-concepto wk-ind1 wk-sublabel">Comodato Envases</td>
-          <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gComodato(f)) }}</td>
-        </tr>
+          <tr class="wk-row-total wk-total-activo">
+            <td class="wk-concepto">TOTAL ACTIVO CORRIENTE</td>
+            <ng-container *ngTemplateOutlet="varCells; context: { r: varDiff(gTotalActivo.bind(this)) }"></ng-container>
+          </tr>
 
-        <tr class="wk-row-sec wk-sec-pasivo">
-          <td class="wk-concepto">G&amp;G — Gente y Gestión</td>
-          <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gGgTotal(f)) }}</td>
-        </tr>
-        <tr class="wk-row-item" *ngFor="let k of allGgKeys">
-          <td class="wk-concepto wk-ind1">{{ k }}</td>
-          <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gGgItem(f, k)) }}</td>
-        </tr>
+          <tr class="wk-row-espacio"><td colspan="5"></td></tr>
 
-        <tr class="wk-row-sec wk-sec-pasivo">
-          <td class="wk-concepto">IMPUESTOS</td>
-          <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gImpTotal(f)) }}</td>
-        </tr>
-        <tr class="wk-row-item" *ngFor="let k of allImpKeys">
-          <td class="wk-concepto wk-ind1">{{ k }}</td>
-          <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gImpItem(f, k)) }}</td>
-        </tr>
+          <tr class="wk-row-bloque pasivo-bloque"><td colspan="5">PASIVO CORRIENTE</td></tr>
 
-        <tr class="wk-row-sec wk-sec-pasivo">
-          <td class="wk-concepto">DETRACCIONES</td>
-          <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gDetracciones(f)) }}</td>
-        </tr>
+          <!-- CTAS PAGAR -->
+          <tr class="wk-row-sec wk-sec-pasivo wk-row-toggle" (click)="toggleSeccion('vcxp')">
+            <td class="wk-concepto"><span class="wk-toggle-icon">{{ estaColapsada('vcxp') ? '▶' : '▼' }}</span>CTAS POR PAGAR</td>
+            <ng-container *ngTemplateOutlet="varCells; context: { r: varDiff(gCtasPagarTotal.bind(this)) }"></ng-container>
+          </tr>
+          <ng-container *ngIf="!estaColapsada('vcxp')">
+            <tr class="wk-row-item">
+              <td class="wk-concepto wk-ind1 wk-sublabel">Proveedores Principales</td>
+              <ng-container *ngTemplateOutlet="varCells; context: { r: varDiff(gProvPrincTotal.bind(this)) }"></ng-container>
+            </tr>
+            <tr class="wk-row-item" *ngFor="let k of allProvKeys">
+              <td class="wk-concepto wk-ind2">{{ k }}</td>
+              <ng-container *ngTemplateOutlet="varCells; context: { r: varItem(varDatos1!.pasivo.ctasPagar.proveedoresPrincipales.items, varDatos2!.pasivo.ctasPagar.proveedoresPrincipales.items, k) }"></ng-container>
+            </tr>
+            <tr class="wk-row-item">
+              <td class="wk-concepto wk-ind1 wk-sublabel">Proveedores Secundarios</td>
+              <ng-container *ngTemplateOutlet="varCells; context: { r: varDiff(gProvSec.bind(this)) }"></ng-container>
+            </tr>
+            <tr class="wk-row-item">
+              <td class="wk-concepto wk-ind1 wk-sublabel">Comodato Envases</td>
+              <ng-container *ngTemplateOutlet="varCells; context: { r: varDiff(gComodato.bind(this)) }"></ng-container>
+            </tr>
+          </ng-container>
 
-        <tr class="wk-row-sec wk-sec-pasivo">
-          <td class="wk-concepto">OBLIGACIONES FINANCIERAS</td>
-          <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gObligTotal(f)) }}</td>
-        </tr>
-        <tr class="wk-row-item" *ngFor="let k of allObligKeys">
-          <td class="wk-concepto wk-ind1">{{ k }}</td>
-          <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gObligItem(f, k)) }}</td>
-        </tr>
+          <!-- G&G -->
+          <tr class="wk-row-sec wk-sec-pasivo wk-row-toggle" (click)="toggleSeccion('vgg')">
+            <td class="wk-concepto"><span class="wk-toggle-icon">{{ estaColapsada('vgg') ? '▶' : '▼' }}</span>G&amp;G — Gente y Gestión</td>
+            <ng-container *ngTemplateOutlet="varCells; context: { r: varDiff(gGgTotal.bind(this)) }"></ng-container>
+          </tr>
+          <ng-container *ngIf="!estaColapsada('vgg')">
+            <tr class="wk-row-item" *ngFor="let k of allGgKeys">
+              <td class="wk-concepto wk-ind1">{{ k }}</td>
+              <ng-container *ngTemplateOutlet="varCells; context: { r: varItem(varDatos1!.pasivo.gg.items, varDatos2!.pasivo.gg.items, k) }"></ng-container>
+            </tr>
+          </ng-container>
 
-        <tr class="wk-row-total wk-total-pasivo">
-          <td class="wk-concepto">TOTAL PASIVO CORRIENTE</td>
-          <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gTotalPasivo(f)) }}</td>
-        </tr>
+          <!-- IMPUESTOS -->
+          <tr class="wk-row-sec wk-sec-pasivo wk-row-toggle" (click)="toggleSeccion('vimp')">
+            <td class="wk-concepto"><span class="wk-toggle-icon">{{ estaColapsada('vimp') ? '▶' : '▼' }}</span>IMPUESTOS</td>
+            <ng-container *ngTemplateOutlet="varCells; context: { r: varDiff(gImpTotal.bind(this)) }"></ng-container>
+          </tr>
+          <ng-container *ngIf="!estaColapsada('vimp')">
+            <tr class="wk-row-item" *ngFor="let k of allImpKeys">
+              <td class="wk-concepto wk-ind1">{{ k }}</td>
+              <ng-container *ngTemplateOutlet="varCells; context: { r: varItem(varDatos1!.pasivo.impuestos.items, varDatos2!.pasivo.impuestos.items, k) }"></ng-container>
+            </tr>
+          </ng-container>
 
-        <tr class="wk-row-espacio">
-          <td [attr.colspan]="fechasFiltradas.length + 1"></td>
-        </tr>
+          <tr class="wk-row-sec wk-sec-pasivo">
+            <td class="wk-concepto">DETRACCIONES</td>
+            <ng-container *ngTemplateOutlet="varCells; context: { r: varDiff(gDetracciones.bind(this)) }"></ng-container>
+          </tr>
 
-        <tr class="wk-row-wk">
-          <td class="wk-concepto">WORKING CAPITAL (WK)</td>
-          <td class="wk-val" *ngFor="let f of fechasFiltradas" [class.pos]="(gWk(f) ?? 0) > 0"
-            [class.neg]="(gWk(f) ?? 0) < 0">
-            {{ fmt(gWk(f)) }}
-          </td>
-        </tr>
+          <!-- OBLIGACIONES -->
+          <tr class="wk-row-sec wk-sec-pasivo wk-row-toggle" (click)="toggleSeccion('voblig')">
+            <td class="wk-concepto"><span class="wk-toggle-icon">{{ estaColapsada('voblig') ? '▶' : '▼' }}</span>OBLIGACIONES FINANCIERAS</td>
+            <ng-container *ngTemplateOutlet="varCells; context: { r: varDiff(gObligTotal.bind(this)) }"></ng-container>
+          </tr>
+          <ng-container *ngIf="!estaColapsada('voblig')">
+            <tr class="wk-row-item" *ngFor="let k of allObligKeys">
+              <td class="wk-concepto wk-ind1">{{ k }}</td>
+              <ng-container *ngTemplateOutlet="varCells; context: { r: varItem(varDatos1!.pasivo.obligacionesFinancieras.items, varDatos2!.pasivo.obligacionesFinancieras.items, k) }"></ng-container>
+            </tr>
+          </ng-container>
 
-        <tr class="wk-row-pago">
-          <td class="wk-concepto">PAGO A CUENTA RENTA</td>
-          <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gPago(f)) }}</td>
-        </tr>
+          <tr class="wk-row-total wk-total-pasivo">
+            <td class="wk-concepto">TOTAL PASIVO CORRIENTE</td>
+            <ng-container *ngTemplateOutlet="varCells; context: { r: varDiff(gTotalPasivo.bind(this)) }"></ng-container>
+          </tr>
 
-      </tbody>
-    </table>
-  </div>
+          <tr class="wk-row-espacio"><td colspan="5"></td></tr>
+
+          <tr class="wk-row-wk">
+            <td class="wk-concepto">WORKING CAPITAL (WK)</td>
+            <ng-container *ngTemplateOutlet="varCells; context: { r: varDiff(gWk.bind(this)) }"></ng-container>
+          </tr>
+          <tr class="wk-row-pago">
+            <td class="wk-concepto">PAGO A CUENTA RENTA</td>
+            <ng-container *ngTemplateOutlet="varCells; context: { r: varDiff(gPago.bind(this)) }"></ng-container>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
 
 </div>
+
+<!-- Template reutilizable para celdas de variación -->
+<ng-template #varCells let-r="r">
+  <td class="wk-val">{{ fmt(r.v1) }}</td>
+  <td class="wk-val">{{ fmt(r.v2) }}</td>
+  <td class="wk-val" [class.var-pos]="r.diff > 0" [class.var-neg]="r.diff < 0">
+    {{ fmtDiff(r.diff) }}
+  </td>
+  <td class="wk-val" [class.var-pos]="r.diff > 0" [class.var-neg]="r.diff < 0">
+    <ng-container *ngIf="r.pct !== null">{{ r.diff >= 0 ? '+' : '' }}{{ r.pct | number:'1.1-1' }}%</ng-container>
+    <ng-container *ngIf="r.pct === null">—</ng-container>
+  </td>
+</ng-template>

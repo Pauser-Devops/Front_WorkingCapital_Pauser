@@ -203,12 +203,69 @@ export class WkSemanalComponent implements OnInit, OnDestroy {
     return Array.from(s);
   }
   sumarKpi(campo: 'activo' | 'pasivo' | 'wk'): number {
-  return this.fechasFiltradas.reduce((acc, f) => {
-    const d = this.datos[f];
-    if (!d) return acc;
-    if (campo === 'activo') return acc + d.activo.total;
-    if (campo === 'pasivo') return acc + d.pasivo.total;
-    return acc + d.wk;
-  }, 0);
-}
+    return this.fechasFiltradas.reduce((acc, f) => {
+      const d = this.datos[f];
+      if (!d) return acc;
+      if (campo === 'activo') return acc + d.activo.total;
+      if (campo === 'pasivo') return acc + d.pasivo.total;
+      return acc + d.wk;
+    }, 0);
+  }
+
+  // ── PESTAÑAS ──────────────────────────────────────────
+  pestanaActiva: 'tabla' | 'variacion' = 'tabla';
+
+  // ── COLAPSABLES ───────────────────────────────────────
+  seccionesColapsadas = new Set<string>();
+
+  toggleSeccion(key: string) {
+    if (this.seccionesColapsadas.has(key)) {
+      this.seccionesColapsadas.delete(key);
+    } else {
+      this.seccionesColapsadas.add(key);
+    }
+  }
+
+  estaColapsada(key: string): boolean {
+    return this.seccionesColapsadas.has(key);
+  }
+
+  // ── VARIACIÓN ─────────────────────────────────────────
+  varFecha1 = '';
+  varFecha2 = '';
+
+  get varFechasListas(): boolean {
+    return !!this.varFecha1 && !!this.varFecha2 && this.varFecha1 !== this.varFecha2;
+  }
+
+  formatFechaLabel(f: string): string { return this.formatFecha(f); }
+
+  varDiff(getter: (f: string) => number | null): { v1: number; v2: number; diff: number; pct: number | null } {
+    const v1 = getter(this.varFecha1) ?? 0;
+    const v2 = getter(this.varFecha2) ?? 0;
+    const diff = v2 - v1;
+    const pct = v1 !== 0 ? (diff / Math.abs(v1)) * 100 : null;
+    return { v1, v2, diff, pct };
+  }
+
+  varItem(items1: Record<string, number>, items2: Record<string, number>, k: string) {
+    const v1 = items1[k] ?? 0;
+    const v2 = items2[k] ?? 0;
+    const diff = v2 - v1;
+    const pct = v1 !== 0 ? (diff / Math.abs(v1)) * 100 : null;
+    return { v1, v2, diff, pct };
+  }
+
+  get varDatos1(): WkDatos | null { return this.datos[this.varFecha1] ?? null; }
+  get varDatos2(): WkDatos | null { return this.datos[this.varFecha2] ?? null; }
+
+  fmtDiff(diff: number): string {
+    const s = this.fmt(Math.abs(diff));
+    return (diff >= 0 ? '+' : '−') + s;
+  }
+
+  classDiff(diff: number): string {
+    return diff > 0 ? 'var-pos' : diff < 0 ? 'var-neg' : '';
+  }
+
 }
