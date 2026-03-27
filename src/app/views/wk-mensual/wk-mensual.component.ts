@@ -148,7 +148,7 @@ export class WkMensualComponent implements OnInit, OnDestroy {
   gCxcTotal(ym: string): number | null { return this.get$(ym)?.activo.cxc.total ?? null; }
   gCxcItem(ym: string, k: string): number | null { return this.get$(ym)?.activo.cxc.items[k] ?? null; }
   gVentaRuta(ym: string): number | null { return this.get$(ym)?.activo.ventaEnRuta ?? null; }
-   gCredFiscal(ym: string): number | null { return this.get$(ym)?.activo.credFiscal ?? null; }
+  gCredFiscal(ym: string): number | null { return this.get$(ym)?.activo.credFiscal ?? null; }
   gTotalActivo(ym: string): number | null { return this.get$(ym)?.activo.total ?? null; }
   gCtasPagarTotal(ym: string): number | null { return this.get$(ym)?.pasivo.ctasPagar.total ?? null; }
   gProvPrincTotal(ym: string): number | null { return this.get$(ym)?.pasivo.ctasPagar.proveedoresPrincipales.total ?? null; }
@@ -210,4 +210,58 @@ export class WkMensualComponent implements OnInit, OnDestroy {
       return acc + d.wk;
     }, 0);
   }
+
+  // ── PESTAÑAS ──────────────────────────────────────────
+  pestanaActiva: 'tabla' | 'variacion' = 'tabla';
+
+  // ── COLAPSABLES ───────────────────────────────────────
+  seccionesColapsadas = new Set<string>();
+
+  toggleSeccion(key: string) {
+    if (this.seccionesColapsadas.has(key)) {
+      this.seccionesColapsadas.delete(key);
+    } else {
+      this.seccionesColapsadas.add(key);
+    }
+  }
+
+  estaColapsada(key: string): boolean {
+    return this.seccionesColapsadas.has(key);
+  }
+
+  // ── VARIACIÓN ─────────────────────────────────────────
+  varMes1 = '';
+  varMes2 = '';
+
+  get varMesesListos(): boolean {
+    return !!this.varMes1 && !!this.varMes2 && this.varMes1 !== this.varMes2;
+  }
+
+  get varDatos1(): WkDatos | null { return this.datos[this.varMes1] ?? null; }
+  get varDatos2(): WkDatos | null { return this.datos[this.varMes2] ?? null; }
+
+  varDiff(getter: (ym: string) => number | null) {
+    const v1 = getter(this.varMes1) ?? 0;
+    const v2 = getter(this.varMes2) ?? 0;
+    const diff = v2 - v1;
+    const pct = v1 !== 0 ? (diff / Math.abs(v1)) * 100 : null;
+    return { v1, v2, diff, pct };
+  }
+
+  varItem(items1: Record<string, number>, items2: Record<string, number>, k: string) {
+    const v1 = items1[k] ?? 0;
+    const v2 = items2[k] ?? 0;
+    const diff = v2 - v1;
+    const pct = v1 !== 0 ? (diff / Math.abs(v1)) * 100 : null;
+    return { v1, v2, diff, pct };
+  }
+
+  fmtDiff(diff: number): string {
+    return (diff >= 0 ? '+' : '−') + this.fmt(Math.abs(diff));
+  }
+
+  labelMes(ym: string): string {
+    return this.meses.find(m => m.ym === ym)?.label ?? ym;
+  }
+
 }

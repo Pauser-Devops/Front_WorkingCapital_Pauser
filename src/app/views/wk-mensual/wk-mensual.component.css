@@ -184,3 +184,59 @@
 
 .wk-kpi.wk-neg { border-color: #fca5a5; background: #fef2f2; }
 .wk-kpi.wk-neg .wk-kpi-val { color: #dc2626; }
+
+
+/* ── Pestañas ── */
+.wk-tabs {
+  display: flex; gap: 4px; margin-bottom: 20px;
+  border-bottom: 2px solid #e5e7eb; padding-bottom: 0;
+}
+.wk-tab {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 20px; border: none; background: none;
+  color: #64748b; font-size: 13px; font-weight: 600;
+  cursor: pointer; border-bottom: 2px solid transparent;
+  margin-bottom: -2px; border-radius: 6px 6px 0 0; transition: all .15s;
+}
+.wk-tab:hover { color: #1a2b4a; background: #f1f5f9; }
+.wk-tab-activa { color: #1a2b4a !important; border-bottom-color: #1a2b4a !important; background: none !important; }
+
+/* ── Toggle ── */
+.wk-row-toggle { cursor: pointer; user-select: none; }
+.wk-row-toggle:hover td { filter: brightness(1.08); }
+.wk-toggle-icon { font-size: 10px; margin-right: 8px; opacity: 0.7; display: inline-block; width: 12px; }
+
+/* ── Variación ── */
+.var-selector {
+  display: flex; align-items: flex-end; gap: 16px;
+  margin-bottom: 20px; padding: 14px 18px;
+  background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 10px;
+}
+.var-fecha-field { display: flex; flex-direction: column; gap: 4px; }
+.var-flecha { font-size: 22px; color: #94a3b8; padding-bottom: 4px; }
+.var-aviso {
+  display: flex; align-items: center; gap: 10px;
+  color: #94a3b8; font-size: 13px; padding: 40px; justify-content: center;
+}
+.var-celda { border-left: 2px solid rgba(0,0,0,0.06); }
+.var-pos { color: #15803d !important; font-weight: 700 !important; background: #f0fdf4 !important; }
+.var-neg { color: #dc2626 !important; font-weight: 700 !important; background: #fef2f2 !important; }
+.var-cero { color: #94a3b8 !important; background: #f8fafc !important; font-weight: 500 !important; }
+
+.wk-row-sec td.var-celda,
+.wk-row-total td.var-celda,
+.wk-row-wk td.var-celda,
+.wk-row-pago td.var-celda { background: #f1f5f9 !important; color: #64748b !important; }
+
+.wk-row-sec td.var-pos, .wk-row-total td.var-pos,
+.wk-row-wk td.var-pos, .wk-row-pago td.var-pos {
+  color: #15803d !important; background: #dcfce7 !important; font-weight: 700 !important;
+}
+.wk-row-sec td.var-neg, .wk-row-total td.var-neg,
+.wk-row-wk td.var-neg, .wk-row-pago td.var-neg {
+  color: #991b1b !important; background: #fecaca !important; font-weight: 700 !important;
+}
+.wk-row-sec td.var-cero, .wk-row-total td.var-cero,
+.wk-row-wk td.var-cero, .wk-row-pago td.var-cero {
+  color: #94a3b8 !important; background: #f1f5f9 !important; font-weight: 500 !important;
+}
