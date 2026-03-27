@@ -55,7 +55,7 @@ interface DashData {
 @Component({
   selector: 'app-dash-wk',
   standalone: true,
- imports: [CommonModule, DecimalPipe, DonutChartComponent, FormsModule],
+  imports: [CommonModule, DecimalPipe, DonutChartComponent, FormsModule],
   templateUrl: './dash-wk.component.html',
   styleUrls: ['./dash-wk.component.css'],
 })
@@ -90,35 +90,35 @@ export class DashWkComponent implements OnInit, OnDestroy {
   ngOnDestroy() { this.destroy$.next(); this.destroy$.complete(); }
 
   cargar() {
-  this.cargando = true;
-  let url = `${API}/dashboard-wk/resumen`;
-  const params = [];
-  if (this.filtroDesde) params.push(`fecha_desde=${this.filtroDesde}`);
-  if (this.filtroHasta) params.push(`fecha_hasta=${this.filtroHasta}`);
-  if (params.length) url += '?' + params.join('&');
+    this.cargando = true;
+    let url = `${API}/dashboard-wk/resumen`;
+    const params = [];
+    if (this.filtroDesde) params.push(`fecha_desde=${this.filtroDesde}`);
+    if (this.filtroHasta) params.push(`fecha_hasta=${this.filtroHasta}`);
+    if (params.length) url += '?' + params.join('&');
 
-  this.http.get<any>(url).subscribe({
-    next: r => {
-      this.cargando = false;
-      if (r.estado === 'OK') {
-        this.datos = r.datos;
-        this.slicesActivo = asignarColores(r.datos.composicion_activo, COLORES_ACTIVO);
-        this.slicesPasivo = asignarColores(r.datos.composicion_pasivo, COLORES_PASIVO);
-        this.hiddenActivo.clear();
-        this.hiddenPasivo.clear();
-      } else {
-        this.error = r.detalle ?? 'Error al cargar';
-      }
-    },
-    error: () => { this.cargando = false; this.error = 'Error de conexión'; }
-  });
-}
+    this.http.get<any>(url).subscribe({
+      next: r => {
+        this.cargando = false;
+        if (r.estado === 'OK') {
+          this.datos = r.datos;
+          this.slicesActivo = asignarColores(r.datos.composicion_activo, COLORES_ACTIVO);
+          this.slicesPasivo = asignarColores(r.datos.composicion_pasivo, COLORES_PASIVO);
+          this.hiddenActivo.clear();
+          this.hiddenPasivo.clear();
+        } else {
+          this.error = r.detalle ?? 'Error al cargar';
+        }
+      },
+      error: () => { this.cargando = false; this.error = 'Error de conexión'; }
+    });
+  }
 
-limpiarFiltro() {
-  this.filtroDesde = '';
-  this.filtroHasta = '';
-  this.cargar();
-}
+  limpiarFiltro() {
+    this.filtroDesde = '';
+    this.filtroHasta = '';
+    this.cargar();
+  }
 
   // ── Toggle leyenda ────────────────────────────────────────────
   toggleActivo(name: string) {
@@ -153,14 +153,18 @@ limpiarFiltro() {
     if (n == null) return '—';
     return n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
-
+  /* formato en Millones (resumido)
+    fmtM(n: number | null | undefined): string {
+      if (n == null) return '—';
+      if (Math.abs(n) >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+      if (Math.abs(n) >= 1_000) return (n / 1_000).toFixed(0) + 'K';
+      return n.toFixed(0);
+    }
+  */
   fmtM(n: number | null | undefined): string {
     if (n == null) return '—';
-    if (Math.abs(n) >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
-    if (Math.abs(n) >= 1_000) return (n / 1_000).toFixed(0) + 'K';
-    return n.toFixed(0);
+    return n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
-
   fmtVar(v: number | null): string {
     if (v == null) return '';
     return (v >= 0 ? '▲ ' : '▼ ') + Math.abs(v).toFixed(1) + '%';

@@ -237,7 +237,7 @@ export class SimuladorOptimoComponent implements OnInit {
             mes:         c.mes,
             anio:        c.anio,
             skus_count:  c.filas ?? c.filas_cargadas ?? 0,
-            fecha_carga: c.created_at ?? c.fecha,
+            fecha_carga: c.fecha_carga ?? c.fecha,
             archivo:     c.archivo ?? c.nombre_archivo,
           }));
         this.cargandoPrecios = false;
