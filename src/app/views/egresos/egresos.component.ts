@@ -724,4 +724,20 @@ export class EgresosComponent implements OnInit {
     this.valoresPanel[ID_PROV_GRAT] =
       Math.round(this.gratDiario * this.diasGratAcumulados(this.nuevaFecha) * 100) / 100;
   }
+
+
+  // ── COLAPSABLES ───────────────────────────────────────
+seccionesColapsadas = new Set<string>();
+
+toggleSeccion(seccion: string) {
+  if (this.seccionesColapsadas.has(seccion)) {
+    this.seccionesColapsadas.delete(seccion);
+  } else {
+    this.seccionesColapsadas.add(seccion);
+  }
+}
+
+estaColapsada(seccion: string): boolean {
+  return this.seccionesColapsadas.has(seccion);
+}
 }

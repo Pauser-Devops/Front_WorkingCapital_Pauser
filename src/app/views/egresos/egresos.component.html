@@ -32,20 +32,20 @@
     <button class="eg-tab" [class.eg-tab-activo]="tabActivo === 'tabla'" (click)="tabActivo = 'tabla'">
       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="3" width="18" height="18" rx="2"/>
-        <line x1="3" y1="9" x2="21" y2="9"/>
-        <line x1="3" y1="15" x2="21" y2="15"/>
-        <line x1="9" y1="3" x2="9" y2="21"/>
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <line x1="3" y1="9" x2="21" y2="9" />
+        <line x1="3" y1="15" x2="21" y2="15" />
+        <line x1="9" y1="3" x2="9" y2="21" />
       </svg>
       Tabla por fecha
     </button>
     <button class="eg-tab" [class.eg-tab-activo]="tabActivo === 'provisiones'" (click)="tabActivo = 'provisiones'">
       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-        <circle cx="9" cy="7" r="4"/>
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
       </svg>
       Provisiones
     </button>
@@ -119,15 +119,16 @@
         <tbody>
           <ng-container *ngFor="let c of conceptos; trackBy: trackById">
 
-            <!-- SECCIÓN -->
-            <tr *ngIf="esSeccion(c)" class="eg-row-seccion">
+            <!-- SECCIÓN — clickeable -->
+            <tr *ngIf="esSeccion(c)" class="eg-row-seccion eg-row-toggle" (click)="toggleSeccion(c.seccion)">
               <td class="eg-td-seccion eg-col-sticky">
+                <span class="eg-toggle-icon">{{ estaColapsada(c.seccion) ? '▶' : '▼' }}</span>
                 {{ c.seccion === 'RENTA' ? '' : c.nombre }}
               </td>
               <td *ngFor="let col of columnasFiltradas; trackBy: trackByFecha" class="eg-td-seccion-fill"></td>
             </tr>
 
-            <!-- TOTAL -->
+            <!-- TOTAL — siempre visible -->
             <tr *ngIf="esTotal(c)" class="eg-row-total" [class.eg-row-total-pagar]="c.id === 57">
               <td class="eg-td-label total eg-col-sticky" [class.eg-td-total-pagar]="c.id === 57">
                 {{ c.nombre }}
@@ -138,8 +139,9 @@
               </td>
             </tr>
 
-            <!-- ITEM -->
-            <tr *ngIf="esItem(c) && mostrarFila(c.id)" class="eg-row-item" [class.eg-row-total-pagar]="c.id === 57">
+            <!-- ITEM — se oculta si sección colapsada -->
+            <tr *ngIf="esItem(c) && mostrarFila(c.id) && !estaColapsada(c.seccion)" class="eg-row-item"
+              [class.eg-row-total-pagar]="c.id === 57">
               <td class="eg-td-label eg-col-sticky" [style.paddingLeft.px]="16 + (c.indent || 0) * 12"
                 [class.eg-td-total-pagar]="c.id === 49">
                 {{ c.nombre }}
@@ -159,13 +161,13 @@
                     c.id === 57
                     ? fmt(getTotalPagar(col.fecha))
                     : (conceptoAplicaEnFecha(c.id, col.fecha) ? fmt(getValor(c.id, col.fecha)) : '—')
-                  }}</span>
+                    }}</span>
                 </ng-template>
               </td>
             </tr>
 
-            <!-- SUBITEM -->
-            <tr *ngIf="esSubitem(c)" class="eg-row-subitem">
+            <!-- SUBITEM — se oculta si sección colapsada -->
+            <tr *ngIf="esSubitem(c) && !estaColapsada(c.seccion)" class="eg-row-subitem">
               <td class="eg-td-label subitem eg-col-sticky" [style.paddingLeft.px]="16 + (c.indent || 0) * 12">
                 <span class="eg-indent-line"></span>{{ c.nombre }}
               </td>
@@ -219,13 +221,8 @@
         </div>
         <div class="prov-base-right">
           <span class="prov-base-prefix">S/</span>
-          <input
-            class="prov-base-input"
-            type="text"
-            [value]="fmtProvBase(sueldoBase)"
-            (focus)="onProvBaseFocus($event)"
-            (blur)="onProvBaseBlur($event)"
-            (input)="onProvBaseInput($event)" />
+          <input class="prov-base-input" type="text" [value]="fmtProvBase(sueldoBase)" (focus)="onProvBaseFocus($event)"
+            (blur)="onProvBaseBlur($event)" (input)="onProvBaseInput($event)" />
           <button class="prov-base-save" (click)="guardarSueldoBase()" [class.saved]="sueldoBaseSaved">
             <span class="material-icons" style="font-size:16px">{{ sueldoBaseSaved ? 'check' : 'save' }}</span>
             {{ sueldoBaseSaved ? 'Guardado' : 'Guardar' }}
@@ -242,11 +239,11 @@
             <div class="prov-card-icon prov-icon-grat">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 12 20 22 4 22 4 12"/>
-                <rect x="2" y="7" width="20" height="5"/>
-                <line x1="12" y1="22" x2="12" y2="7"/>
-                <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
-                <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+                <polyline points="20 12 20 22 4 22 4 12" />
+                <rect x="2" y="7" width="20" height="5" />
+                <line x1="12" y1="22" x2="12" y2="7" />
+                <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
+                <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
               </svg>
             </div>
             <div>
@@ -290,8 +287,8 @@
             <div class="prov-card-icon prov-icon-cts">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                <line x1="1" y1="10" x2="23" y2="10"/>
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                <line x1="1" y1="10" x2="23" y2="10" />
               </svg>
             </div>
             <div>
@@ -335,8 +332,8 @@
             <div class="prov-card-icon prov-icon-total">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="12" y1="1" x2="12" y2="23"/>
-                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                <line x1="12" y1="1" x2="12" y2="23" />
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
               </svg>
             </div>
             <div>
@@ -367,10 +364,12 @@
           <div class="prov-uso-hint">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
-              <line x1="12" y1="16" x2="12.01" y2="16"/>
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
-            Usa el valor <strong>mensual</strong> en la fila "Provisiones Gente y Gestión" al crear una nueva fecha en Egresos.
+            Usa el valor <strong>mensual</strong> en la fila "Provisiones Gente y Gestión" al crear una nueva fecha en
+            Egresos.
           </div>
         </div>
 

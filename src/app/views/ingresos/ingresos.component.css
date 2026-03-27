@@ -1126,3 +1126,15 @@
   padding: 32px;
   justify-content: center;
 }
+
+/* ── Toggle secciones ── */
+.ing-row-toggle { cursor: pointer; user-select: none; }
+.ing-row-toggle:hover td { filter: brightness(1.12); }
+
+.ing-toggle-icon {
+  font-size: 10px;
+  margin-right: 8px;
+  opacity: 0.8;
+  display: inline-block;
+  width: 12px;
+}

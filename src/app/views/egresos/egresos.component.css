@@ -1403,3 +1403,16 @@
 
 .prov-uso-hint svg { flex-shrink: 0; margin-top: 1px; }
 .prov-uso-hint strong { color: var(--warm-700, #3d3730); }
+
+/* ── Toggle secciones ── */
+.eg-row-toggle { cursor: pointer; user-select: none; }
+.eg-row-toggle:hover td { filter: brightness(1.08); }
+
+.eg-toggle-icon {
+  font-size: 10px;
+  margin-right: 8px;
+  opacity: 0.7;
+  display: inline-block;
+  width: 12px;
+  color: var(--red-700);
+}

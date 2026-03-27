@@ -656,4 +656,19 @@ export class IngresosComponent implements OnInit {
   labelFecha(fecha: string): string {
     return this.columnas.find(c => c.fecha === fecha)?.label ?? fecha;
   }
+
+  // ── COLAPSABLES ───────────────────────────────────────
+seccionesColapsadas = new Set<string>();
+
+toggleSeccion(seccion: string) {
+  if (this.seccionesColapsadas.has(seccion)) {
+    this.seccionesColapsadas.delete(seccion);
+  } else {
+    this.seccionesColapsadas.add(seccion);
+  }
+}
+
+estaColapsada(seccion: string): boolean {
+  return this.seccionesColapsadas.has(seccion);
+}
 }
