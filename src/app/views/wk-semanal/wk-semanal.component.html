@@ -441,16 +441,22 @@
   </ng-container>
 
 </div>
-
-<!-- Template reutilizable para celdas de variación -->
 <ng-template #varCells let-r="r">
   <td class="wk-val">{{ fmt(r.v1) }}</td>
   <td class="wk-val">{{ fmt(r.v2) }}</td>
-  <td class="wk-val" [class.var-pos]="r.diff > 0" [class.var-neg]="r.diff < 0">
+  <td class="wk-val var-celda"
+      [class.var-pos]="r.diff > 0"
+      [class.var-neg]="r.diff < 0"
+      [class.var-cero]="r.diff === 0">
     {{ fmtDiff(r.diff) }}
   </td>
-  <td class="wk-val" [class.var-pos]="r.diff > 0" [class.var-neg]="r.diff < 0">
-    <ng-container *ngIf="r.pct !== null">{{ r.diff >= 0 ? '+' : '' }}{{ r.pct | number:'1.1-1' }}%</ng-container>
-    <ng-container *ngIf="r.pct === null">—</ng-container>
+  <td class="wk-val var-celda"
+      [class.var-pos]="r.diff > 0"
+      [class.var-neg]="r.diff < 0"
+      [class.var-cero]="r.diff === 0">
+    <ng-container *ngIf="r.pct !== null && r.diff !== 0">
+      {{ r.diff > 0 ? '+' : '' }}{{ r.pct | number:'1.1-1' }}%
+    </ng-container>
+    <ng-container *ngIf="r.pct === null || r.diff === 0">—</ng-container>
   </td>
 </ng-template>
