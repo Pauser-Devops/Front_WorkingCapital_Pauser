@@ -48,7 +48,7 @@ export interface FiltrosFactura {
  
 @Injectable({ providedIn: 'root' })
 export class FacturasService {
-  private base = `${environment.apiUrl}/wk`;
+  private base = `${environment.apiUrl}/inventario`;
  
   constructor(private http: HttpClient) {}
  

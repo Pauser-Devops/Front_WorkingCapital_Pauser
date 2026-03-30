@@ -85,7 +85,7 @@ export class CruceInventarioComponent implements OnInit {
     if (this.filtroFechaDesde) params = params.set('fecha_desde', this.filtroFechaDesde);
     if (this.filtroFechaHasta) params = params.set('fecha_hasta', this.filtroFechaHasta);
 
-    this.http.get<any>(`${API}/wk/cruce-resumen`, { params }).subscribe({
+    this.http.get<any>(`${API}/inventario/cruce-resumen`, { params }).subscribe({
       next: r => { this.resumen = r.resumen ?? []; this.cargandoKpi = false; },
       error: () => { this.cargandoKpi = false; }
     });
@@ -119,7 +119,7 @@ export class CruceInventarioComponent implements OnInit {
     if (this.filtroFechaDesde) params = params.set('fecha_desde', this.filtroFechaDesde);
     if (this.filtroFechaHasta) params = params.set('fecha_hasta', this.filtroFechaHasta);
 
-    this.http.get<any>(`${API}/wk/cruce-inventario`, { params }).subscribe({
+    this.http.get<any>(`${API}/inventario/cruce-inventario`, { params }).subscribe({
       next: r => { this.lineas = r.datos ?? []; this.total = r.total ?? 0; this.cargando = false; },
       error: () => { this.cargando = false; }
     });
@@ -166,8 +166,8 @@ export class CruceInventarioComponent implements OnInit {
     this.cargandoModal  = true;
 
     const url = tipo === 'factura'
-      ? `${API}/wk/cruce-detalle-factura/${encodeURIComponent(linea.numero_doc)}`
-      : `${API}/wk/cruce-detalle-remito/${encodeURIComponent(linea.numero_doc)}`;
+      ? `${API}/inventario/cruce-detalle-factura/${encodeURIComponent(linea.numero_doc)}`
+      : `${API}/inventario/cruce-detalle-remito/${encodeURIComponent(linea.numero_doc)}`;
 
     let params = new HttpParams().set('proveedor', linea.proveedor_filtro);
     this.http.get<any>(url, { params }).subscribe({

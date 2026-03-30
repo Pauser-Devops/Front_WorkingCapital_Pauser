@@ -83,7 +83,7 @@ export class RemitosComponent implements OnInit {
     let params = new HttpParams();
     if (this.filtroFuente)    params = params.set('fuente',    this.filtroFuente);
     if (this.filtroProveedor) params = params.set('proveedor', this.filtroProveedor);
-    this.http.get<any>(`${API}/wk/remitos-sucursales`, { params }).subscribe({
+    this.http.get<any>(`${API}/inventario/remitos-sucursales`, { params }).subscribe({
       next: r => {
         const lista: string[] = (r.sucursales ?? [])
           .map((s: any) => s.sucursal as string)
@@ -115,7 +115,7 @@ export class RemitosComponent implements OnInit {
     if (this.filtroNumRemito)      params = params.set('numero_remito',   this.filtroNumRemito);
     if (this.filtroCodigoArticulo) params = params.set('codigo_articulo', this.filtroCodigoArticulo);
 
-    this.http.get<any>(`${API}/wk/remitos-detalle`, { params }).subscribe({
+    this.http.get<any>(`${API}/inventario/remitos-detalle`, { params }).subscribe({
       next: r => {
         this.remitos  = r.datos ?? [];
         this.total    = r.total ?? 0;
@@ -156,7 +156,7 @@ export class RemitosComponent implements OnInit {
     let params = new HttpParams();
     if (fuente) params = params.set('fuente', fuente);
 
-    this.http.post<any>(`${API}/wk/remitos-sync`, null, { params }).subscribe({
+    this.http.post<any>(`${API}/inventario/remitos-sync`, null, { params }).subscribe({
       next: r => {
         this.syncCargando = false;
         if (r.estado === 'OK') {
@@ -187,7 +187,7 @@ export class RemitosComponent implements OnInit {
     const formData = new FormData();
     formData.append('file', this.archivoSeleccionado);
 
-    this.http.post<any>(`${API}/wk/remitos-upload/${this.fuenteUpload}`, formData).subscribe({
+    this.http.post<any>(`${API}/inventario/remitos-upload/${this.fuenteUpload}`, formData).subscribe({
       next: r => {
         this.uploadCargando = false; this.archivoSeleccionado = null; this.nombreArchivo = '';
         const ins = r.resultado?.insertados ?? 0;

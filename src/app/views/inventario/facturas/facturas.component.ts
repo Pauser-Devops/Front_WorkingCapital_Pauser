@@ -77,7 +77,7 @@ export class FacturasComponent implements OnInit {
   cargarSucursales(): void {
     let params = new HttpParams();
     if (this.filtroproveedor) params = params.set('proveedor', this.filtroproveedor);
-    this.http.get<any>(`${API}/wk/facturas-sucursales`, { params }).subscribe({
+    this.http.get<any>(`${API}/inventario/facturas-sucursales`, { params }).subscribe({
       next: r => {
         this.sucursales = (r.sucursales ?? [])
           .map((s: any) => s.sucursal)
@@ -106,7 +106,7 @@ export class FacturasComponent implements OnInit {
     if (this.filtroFechaHasta) params = params.set('fecha_hasta',    this.filtroFechaHasta);
     if (this.filtroNumFactura) params = params.set('numero_factura', this.filtroNumFactura);
 
-    this.http.get<any>(`${API}/wk/facturas-detalle`, { params }).subscribe({
+    this.http.get<any>(`${API}/inventario/facturas-detalle`, { params }).subscribe({
       next: r => {
         this.facturas = r.datos ?? [];
         this.total    = r.total ?? 0;
@@ -145,14 +145,14 @@ export class FacturasComponent implements OnInit {
     let params = new HttpParams();
     if (proveedor) params = params.set('proveedor', proveedor);
 
-    this.http.post<any>(`${API}/wk/facturas-sync`, null, { params }).subscribe({
+    this.http.post<any>(`${API}/inventario/facturas-sync`, null, { params }).subscribe({
       next: r => {
         this.syncCargando = false;
         if (r.estado === 'OK') {
           const resumen = Object.entries(r.resultado)
             .map(([p, v]: any) => `${p}: ${v.insertados ?? 0} nuevas (${v.estado})`)
             .join(' | ');
-          this.mensajeSync = '✅ ' + resumen;
+          this.mensajeSync = '' + resumen;
         } else {
           this.mensajeSync = '❌ ' + r.detalle;
         }
@@ -176,12 +176,12 @@ export class FacturasComponent implements OnInit {
     const formData = new FormData();
     formData.append('file', this.archivoSeleccionado);
 
-    this.http.post<any>(`${API}/wk/facturas-upload/${this.proveedorUpload}`, formData).subscribe({
+    this.http.post<any>(`${API}/inventario/facturas-upload/${this.proveedorUpload}`, formData).subscribe({
       next: r => {
         this.uploadCargando = false; this.archivoSeleccionado = null; this.nombreArchivo = '';
         const ins = r.resultado?.insertados ?? 0;
         const est = r.resultado?.estado ?? '';
-        this.mensajeSync = `✅ ${ins} filas insertadas (${est}) — ${this.proveedorUpload}`;
+        this.mensajeSync = ` ${ins} filas insertadas (${est}) — ${this.proveedorUpload}`;
         this.buscar();
       },
       error: e => { this.uploadCargando = false; this.mensajeSync = '❌ ' + e.message; }
