@@ -94,7 +94,8 @@ export class SidebarComponent {
       icono: 'bar_chart',
       abierto: true,
       modulos: [
-        { id: 'cargaDatosInventario', label: 'Carga de Datos' },
+         { id: 'facturasInventario', label: 'Facturas Inventario' },
+        { id: 'remitosInventario', label: 'Remitos de Inventario' },
         { id: 'dashInventario',  label: 'Conciliación Inventario'  }
 
       ]

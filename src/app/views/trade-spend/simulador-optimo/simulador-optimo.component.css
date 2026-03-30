@@ -381,3 +381,37 @@
   .sop-wrapper .dbb-content { padding: 1rem; }
   .sop-wrapper .cp-total-bar { flex-direction: column; align-items: flex-start; gap: 10px; }
 }
+
+/* Pegar al FINAL del simulador-optimo.component.css existente */
+
+.sop-wrapper .sop-tabs { display:flex;background:#fff;border-bottom:0.5px solid #e2e2e0;padding:0 1.5rem;flex-shrink:0; }
+.sop-wrapper .sop-tab { padding:10px 18px;font-size:12px;font-weight:500;color:#888;background:transparent;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:color .13s,border-color .13s;white-space:nowrap; }
+.sop-wrapper .sop-tab:hover { color:#333; }
+.sop-wrapper .sop-tab.active { color:#1a56db;border-bottom-color:#1a56db; }
+
+.sop-wrapper .sop-canal-toggle { display:flex;border:0.5px solid #d4d4d2;border-radius:7px;overflow:hidden; }
+.sop-wrapper .sop-canal-toggle button { padding:5px 14px;font-size:12px;font-weight:500;border:none;background:transparent;color:#666;cursor:pointer;transition:background .13s,color .13s; }
+.sop-wrapper .sop-canal-toggle button.active { background:#1a56db;color:#fff; }
+
+.sop-wrapper .sop-canal-label { display:inline-block;background:#eff6ff;color:#1a56db;padding:1px 8px;border-radius:5px;font-size:12px;font-weight:600; }
+
+.sop-wrapper .sop-input-paq { width:80px;padding:4px 8px;border:0.5px solid #d4d4d2;border-radius:6px;font-size:12px;text-align:right;background:#fafafa;color:#222;font-family:inherit;transition:border-color .13s,background .13s; }
+.sop-wrapper .sop-input-paq:focus { outline:none;border-color:#1a56db;background:#fff; }
+.sop-wrapper .sop-input-paq.sop-input-activo { border-color:#16a34a;background:#f0fdf4; }
+.sop-wrapper .sop-input-paq.sop-input-exceso { border-color:#dc2626;background:#fff1f2; }
+
+.sop-wrapper .sop-tr-activo td { background:#f0fdf4 !important; }
+.sop-wrapper .sop-tr-activo:hover td { background:#dcfce7 !important; }
+.sop-wrapper .sop-tr-exceso td { background:#fff1f2 !important; }
+.sop-wrapper .sop-tr-exceso:hover td { background:#ffe4e6 !important; }
+
+.sop-wrapper .sop-tfoot td { border-top:1.5px solid #e2e2e0;background:#fafafa;font-size:12px; }
+
+.sop-wrapper .sop-alert-warn { background:#fffbeb;color:#92400e;border:0.5px solid #fcd34d;border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:1rem; }
+
+.sop-wrapper .sop-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0; }
+.sop-wrapper .sop-dot-verde    { background:#16a34a; }
+.sop-wrapper .sop-dot-amarillo { background:#d97706; }
+.sop-wrapper .sop-dot-rojo     { background:#dc2626; }
+
+.sop-wrapper .sop-badge-ok { background:#dcfce7;color:#166534; }

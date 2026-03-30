@@ -1,0 +1,190 @@
+<div class="remitos-container">
+
+  <!-- ══ CABECERA ══════════════════════════════════════════════════════════ -->
+  <div class="rem-header">
+    <h2 class="rem-title">Remitos</h2>
+    <div class="rem-header-actions">
+      <button class="btn btn-sync" (click)="syncOneDrive()" [disabled]="syncCargando">
+        <span *ngIf="!syncCargando">☁ Sync OneDrive</span>
+        <span *ngIf="syncCargando">Sincronizando...</span>
+      </button>
+      <button class="btn btn-outline" (click)="mostrarUpload = !mostrarUpload">
+        {{ mostrarUpload ? '✕ Cerrar' : '📂 Carga manual' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Mensaje ────────────────────────────────────────────────────────── -->
+  <div *ngIf="mensajeSync" class="sync-msg">{{ mensajeSync }}</div>
+
+  <!-- ══ PANEL CARGA MANUAL ════════════════════════════════════════════════ -->
+  <div class="upload-panel" *ngIf="mostrarUpload">
+    <div class="upload-row">
+
+      <div class="field-group">
+        <label>Archivo fuente</label>
+        <select [(ngModel)]="fuenteUpload">
+          <option value="REMITOS">REMITOS (CBC / MONDELEZ / NESTLE / PEPSICO)</option>
+          <option value="BACKUS">BACKUS</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label>Archivo Excel</label>
+        <span class="file-btn" (click)="fileInput.click()">
+          {{ nombreArchivo || 'Seleccionar .xlsx' }}
+        </span>
+        <input type="file" accept=".xlsx" (change)="onFileSelected($event)" hidden #fileInput />
+      </div>
+
+      <button class="btn btn-primary"
+              [disabled]="!archivoSeleccionado || uploadCargando"
+              (click)="subirArchivo()">
+        {{ uploadCargando ? 'Cargando...' : '⬆ Subir' }}
+      </button>
+    </div>
+
+    <!-- Sync individual -->
+    <div class="sync-individual">
+      <span class="sync-label">Sync OneDrive por archivo:</span>
+      <button *ngFor="let f of fuentes" class="btn btn-prov"
+              [disabled]="syncCargando" (click)="syncOneDrive(f)">
+        {{ f === 'REMITOS' ? 'REMITOS (general)' : 'BACKUS' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ FILTROS ════════════════════════════════════════════════════════════ -->
+  <div class="filtros-panel">
+    <div class="filtros-row">
+
+      <div class="field-group">
+        <label>Fuente</label>
+        <select [(ngModel)]="filtroFuente" (ngModelChange)="onFiltroChange()">
+          <option value="">Todas</option>
+          <option *ngFor="let f of fuentes" [value]="f">{{ f }}</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label>Proveedor</label>
+        <select [(ngModel)]="filtroProveedor" (ngModelChange)="onFiltroChange()">
+          <option value="">Todos</option>
+          <option *ngFor="let p of proveedores" [value]="p">{{ p }}</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label>Sede / Depósito</label>
+        <select [(ngModel)]="filtroSucursal">
+          <option value="">Todas</option>
+          <option *ngFor="let s of sucursales" [value]="s">{{ s }}</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label>Desde</label>
+        <input type="date" [(ngModel)]="filtroFechaDesde" />
+      </div>
+
+      <div class="field-group">
+        <label>Hasta</label>
+        <input type="date" [(ngModel)]="filtroFechaHasta" />
+      </div>
+
+      <div class="field-group">
+        <label>N° Remito / Comprobante</label>
+        <input type="text" [(ngModel)]="filtroNumRemito" placeholder="Ej: FI47-000..." />
+      </div>
+
+      <div class="field-group">
+        <label>Cód. Artículo</label>
+        <input type="text" [(ngModel)]="filtroCodigoArticulo" placeholder="Ej: 2395" />
+      </div>
+
+      <div class="field-group field-group--buttons">
+        <button class="btn btn-primary" (click)="buscar()">Buscar</button>
+        <button class="btn btn-outline" (click)="limpiarFiltros()">Limpiar</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ INFO RESULTADOS ════════════════════════════════════════════════════ -->
+  <div class="tabla-info">
+    <span>{{ total | number }} registros encontrados</span>
+    <span class="sep">|</span>
+    <span>Página {{ paginaActual }} de {{ totalPaginas }}</span>
+    <span class="sep">|</span>
+    <span>Mostrando {{ remitos.length }}</span>
+  </div>
+
+  <!-- ══ TABLA ══════════════════════════════════════════════════════════════ -->
+  <div class="tabla-wrapper">
+
+    <div class="loading-state" *ngIf="cargando">
+      <div class="spinner"></div>
+      <p>Cargando remitos...</p>
+    </div>
+
+    <div class="empty-state" *ngIf="!cargando && remitos.length === 0">
+      <p>No se encontraron remitos con los filtros seleccionados.</p>
+    </div>
+
+    <table class="rem-table" *ngIf="!cargando && remitos.length > 0">
+      <thead>
+        <tr>
+          <th>Fecha Mvto</th>
+          <th>Fuente</th>
+          <th>Proveedor</th>
+          <th>N° Remito</th>
+          <th>Sede / Depósito</th>
+          <th>Cód. Artículo</th>
+          <th>Artículo</th>
+          <th>UM</th>
+          <th class="text-right">Cant. / Bultos</th>
+          <th class="text-right">Costo Unit.</th>
+          <th class="text-right">Subtotal</th>
+          <th>Confirmado</th>
+          <th>Fecha Stock</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let r of remitos">
+          <td class="nowrap">{{ formatFecha(r.fecha_movimiento) }}</td>
+          <td>
+            <span class="badge" [ngClass]="badgeFuenteClass(r.fuente)">{{ r.fuente }}</span>
+          </td>
+          <td>
+            <span class="badge" [ngClass]="badgeProvClass(r.proveedor)">{{ r.proveedor }}</span>
+          </td>
+          <td class="nowrap mono">{{ r.numero_remito }}</td>
+          <td>{{ r.sucursal || '—' }}</td>
+          <td class="mono">{{ r.codigo_articulo }}</td>
+          <td class="articulo-col">{{ r.nombre_articulo }}</td>
+          <td>{{ r.unidad || '—' }}</td>
+          <td class="text-right">{{ fmtCant(getCantidad(r)) }}</td>
+          <td class="text-right">{{ fmt(r.costo_unitario) }}</td>
+          <td class="text-right fw-bold">{{ fmt(r.subtotal) }}</td>
+          <td>
+            <span *ngIf="r.confirmado" class="tag-confirmado"
+                  [class.tag-si]="r.confirmado === 'yes'"
+                  [class.tag-no]="r.confirmado === 'no'">
+              {{ r.confirmado === 'yes' ? '✓' : r.confirmado }}
+            </span>
+            <span *ngIf="!r.confirmado">—</span>
+          </td>
+          <td class="nowrap">{{ formatFecha(r.fecha_stock) }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ══ PAGINACIÓN ════════════════════════════════════════════════════════ -->
+  <div class="paginacion" *ngIf="totalPaginas > 1">
+    <button class="btn btn-outline" [disabled]="offset === 0" (click)="anterior()">← Anterior</button>
+    <span class="pag-info">Página {{ paginaActual }} de {{ totalPaginas }}</span>
+    <button class="btn btn-outline" [disabled]="paginaActual >= totalPaginas" (click)="siguiente()">Siguiente →</button>
+  </div>
+
+</div>

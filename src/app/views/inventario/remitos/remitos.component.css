@@ -1,0 +1,267 @@
+/* ═══════════════════════════════════════════════════════
+   remitos.component.css
+   ═══════════════════════════════════════════════════════ */
+
+.remitos-container {
+  padding: 20px 24px;
+  font-family: inherit;
+  color: #1a1a2e;
+}
+
+/* ── Cabecera ─────────────────────────────────────────── */
+.rem-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.rem-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+}
+.rem-header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ── Botones ─────────────────────────────────────────── */
+.btn {
+  padding: 7px 16px;
+  border-radius: 6px;
+  font-size: .85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: opacity .15s, background .15s;
+  white-space: nowrap;
+}
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.btn-primary { background: #4f6ef7; color: #fff; }
+.btn-primary:hover:not(:disabled) { background: #3a57e8; }
+
+.btn-sync    { background: #0d9488; color: #fff; }
+.btn-sync:hover:not(:disabled) { background: #0a7a70; }
+
+.btn-outline { background: transparent; color: #4f6ef7; border: 1.5px solid #4f6ef7; }
+.btn-outline:hover:not(:disabled) { background: #eef1fd; }
+
+.btn-prov { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; font-size: .78rem; padding: 5px 12px; }
+.btn-prov:hover:not(:disabled) { background: #e2e8f0; }
+
+/* ── Sync msg ────────────────────────────────────────── */
+.sync-msg {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  color: #166534;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: .85rem;
+  margin-bottom: 14px;
+  word-break: break-word;
+}
+
+/* ── Upload panel ────────────────────────────────────── */
+.upload-panel {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+}
+.upload-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.sync-individual {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 12px;
+}
+.sync-label { font-size: .8rem; color: #64748b; font-weight: 600; }
+.file-btn {
+  display: inline-block;
+  padding: 6px 12px;
+  background: #fff;
+  border: 1.5px dashed #94a3b8;
+  border-radius: 6px;
+  font-size: .83rem;
+  color: #475569;
+  cursor: pointer;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-btn:hover { border-color: #4f6ef7; color: #4f6ef7; }
+
+/* ── Filtros ─────────────────────────────────────────── */
+.filtros-panel {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 14px;
+}
+.filtros-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 130px;
+}
+.field-group label {
+  font-size: .75rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+.field-group input,
+.field-group select {
+  height: 34px;
+  padding: 0 10px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: .85rem;
+  background: #fff;
+  color: #1e293b;
+  outline: none;
+  transition: border-color .15s;
+}
+.field-group input:focus,
+.field-group select:focus { border-color: #4f6ef7; }
+.field-group--buttons { flex-direction: row; align-items: flex-end; min-width: unset; }
+
+/* ── Info resultados ─────────────────────────────────── */
+.tabla-info {
+  font-size: .82rem;
+  color: #64748b;
+  margin-bottom: 8px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.sep { color: #cbd5e1; }
+
+/* ── Tabla ───────────────────────────────────────────── */
+.tabla-wrapper {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+}
+.rem-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .83rem;
+  min-width: 1100px;
+}
+.rem-table thead tr {
+  background: #f1f5f9;
+  border-bottom: 2px solid #e2e8f0;
+}
+.rem-table th {
+  padding: 10px 12px;
+  text-align: left;
+  font-size: .75rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+.rem-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+  color: #1e293b;
+}
+.rem-table tbody tr:hover { background: #f8fafc; }
+.rem-table tbody tr:last-child td { border-bottom: none; }
+
+.text-right  { text-align: right !important; }
+.nowrap      { white-space: nowrap; }
+.mono        { font-family: monospace; font-size: .8rem; color: #475569; }
+.fw-bold     { font-weight: 700; }
+.articulo-col { max-width: 220px; }
+
+/* ── Badges proveedor ────────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+/* Proveedores — mismos colores que facturas */
+.badge-backus   { background: #fef3c7; color: #92400e; }
+.badge-cbc      { background: #dbeafe; color: #1e40af; }
+.badge-mondelez { background: #ede9fe; color: #5b21b6; }
+.badge-nestle   { background: #dcfce7; color: #166534; }
+.badge-pepsico  { background: #fce7f3; color: #9d174d; }
+.badge-otros    { background: #f1f5f9; color: #475569; }
+.badge-default  { background: #f1f5f9; color: #475569; }
+
+/* Fuente */
+.badge-fuente-remitos { background: #e0f2fe; color: #0369a1; }
+.badge-fuente-backus  { background: #fef3c7; color: #92400e; }
+
+/* ── Tag confirmado ──────────────────────────────────── */
+.tag-confirmado {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: .75rem;
+  font-weight: 700;
+}
+.tag-si { background: #dcfce7; color: #166534; }
+.tag-no { background: #fee2e2; color: #991b1b; }
+
+/* ── Loading ─────────────────────────────────────────── */
+.loading-state, .empty-state {
+  padding: 48px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: .9rem;
+}
+.spinner {
+  width: 36px; height: 36px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #4f6ef7;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  margin: 0 auto 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Paginación ──────────────────────────────────────── */
+.paginacion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 16px;
+}
+.pag-info { font-size: .85rem; color: #64748b; }
+
+/* ── Responsive ──────────────────────────────────────── */
+@media (max-width: 768px) {
+  .remitos-container { padding: 12px; }
+  .filtros-row { flex-direction: column; }
+  .field-group { min-width: 100%; }
+  .upload-row  { flex-direction: column; }
+}

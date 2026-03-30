@@ -30,6 +30,11 @@ import { CargaTradeBackusComponent } from './views/trade-spend/carga-trade-backu
 import { DashBackusComponent } from './views/trade-spend/dash-backus/dash-backus.component';
 import { CargaTradeMondelezComponent } from './views/trade-spend/carga-trade-mondelez/carga-trade-mondelez.component';
 import { SimuladorOptimoComponent } from './views/trade-spend/simulador-optimo/simulador-optimo.component';
+import { FacturasComponent } from './views/inventario/facturas/facturas.component';
+import { RemitosComponent } from "./views/inventario/remitos/remitos.component";
+import { CruceInventarioComponent } from './views/inventario/cruce-inventario/cruce-inventario.component';
+
+
 const VISTA_NOMBRES: Record<string, string> = {
   semanal: 'WK Semanal 2026',
   mensual: 'WK Mensual 2026',
@@ -57,7 +62,8 @@ const VISTA_NOMBRES: Record<string, string> = {
   cargaMondelez: 'Carga de Archivos Lima Mondelez',
   simuladorOptimoCBC: 'Simulador de predicción CBC',
   dashInventario: 'Dashboard de Conciliación de Inventario',
-  cargaDatosInventario: 'Carga de Datos de Inventario'
+  remitosInventario: 'Remitos de Inventario',
+  facturasInventario:'Facturas Inventario'
 };
 
 @Component({
@@ -65,22 +71,22 @@ const VISTA_NOMBRES: Record<string, string> = {
   standalone: true,
   encapsulation: ViewEncapsulation.None,
   imports: [
-    CommonModule, 
-    SidebarComponent, 
-    HeaderComponent, 
-    WkSemanalComponent, 
-    WkMensualComponent, 
-    ReportesBancariosComponent, 
-    IngresosComponent, 
-    EgresosComponent, 
-    StockVsCxpComponent, 
+    CommonModule,
+    SidebarComponent,
+    HeaderComponent,
+    WkSemanalComponent,
+    WkMensualComponent,
+    ReportesBancariosComponent,
+    IngresosComponent,
+    EgresosComponent,
+    StockVsCxpComponent,
     RentaProyeccionComponent,
-    IngresosBancariosComponent, 
-    RegistroIngresosBancariosComponent, 
-    AnalisisBancariosComponent, 
-    LoginComponent, 
-    CambiarPasswordComponent, 
-    ComparadorIngresosComponent, 
+    IngresosBancariosComponent,
+    RegistroIngresosBancariosComponent,
+    AnalisisBancariosComponent,
+    LoginComponent,
+    CambiarPasswordComponent,
+    ComparadorIngresosComponent,
     DashWkComponent,
     MaesComponent,
     PGAComponent,
@@ -93,8 +99,11 @@ const VISTA_NOMBRES: Record<string, string> = {
     CargaTradeBackusComponent,
     DashBackusComponent,
     CargaTradeMondelezComponent,
-    SimuladorOptimoComponent
-  ],
+    SimuladorOptimoComponent,
+    FacturasComponent,
+    RemitosComponent,
+    CruceInventarioComponent
+],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })

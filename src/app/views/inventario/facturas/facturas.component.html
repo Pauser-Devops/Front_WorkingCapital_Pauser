@@ -1,0 +1,173 @@
+<div class="facturas-container">
+
+  <!-- ══ CABECERA ══════════════════════════════════════════════════════════ -->
+  <div class="fact-header">
+    <h2 class="fact-title">Facturas por Proveedor</h2>
+    <div class="fact-header-actions">
+      <button class="btn btn-sync" (click)="syncOneDrive()" [disabled]="syncCargando">
+        <span *ngIf="!syncCargando">☁ Sync OneDrive</span>
+        <span *ngIf="syncCargando">Sincronizando...</span>
+      </button>
+      <button class="btn btn-outline" (click)="mostrarUpload = !mostrarUpload">
+        {{ mostrarUpload ? '✕ Cerrar carga' : '📂 Carga manual' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Mensaje sync ───────────────────────────────────────────────────── -->
+  <div *ngIf="mensajeSync" class="sync-msg">{{ mensajeSync }}</div>
+
+  <!-- ══ PANEL CARGA MANUAL ════════════════════════════════════════════════ -->
+  <div class="upload-panel" *ngIf="mostrarUpload">
+    <div class="upload-row">
+
+      <div class="field-group">
+        <label>Proveedor</label>
+        <select [(ngModel)]="proveedorUpload">
+          <option *ngFor="let p of proveedores" [value]="p">{{ p }}</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label>Archivo Excel</label>
+        <label class="file-label">
+          <input type="file" accept=".xlsx" (change)="onFileSelected($event)" hidden #fileInput />
+          <span class="file-btn" (click)="fileInput.click()">
+            {{ nombreArchivo || 'Seleccionar .xlsx' }}
+          </span>
+        </label>
+      </div>
+
+      <button class="btn btn-primary"
+              [disabled]="!archivoSeleccionado || uploadCargando"
+              (click)="subirArchivo()">
+        {{ uploadCargando ? 'Cargando...' : '⬆ Subir' }}
+      </button>
+    </div>
+
+    <!-- Sync individual por proveedor -->
+    <div class="sync-individual">
+      <span class="sync-label">Sync OneDrive por proveedor:</span>
+      <button *ngFor="let p of proveedores"
+              class="btn btn-prov"
+              [disabled]="syncCargando"
+              (click)="syncOneDrive(p)">
+        {{ p }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ FILTROS ════════════════════════════════════════════════════════════ -->
+  <div class="filtros-panel">
+    <div class="filtros-row">
+
+      <div class="field-group">
+        <label>Proveedor</label>
+        <select [(ngModel)]="filtroproveedor" (ngModelChange)="onProveedorChange()">
+          <option value="">Todos</option>
+          <option *ngFor="let p of proveedores" [value]="p">{{ p }}</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label>Sede / Sucursal</label>
+        <select [(ngModel)]="filtroSucursal">
+          <option value="">Todas</option>
+          <option *ngFor="let s of sucursales" [value]="s">{{ s }}</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label>Desde</label>
+        <input type="date" [(ngModel)]="filtroFechaDesde" />
+      </div>
+
+      <div class="field-group">
+        <label>Hasta</label>
+        <input type="date" [(ngModel)]="filtroFechaHasta" />
+      </div>
+
+      <div class="field-group">
+        <label>N° Factura</label>
+        <input type="text" [(ngModel)]="filtroNumFactura" placeholder="Ej: F063-000..." />
+      </div>
+
+      <div class="field-group field-group--buttons">
+        <button class="btn btn-primary" (click)="buscar()">Buscar</button>
+        <button class="btn btn-outline" (click)="limpiarFiltros()">Limpiar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ INFO RESULTADOS ════════════════════════════════════════════════════ -->
+  <div class="tabla-info">
+    <span>{{ total | number }} registros encontrados</span>
+    <span class="sep">|</span>
+    <span>Página {{ paginaActual }} de {{ totalPaginas }}</span>
+    <span class="sep">|</span>
+    <span>Mostrando {{ facturas.length }}</span>
+  </div>
+
+  <!-- ══ TABLA ══════════════════════════════════════════════════════════════ -->
+  <div class="tabla-wrapper">
+
+    <!-- Loading -->
+    <div class="loading-state" *ngIf="cargando">
+      <div class="spinner"></div>
+      <p>Cargando facturas...</p>
+    </div>
+
+    <!-- Sin resultados -->
+    <div class="empty-state" *ngIf="!cargando && facturas.length === 0">
+      <p>No se encontraron facturas con los filtros seleccionados.</p>
+    </div>
+
+    <!-- Tabla -->
+    <table class="fact-table" *ngIf="!cargando && facturas.length > 0">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Proveedor</th>
+          <th>N° Factura</th>
+          <th>Sede</th>
+          <th>Cód. Artículo</th>
+          <th>Artículo</th>
+          <th class="text-right">Cant.</th>
+          <th>UM</th>
+          <th class="text-right">P. Unit.</th>
+          <th class="text-right">Valor Venta</th>
+          <th class="text-right">IGV</th>
+          <th class="text-right">Total</th>
+          <th>Condición</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let f of facturas">
+          <td class="nowrap">{{ formatFecha(f.fecha_emision) }}</td>
+          <td>
+            <span class="badge" [ngClass]="badgeClass(f.proveedor)">{{ f.proveedor }}</span>
+          </td>
+          <td class="nowrap">{{ f.numero_factura }}</td>
+          <td>{{ f.sucursal || '—' }}</td>
+          <td class="mono">{{ f.codigo_articulo }}</td>
+          <td class="articulo-col">{{ f.nombre_articulo }}</td>
+          <td class="text-right">{{ fmt(f.cantidad) }}</td>
+          <td>{{ f.um }}</td>
+          <td class="text-right">{{ fmt(f.precio_unitario) }}</td>
+          <td class="text-right">{{ fmt(f.valor_venta) }}</td>
+          <td class="text-right">{{ fmt(f.igv) }}</td>
+          <td class="text-right fw-bold">{{ fmt(f.importe_total) }}</td>
+          <td>{{ f.condicion_pago || '—' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ══ PAGINACIÓN ════════════════════════════════════════════════════════ -->
+  <div class="paginacion" *ngIf="totalPaginas > 1">
+    <button class="btn btn-outline" [disabled]="offset === 0" (click)="anterior()">← Anterior</button>
+    <span class="pag-info">Página {{ paginaActual }} de {{ totalPaginas }}</span>
+    <button class="btn btn-outline" [disabled]="paginaActual >= totalPaginas" (click)="siguiente()">Siguiente →</button>
+  </div>
+
+</div>

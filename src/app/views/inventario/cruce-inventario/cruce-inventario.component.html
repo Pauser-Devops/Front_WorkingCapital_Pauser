@@ -1,0 +1,311 @@
+<div class="cruce-container">
+
+  <!-- ══ CABECERA ══════════════════════════════════════════════════════════ -->
+  <div class="cruce-header">
+    <div class="cruce-header-left">
+      <h2 class="cruce-title">Cruce de Inventario</h2>
+      <span class="cruce-subtitle">Conciliación Facturas vs Remitos</span>
+    </div>
+    <button class="btn btn-refresh" (click)="aplicarFiltros()">↺ Actualizar</button>
+  </div>
+
+  <!-- ══ CARDS KPI ══════════════════════════════════════════════════════════ -->
+  <div class="kpi-grid">
+
+    <div class="kpi-card kpi-total" (click)="filtrarPorEstado('')"
+         [class.kpi-active]="filtroEstado === ''">
+      <span class="kpi-label">TOTAL LÍNEAS</span>
+      <span class="kpi-value">{{ totalLineas | number }}</span>
+      <span class="kpi-sub">{{ pctCoincideGlobal }}% conciliado</span>
+      <div class="kpi-bar-wrap">
+        <div class="kpi-bar kpi-bar-coincide" [style.width]="barWidth(totalCoincide, totalLineas)"></div>
+      </div>
+    </div>
+
+    <div class="kpi-card kpi-coincide" (click)="filtrarPorEstado('COINCIDE')"
+         [class.kpi-active]="filtroEstado === 'COINCIDE'">
+      <span class="kpi-label">COINCIDE</span>
+      <span class="kpi-value kpi-green">{{ totalCoincide | number }}</span>
+      <span class="kpi-sub">{{ barWidth(totalCoincide, totalLineas) }}</span>
+    </div>
+
+    <div class="kpi-card kpi-dif" (click)="filtrarPorEstado('DIFERENCIA')"
+         [class.kpi-active]="filtroEstado === 'DIFERENCIA'">
+      <span class="kpi-label">DIFERENCIAS</span>
+      <span class="kpi-value kpi-orange">{{ totalDiferencia | number }}</span>
+      <span class="kpi-sub kpi-orange-sub">S/ {{ fmt(totalDifImporte) }}</span>
+    </div>
+
+    <div class="kpi-card kpi-fac" (click)="filtrarPorEstado('SOLO_FACTURA')"
+         [class.kpi-active]="filtroEstado === 'SOLO_FACTURA'">
+      <span class="kpi-label">SOLO FACTURA</span>
+      <span class="kpi-value kpi-blue">{{ totalSoloFac | number }}</span>
+      <span class="kpi-sub">Sin remito registrado</span>
+    </div>
+
+    <div class="kpi-card kpi-rem" (click)="filtrarPorEstado('SOLO_REMITO')"
+         [class.kpi-active]="filtroEstado === 'SOLO_REMITO'">
+      <span class="kpi-label">SOLO REMITO</span>
+      <span class="kpi-value kpi-red">{{ totalSoloRem | number }}</span>
+      <span class="kpi-sub">Sin factura del proveedor</span>
+    </div>
+
+  </div>
+
+  <!-- ══ TABLA RESUMEN POR PROVEEDOR ════════════════════════════════════════ -->
+  <div class="resumen-panel" *ngIf="resumen.length > 0">
+    <h3 class="panel-title">Resumen por Proveedor</h3>
+    <div class="resumen-grid">
+      <div class="resumen-row resumen-header">
+        <span>Proveedor</span>
+        <span class="text-right">Total</span>
+        <span class="text-right">Coincide</span>
+        <span class="text-right">Diferencia</span>
+        <span class="text-right">Solo Factura</span>
+        <span class="text-right">Solo Remito</span>
+        <span>Conciliación</span>
+      </div>
+      <div class="resumen-row" *ngFor="let r of resumen"
+           (click)="filtroProveedor = r.proveedor; aplicarFiltros()"
+           [class.resumen-row-active]="filtroProveedor === r.proveedor">
+        <span>
+          <span class="badge" [ngClass]="badgeProv(r.proveedor)">{{ r.proveedor }}</span>
+        </span>
+        <span class="text-right fw-600">{{ r.total_lineas | number }}</span>
+        <span class="text-right c-green">{{ r.coincide | number }}</span>
+        <span class="text-right c-orange">{{ r.diferencia | number }}</span>
+        <span class="text-right c-blue">{{ r.solo_factura | number }}</span>
+        <span class="text-right c-red">{{ r.solo_remito | number }}</span>
+        <span class="barra-col">
+          <div class="barra-wrap">
+            <div class="barra-fill" [style.width]="r.pct_coincide + '%'"
+                 [class.barra-green]="r.pct_coincide >= 80"
+                 [class.barra-orange]="r.pct_coincide >= 50 && r.pct_coincide < 80"
+                 [class.barra-red]="r.pct_coincide < 50">
+            </div>
+          </div>
+          <span class="barra-pct">{{ r.pct_coincide }}%</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ FILTROS ════════════════════════════════════════════════════════════ -->
+  <div class="filtros-panel">
+    <div class="filtros-row">
+
+      <div class="field-group">
+        <label>Proveedor</label>
+        <select [(ngModel)]="filtroProveedor">
+          <option value="">Todos</option>
+          <option *ngFor="let p of proveedores" [value]="p">{{ p }}</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label>Estado</label>
+        <select [(ngModel)]="filtroEstado">
+          <option value="">Todos</option>
+          <option *ngFor="let e of estados" [value]="e">{{ labelEstado(e) }}</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label>Sede / Sucursal</label>
+        <input type="text" [(ngModel)]="filtroSucursal" placeholder="Ej: TRUJILLO" />
+      </div>
+
+      <div class="field-group">
+        <label>Desde</label>
+        <input type="date" [(ngModel)]="filtroFechaDesde" />
+      </div>
+
+      <div class="field-group">
+        <label>Hasta</label>
+        <input type="date" [(ngModel)]="filtroFechaHasta" />
+      </div>
+
+      <div class="field-group field-group--buttons">
+        <button class="btn btn-primary" (click)="aplicarFiltros()">Buscar</button>
+        <button class="btn btn-outline" (click)="limpiarFiltros()">Limpiar</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ INFO ═══════════════════════════════════════════════════════════════ -->
+  <div class="tabla-info">
+    <span>{{ total | number }} líneas encontradas</span>
+    <span class="sep">|</span>
+    <span>Página {{ paginaActual }} de {{ totalPaginas }}</span>
+    <ng-container *ngIf="filtroEstado">
+      <span class="sep">|</span>
+      <span class="filtro-activo">
+        Filtro: <strong>{{ labelEstado(filtroEstado) }}</strong>
+        <button class="clear-filtro" (click)="filtroEstado=''; buscar()">✕</button>
+      </span>
+    </ng-container>
+  </div>
+
+  <!-- ══ TABLA DETALLE ══════════════════════════════════════════════════════ -->
+  <div class="tabla-wrapper">
+
+    <div class="loading-state" *ngIf="cargando">
+      <div class="spinner"></div>
+      <p>Calculando cruce...</p>
+    </div>
+
+    <div class="empty-state" *ngIf="!cargando && lineas.length === 0">
+      <p>No se encontraron resultados con los filtros seleccionados.</p>
+    </div>
+
+    <table class="cruce-table" *ngIf="!cargando && lineas.length > 0">
+      <thead>
+        <tr>
+          <th>Estado</th>
+          <th>Proveedor</th>
+          <th>N° Documento</th>
+          <th>Sede</th>
+          <th>Cód. Artículo</th>
+          <th>Artículo</th>
+          <th>Fecha</th>
+          <th class="text-right">Cant. Factura</th>
+          <th class="text-right">Cant. Remito</th>
+          <th class="text-right">Imp. Factura</th>
+          <th class="text-right">Imp. Remito</th>
+          <th class="text-right">Diferencia</th>
+          <th>Detalle</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let l of lineas" [ngClass]="'fila-' + l.estado.toLowerCase()">
+          <td>
+            <span class="badge-estado" [ngClass]="badgeEstado(l.estado)">
+              {{ labelEstado(l.estado) }}
+            </span>
+          </td>
+          <td>
+            <span class="badge" [ngClass]="badgeProv(l.proveedor_filtro)">
+              {{ l.proveedor_filtro }}
+            </span>
+          </td>
+          <td class="nowrap mono">{{ l.numero_doc || '—' }}</td>
+          <td>{{ l.sucursal_filtro || '—' }}</td>
+          <td class="mono small">{{ l.codigo_articulo || '—' }}</td>
+          <td class="articulo-col">{{ l.nombre_articulo }}</td>
+          <td class="nowrap">{{ formatFecha(l.fecha_ref) }}</td>
+          <td class="text-right">{{ fmtCant(l.cant_factura) }}</td>
+          <td class="text-right">{{ fmtCant(l.cant_remito) }}</td>
+          <td class="text-right">{{ fmt(l.importe_factura) }}</td>
+          <td class="text-right">{{ fmt(l.importe_remito) }}</td>
+          <td class="text-right"
+              [class.c-red]="diffImporte(l) !== 0"
+              [class.c-green]="diffImporte(l) === 0">
+            {{ diffImporte(l) !== 0 ? fmt(diffImporte(l)) : '—' }}
+          </td>
+          <td class="detalle-btns">
+            <button class="btn-link" [disabled]="!l.fac_id"
+                    (click)="verDetalle(l, 'factura')" title="Ver factura">
+              📄
+            </button>
+            <button class="btn-link" [disabled]="!l.rem_id"
+                    (click)="verDetalle(l, 'remito')" title="Ver remito">
+              📦
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ══ PAGINACIÓN ════════════════════════════════════════════════════════ -->
+  <div class="paginacion" *ngIf="totalPaginas > 1">
+    <button class="btn btn-outline" [disabled]="offset === 0" (click)="anterior()">← Anterior</button>
+    <span class="pag-info">Página {{ paginaActual }} de {{ totalPaginas }}</span>
+    <button class="btn btn-outline" [disabled]="paginaActual >= totalPaginas" (click)="siguiente()">Siguiente →</button>
+  </div>
+
+</div>
+
+<!-- ══ MODAL DETALLE ══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" *ngIf="mostrarModal" (click)="cerrarModal()">
+  <div class="modal-box" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <span class="modal-icon">{{ modalTipo === 'factura' ? '📄' : '📦' }}</span>
+        <div>
+          <h3 class="modal-title">
+            {{ modalTipo === 'factura' ? 'Detalle Factura' : 'Detalle Remito' }}
+          </h3>
+          <span class="modal-doc">{{ modalDoc }} — {{ modalProveedor }}</span>
+        </div>
+      </div>
+      <button class="modal-close" (click)="cerrarModal()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="loading-state" *ngIf="cargandoModal">
+        <div class="spinner"></div><p>Cargando...</p>
+      </div>
+
+      <div class="empty-state" *ngIf="!cargandoModal && modalLineas.length === 0">
+        <p>No se encontraron líneas.</p>
+      </div>
+
+      <table class="modal-table" *ngIf="!cargandoModal && modalLineas.length > 0">
+        <thead>
+          <tr *ngIf="modalTipo === 'factura'">
+            <th>Cód. Artículo</th><th>Artículo</th><th>UM</th>
+            <th class="text-right">Cantidad</th>
+            <th class="text-right">P. Unit.</th>
+            <th class="text-right">Valor Venta</th>
+            <th class="text-right">IGV</th>
+            <th class="text-right">Total</th>
+          </tr>
+          <tr *ngIf="modalTipo === 'remito'">
+            <th>Cód. Artículo</th><th>Artículo</th><th>UM</th>
+            <th class="text-right">Bultos</th>
+            <th class="text-right">Cantidad</th>
+            <th class="text-right">Costo Unit.</th>
+            <th class="text-right">Subtotal</th>
+            <th>Confirmado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Facturas -->
+          <ng-container *ngIf="modalTipo === 'factura'">
+            <tr *ngFor="let m of modalLineas">
+              <td class="mono small">{{ m.codigo_articulo }}</td>
+              <td>{{ m.nombre_articulo }}</td>
+              <td>{{ m.um }}</td>
+              <td class="text-right">{{ fmtCant(m.cantidad) }}</td>
+              <td class="text-right">{{ fmt(m.precio_unitario) }}</td>
+              <td class="text-right">{{ fmt(m.valor_venta) }}</td>
+              <td class="text-right">{{ fmt(m.igv) }}</td>
+              <td class="text-right fw-600">{{ fmt(m.importe_total) }}</td>
+            </tr>
+          </ng-container>
+          <!-- Remitos -->
+          <ng-container *ngIf="modalTipo === 'remito'">
+            <tr *ngFor="let m of modalLineas">
+              <td class="mono small">{{ m.codigo_articulo }}</td>
+              <td>{{ m.nombre_articulo }}</td>
+              <td>{{ m.unidad }}</td>
+              <td class="text-right">{{ fmtCant(m.bultos) }}</td>
+              <td class="text-right">{{ fmtCant(m.cantidad) }}</td>
+              <td class="text-right">{{ fmt(m.costo_unitario) }}</td>
+              <td class="text-right fw-600">{{ fmt(m.subtotal) }}</td>
+              <td>
+                <span class="tag-conf" [class.tag-si]="m.confirmado==='yes'">
+                  {{ m.confirmado === 'yes' ? '✓' : (m.confirmado || '—') }}
+                </span>
+              </td>
+            </tr>
+          </ng-container>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
