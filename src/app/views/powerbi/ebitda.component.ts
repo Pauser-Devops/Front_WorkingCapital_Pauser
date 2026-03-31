@@ -19,7 +19,7 @@ export class EbitdaComponent {
   url: SafeResourceUrl;
   constructor(private sanitizer: DomSanitizer) {
     this.url = this.sanitizer.bypassSecurityTrustResourceUrl(
-      'https://app.powerbi.com/view?r=eyJrIjoiNTY3M2I5NTYtNmU5Yy00ZjNmLTk4MWYtZjZhYjI2YzRiMzQ1IiwidCI6IjYzNzI1YjE4LTlmMWYtNGFlZC05MmExLWIxY2QxMzllN2E1NyJ9'
+      ''
     );
   }
 }
