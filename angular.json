@@ -58,7 +58,7 @@
           },
           "configurations": {
             "production": {
-              "baseHref": "/wk-cb/",  
+              "baseHref": "/finanzas/",  
               "budgets": [
                 {
                   "type": "initial",
