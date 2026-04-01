@@ -320,6 +320,8 @@
 .eg-tabla-wrap {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  overflow-y: auto;          
+  max-height: calc(100vh - 220px);
   border-radius: 12px;
   box-shadow: var(--shadow-md);
   background: var(--white);
@@ -1415,4 +1417,10 @@
   display: inline-block;
   width: 12px;
   color: var(--red-700);
+}
+
+.eg-tabla thead {
+  position: sticky;
+  top: 0;
+  z-index: 6;
 }

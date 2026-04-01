@@ -81,7 +81,7 @@ export class SidebarComponent {
       abierto: true,
       modulos: [
        /* { id: 'simuladorTS', label: 'TS - Simulador CBC' ,roles: ['admin', 'gerencia']},*/
-        { id: 'simuladorOptimoCBC', label: 'Simulador CBC' ,roles: ['admin', 'gerencia']},
+        { id: 'simuladorOptimoCBC', label: 'Simulador Trade Spend CBC' ,roles: ['admin', 'gerencia']},
         { id: 'cargaTS', label: 'Carga de Archivos CBC' ,roles: ['admin', 'gerencia']},
          { id: 'dashBackus', label: 'Descuentos Backus' ,roles: ['admin', 'gerencia']},
         { id: 'cargaBackus', label: 'Carga de Archivos Backus' ,roles: ['admin', 'gerencia']},

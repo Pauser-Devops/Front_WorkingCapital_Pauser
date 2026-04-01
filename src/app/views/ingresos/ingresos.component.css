@@ -116,6 +116,8 @@
 
 .ing-tabla-wrap {
   overflow-x: auto;
+  overflow-y: auto;          
+  max-height: calc(100vh - 220px);
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
   background: white;
@@ -1137,4 +1139,10 @@
   opacity: 0.8;
   display: inline-block;
   width: 12px;
+}
+
+.ing-tabla thead {
+  position: sticky;
+  top: 0;
+  z-index: 6;
 }

@@ -193,6 +193,8 @@
 /* ── Tabla ── */
 .wk-tabla-wrap {
   overflow-x: auto;
+    overflow-y: auto;          
+  max-height: calc(100vh - 220px);
   -webkit-overflow-scrolling: touch;
   border-radius: 12px;
   border: 1px solid #e5e7eb;
@@ -593,4 +595,12 @@
   color: #94a3b8 !important;
   background: #f1f5f9 !important;
   font-weight: 500 !important;
+}
+
+/*encabezado estático al hacer scroll*/
+
+.wk-tabla thead {
+  position: sticky;
+  top: 0;
+  z-index: 6;
 }
