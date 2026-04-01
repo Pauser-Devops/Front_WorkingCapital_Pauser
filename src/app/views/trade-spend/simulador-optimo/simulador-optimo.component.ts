@@ -5,8 +5,8 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 
 const MESES: Record<number, string> = {
-  1:'Enero',2:'Febrero',3:'Marzo',4:'Abril',5:'Mayo',6:'Junio',
-  7:'Julio',8:'Agosto',9:'Setiembre',10:'Octubre',11:'Noviembre',12:'Diciembre',
+  1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril', 5: 'Mayo', 6: 'Junio',
+  7: 'Julio', 8: 'Agosto', 9: 'Setiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre',
 };
 
 export interface CanalOptimo {
@@ -83,68 +83,68 @@ export class SimuladorOptimoComponent implements OnInit {
 
   // ── Simulador ──────────────────────────────────────────────────────────────
   formAgencia = 'CHM';
-  formAnio    = new Date().getFullYear();
-  formMes     = new Date().getMonth() + 1;
+  formAnio = new Date().getFullYear();
+  formMes = new Date().getMonth() + 1;
   formNegocio = '';
   filtroNegocioTabla = '';
   canalActivo: 'Tradicional' | 'Mayorista' = 'Tradicional';
 
-  data:    SimuladorOptimoData | null = null;
+  data: SimuladorOptimoData | null = null;
   cargando = false;
-  error:   string | null = null;
+  error: string | null = null;
 
   // Plan interactivo: politica_id → paquetes ingresados
   planPaquetes: Record<number, number> = {};
 
   // ── Cierre CP ──────────────────────────────────────────────────────────────
   cierreAgencia = 'CHM';
-  cierreAnio    = new Date().getFullYear();
-  cierreMes     = new Date().getMonth() + 1;
-  dataCierre:    CierreData | null = null;
+  cierreAnio = new Date().getFullYear();
+  cierreMes = new Date().getMonth() + 1;
+  dataCierre: CierreData | null = null;
   cargandoCierre = false;
 
   // ── Precios ────────────────────────────────────────────────────────────────
   historialPrecios: HistorialPrecio[] = [];
-  cargandoPrecios  = false;
+  cargandoPrecios = false;
 
   // ── Chess ──────────────────────────────────────────────────────────────────
   historialChess: HistorialChess[] = [];
-  cargandoChess  = false;
+  cargandoChess = false;
 
   // ── TTV Mínimo ────────────────────────────────────────────────────────────
-  ttvItems:      any[] = [];
-  cargandoTtv  = false;
+  ttvItems: any[] = [];
+  cargandoTtv = false;
   guardandoTtv = false;
-  copiandoTtv  = false;
-  errorTtv:    string | null = null;
-  mensajeTtvOk:string | null = null;
+  copiandoTtv = false;
+  errorTtv: string | null = null;
+  mensajeTtvOk: string | null = null;
   ttvGuardadoEn = '';
   ttvModoEdicion = false;
-  ttvFormMes  = new Date().getMonth() + 1;
+  ttvFormMes = new Date().getMonth() + 1;
   ttvFormAnio = new Date().getFullYear();
   ttvFiltroNegocio = '';
 
-  readonly mesesOpciones = Object.entries(MESES).map(([n,l])=>({num:Number(n),label:l}));
-  readonly aniosOpciones = [new Date().getFullYear(), new Date().getFullYear()-1];
-  readonly mesesLabels   = MESES;
+  readonly mesesOpciones = Object.entries(MESES).map(([n, l]) => ({ num: Number(n), label: l }));
+  readonly aniosOpciones = [new Date().getFullYear(), new Date().getFullYear() - 1];
+  readonly mesesLabels = MESES;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
   ngOnInit(): void { this.cargar(); }
 
   // ── Tabs ───────────────────────────────────────────────────────────────────
 
   cambiarTab(tab: Tab): void {
     this.tabActual = tab;
-    if (tab==='precios' && !this.historialPrecios.length) this.cargarPrecios();
-    if (tab==='chess'   && !this.historialChess.length)   this.cargarChess();
-    if (tab==='ttv')                                       this.cargarTtv();
+    if (tab === 'precios' && !this.historialPrecios.length) this.cargarPrecios();
+    if (tab === 'chess' && !this.historialChess.length) this.cargarChess();
+    if (tab === 'ttv') this.cargarTtv();
   }
 
   refrescar(): void {
-    if (this.tabActual==='simulador') this.cargar();
-    if (this.tabActual==='cierre')    this.cargarCierre();
-    if (this.tabActual==='precios')   this.cargarPrecios();
-    if (this.tabActual==='chess')     this.cargarChess();
+    if (this.tabActual === 'simulador') this.cargar();
+    if (this.tabActual === 'cierre') this.cargarCierre();
+    if (this.tabActual === 'precios') this.cargarPrecios();
+    if (this.tabActual === 'chess') this.cargarChess();
   }
 
   // ── Simulador ──────────────────────────────────────────────────────────────
@@ -155,8 +155,8 @@ export class SimuladorOptimoComponent implements OnInit {
     this.http.get<SimuladorOptimoData>(
       `${environment.apiUrl}/trade-spend/simulador-optimo/${this.formAgencia}/${this.formAnio}/${this.formMes}${q}`
     ).subscribe({
-      next:  d   => { this.data=d; this.cargando=false; this.planPaquetes={}; },
-      error: err => { this.error=err.error?.detail??'Error al calcular'; this.cargando=false; },
+      next: d => { this.data = d; this.cargando = false; this.planPaquetes = {}; },
+      error: err => { this.error = err.error?.detail ?? 'Error al calcular'; this.cargando = false; },
     });
   }
 
@@ -183,9 +183,9 @@ export class SimuladorOptimoComponent implements OnInit {
 
   // TS que cuesta este SKU en el plan
   tsPorSku(sku: SkuOptimo): number {
-    const paq   = this.planPaquetes[sku.politica_id] ?? 0;
+    const paq = this.planPaquetes[sku.politica_id] ?? 0;
     const canal = this.getCanalData(sku);
-    if (!canal || paq<=0) return 0;
+    if (!canal || paq <= 0) return 0;
     return paq * canal.ts_por_paquete;
   }
 
@@ -205,14 +205,14 @@ export class SimuladorOptimoComponent implements OnInit {
   get ttvTotalPlan(): number {
     if (!this.data) return 0;
     return this.data.skus.reduce((acc, sku) => {
-      const paq   = this.planPaquetes[sku.politica_id] ?? 0;
+      const paq = this.planPaquetes[sku.politica_id] ?? 0;
       const canal = this.getCanalData(sku);
       return acc + (canal ? paq * canal.precio_base : 0);
     }, 0);
   }
 
   get totalPaqPlan(): number {
-    return Object.values(this.planPaquetes).reduce((a,b)=>a+b, 0);
+    return Object.values(this.planPaquetes).reduce((a, b) => a + b, 0);
   }
 
   get margenRestante(): number {
@@ -228,7 +228,7 @@ export class SimuladorOptimoComponent implements OnInit {
   get tsPctProyectado(): number {
     if (!this.data) return 0;
     const tsTotalProyectado = this.data.estado_actual.ts_soles + this.tsPlanSoles;
-    const factTeorica       = this.data.estado_actual.fact_teorica;
+    const factTeorica = this.data.estado_actual.fact_teorica;
     return factTeorica > 0 ? (tsTotalProyectado / factTeorica) * 100 : 0;
   }
 
@@ -241,40 +241,28 @@ export class SimuladorOptimoComponent implements OnInit {
   // ── Helpers tabla ──────────────────────────────────────────────────────────
 
   getCanalData(sku: SkuOptimo): CanalOptimo | null {
-    return sku.canales.find(c=>c.canal===this.canalActivo) ?? null;
+    return sku.canales.find(c => c.canal === this.canalActivo) ?? null;
   }
 
   get negociosDisponibles(): string[] {
     if (!this.data) return [];
-    return [...new Set(this.data.skus.map(s=>s.negocio).filter(Boolean))].sort();
+    return [...new Set(this.data.skus.map(s => s.negocio).filter(Boolean))].sort();
   }
 
   get skusFiltrados(): SkuOptimo[] {
     if (!this.data) return [];
     const skus = this.data.skus.filter(s => this.getCanalData(s) !== null);
-    return this.filtroNegocioTabla ? skus.filter(s=>s.negocio===this.filtroNegocioTabla) : skus;
+    return this.filtroNegocioTabla ? skus.filter(s => s.negocio === this.filtroNegocioTabla) : skus;
   }
 
   barPct(valor: number, limite: number): number {
-    return !limite ? 0 : Math.min((valor/limite)*100, 100);
+    return !limite ? 0 : Math.min((valor / limite) * 100, 100);
   }
 
   badgeAccion(tipo: string): string {
-    if (tipo==='bonificacion') return 'sop-badge sop-badge-boni';
-    if (tipo==='descuento')    return 'sop-badge sop-badge-dscto';
+    if (tipo === 'bonificacion') return 'sop-badge sop-badge-boni';
+    if (tipo === 'descuento') return 'sop-badge sop-badge-dscto';
     return 'sop-badge sop-badge-sin';
-  }
-
-  // ── Cierre CP ──────────────────────────────────────────────────────────────
-
-  cargarCierre(): void {
-    this.cargandoCierre = true;
-    this.http.get<CierreData>(
-      `${environment.apiUrl}/trade-spend/resultado/${this.cierreAgencia}/${this.cierreAnio}/${this.cierreMes}/negocios`
-    ).subscribe({
-      next:  d  => { this.dataCierre=d; this.cargandoCierre=false; },
-      error: () => { this.cargandoCierre=false; },
-    });
   }
 
   // ── Precios ────────────────────────────────────────────────────────────────
@@ -284,14 +272,14 @@ export class SimuladorOptimoComponent implements OnInit {
     this.http.get<any[]>(`${environment.apiUrl}/trade-spend/cargas/`).subscribe({
       next: d => {
         this.historialPrecios = d
-          .filter(c => (c.tipo||'').toLowerCase().includes('precio'))
+          .filter(c => (c.tipo || '').toLowerCase().includes('precio'))
           .map(c => ({
-            agencia:     c.agencia ?? c.agencia_codigo,
-            mes:         c.mes,
-            anio:        c.anio,
-            skus_count:  c.filas ?? c.insertados ?? 0,
+            agencia: c.agencia ?? c.agencia_codigo,
+            mes: c.mes,
+            anio: c.anio,
+            skus_count: c.filas ?? c.insertados ?? 0,
             fecha_carga: c.created_at ?? c.fecha ?? '',
-            archivo:     c.archivo ?? c.nombre_archivo ?? '',
+            archivo: c.archivo ?? c.nombre_archivo ?? '',
           }));
         this.cargandoPrecios = false;
       },
@@ -304,19 +292,19 @@ export class SimuladorOptimoComponent implements OnInit {
   cargarChess(): void {
     this.cargandoChess = true;
     this.http.get<HistorialChess[]>(`${environment.apiUrl}/trade-spend/chess-historial`).subscribe({
-      next:  d  => { this.historialChess=d; this.cargandoChess=false; },
-      error: () => { this.cargandoChess=false; },
+      next: d => { this.historialChess = d; this.cargandoChess = false; },
+      error: () => { this.cargandoChess = false; },
     });
   }
 
   // ── Formateo ───────────────────────────────────────────────────────────────
 
   fmtMoney(n: number): string {
-    return 'S/ '+(n??0).toLocaleString('es-PE',{minimumFractionDigits:0,maximumFractionDigits:0});
+    return 'S/ ' + (n ?? 0).toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   }
-  fmtPct(n: number):        string { return (n??0).toFixed(2)+'%'; }
-  fmtNum(n: number, d=0):   string {
-    return (n??0).toLocaleString('es-PE',{minimumFractionDigits:d,maximumFractionDigits:d});
+  fmtPct(n: number): string { return (n ?? 0).toFixed(2) + '%'; }
+  fmtNum(n: number, d = 0): string {
+    return (n ?? 0).toLocaleString('es-PE', { minimumFractionDigits: d, maximumFractionDigits: d });
   }
   // ── TTV Mínimo ────────────────────────────────────────────────────────────
 
@@ -369,60 +357,248 @@ export class SimuladorOptimoComponent implements OnInit {
     this.http.post<any>(
       `${environment.apiUrl}/trade-spend/ttv-minimo/${this.ttvFormAnio}/${this.ttvFormMes}/copiar`, {}
     ).subscribe({
-      next: d => { this.copiandoTtv=false; this.mensajeTtvOk=d.mensaje; this.cargarTtv(); },
-      error: err => { this.copiandoTtv=false; this.errorTtv=err.error?.detail??'Error al copiar'; },
+      next: d => { this.copiandoTtv = false; this.mensajeTtvOk = d.mensaje; this.cargarTtv(); },
+      error: err => { this.copiandoTtv = false; this.errorTtv = err.error?.detail ?? 'Error al copiar'; },
     });
   }
 
   activarTtvEdicion(item: any): void {
-    item._ttv_full=item.ttv_full; item._ttv_min_off=item.ttv_min_off;
-    item._ttv_min_cnt=item.ttv_min_cnt; item.editando=true;
+    item._ttv_full = item.ttv_full; item._ttv_min_off = item.ttv_min_off;
+    item._ttv_min_cnt = item.ttv_min_cnt; item.editando = true;
   }
 
   confirmarTtvEdicion(item: any): void {
-    item.ttv_full=item._ttv_full; item.ttv_min_off=item._ttv_min_off;
-    item.ttv_min_cnt=item._ttv_min_cnt; item.editando=false;
+    item.ttv_full = item._ttv_full; item.ttv_min_off = item._ttv_min_off;
+    item.ttv_min_cnt = item._ttv_min_cnt; item.editando = false;
   }
 
   cancelarTtvEdicion(item: any): void {
-    item._ttv_full=item.ttv_full; item._ttv_min_off=item.ttv_min_off;
-    item._ttv_min_cnt=item.ttv_min_cnt; item.editando=false;
+    item._ttv_full = item.ttv_full; item._ttv_min_off = item.ttv_min_off;
+    item._ttv_min_cnt = item.ttv_min_cnt; item.editando = false;
   }
 
   editarTodosTtv(): void {
-    this.ttvModoEdicion=true; this.ttvItems.forEach(i=>this.activarTtvEdicion(i));
+    this.ttvModoEdicion = true; this.ttvItems.forEach(i => this.activarTtvEdicion(i));
   }
 
   guardarTtv(): void {
-    this.ttvItems.filter(i=>i.editando).forEach(i=>this.confirmarTtvEdicion(i));
-    this.ttvModoEdicion=false; this.guardandoTtv=true; this.errorTtv=null;
+    this.ttvItems.filter(i => i.editando).forEach(i => this.confirmarTtvEdicion(i));
+    this.ttvModoEdicion = false; this.guardandoTtv = true; this.errorTtv = null;
     this.http.post<any>(
       `${environment.apiUrl}/trade-spend/ttv-minimo/${this.ttvFormAnio}/${this.ttvFormMes}`,
-      { updated_by:'usuario', items: this.ttvItems.map(i=>({
-          cd_pauser:i.cd_pauser, sku_nombre:i.sku_nombre,
-          sku_gerencial:i.sku_gerencial, negocio:i.negocio,
-          ttv_full:i.ttv_full, ttv_min_off:i.ttv_min_off, ttv_min_cnt:i.ttv_min_cnt,
-        })) }
+      {
+        updated_by: 'usuario', items: this.ttvItems.map(i => ({
+          cd_pauser: i.cd_pauser, sku_nombre: i.sku_nombre,
+          sku_gerencial: i.sku_gerencial, negocio: i.negocio,
+          ttv_full: i.ttv_full, ttv_min_off: i.ttv_min_off, ttv_min_cnt: i.ttv_min_cnt,
+        }))
+      }
     ).subscribe({
-      next: d => { this.guardandoTtv=false; this.mensajeTtvOk=d.mensaje; this.cargarTtv(); },
-      error: err => { this.guardandoTtv=false; this.errorTtv=err.error?.detail??'Error'; },
+      next: d => { this.guardandoTtv = false; this.mensajeTtvOk = d.mensaje; this.cargarTtv(); },
+      error: err => { this.guardandoTtv = false; this.errorTtv = err.error?.detail ?? 'Error'; },
     });
   }
 
   get ttvFiltrados(): any[] {
     return this.ttvFiltroNegocio
-      ? this.ttvItems.filter(i=>i.negocio===this.ttvFiltroNegocio)
+      ? this.ttvItems.filter(i => i.negocio === this.ttvFiltroNegocio)
       : this.ttvItems;
   }
 
   get ttvNegociosDisponibles(): string[] {
-    return [...new Set(this.ttvItems.map(i=>i.negocio).filter(Boolean))].sort() as string[];
+    return [...new Set(this.ttvItems.map(i => i.negocio).filter(Boolean))].sort() as string[];
   }
 
-  get ttvHayEdiciones(): boolean { return this.ttvItems.some(i=>i.editando); }
+  get ttvHayEdiciones(): boolean { return this.ttvItems.some(i => i.editando); }
 
-  fmtFecha(iso: string):    string {
+  fmtFecha(iso: string): string {
     if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('es-PE',{day:'2-digit',month:'short',year:'numeric'});
+    return new Date(iso).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+
+
+  // ── Agregar SKU ──────────────────────────────────────────────────────────────
+  modalAgregarAbierto = false;
+  skuBusqueda = '';
+  skusBuscados: any[] = [];
+  skuSeleccionado: any = null;
+  nuevoTtvFull = 0;
+  nuevoTtvMinOff = 0;
+  nuevoTtvMinCnt = 0;
+  agregandoSku = false;
+  buscandoSkus = false;
+
+  abrirModalAgregar(): void {
+    this.modalAgregarAbierto = true;
+    this.skuBusqueda = '';
+    this.skusBuscados = [];
+    this.skuSeleccionado = null;
+    this.nuevoTtvFull = 0;
+    this.nuevoTtvMinOff = 0;
+    this.nuevoTtvMinCnt = 0;
+  }
+
+  cerrarModalAgregar(): void {
+    this.modalAgregarAbierto = false;
+  }
+
+  buscarSkus(): void {
+    if (this.skuBusqueda.length < 2) { this.skusBuscados = []; return; }
+    this.buscandoSkus = true;
+    this.http.get<any[]>(
+      `${environment.apiUrl}/trade-spend/ttv-minimo/skus/buscar?q=${encodeURIComponent(this.skuBusqueda)}`
+    ).subscribe({
+      next: d => { this.skusBuscados = d; this.buscandoSkus = false; },
+      error: () => { this.buscandoSkus = false; },
+    });
+  }
+
+  seleccionarSku(sku: any): void {
+    this.skuSeleccionado = sku;
+    this.skuBusqueda = sku.sku_gerencial;
+    this.skusBuscados = [];
+  }
+
+  confirmarAgregarSku(): void {
+    if (!this.skuSeleccionado) return;
+
+    // Verificar que no esté ya en la lista
+    const yaExiste = this.ttvItems.some(i => i.cd_pauser === this.skuSeleccionado.cd_pauser);
+    if (yaExiste) {
+      this.errorTtv = `El SKU "${this.skuSeleccionado.sku_gerencial}" ya está en el periodo`;
+      this.cerrarModalAgregar();
+      return;
+    }
+
+    this.agregandoSku = true;
+    this.http.post<any>(
+      `${environment.apiUrl}/trade-spend/ttv-minimo/${this.ttvFormAnio}/${this.ttvFormMes}`,
+      {
+        updated_by: 'usuario',
+        items: [{
+          cd_pauser: this.skuSeleccionado.cd_pauser,
+          sku_nombre: this.skuSeleccionado.sku_gerencial,
+          sku_gerencial: this.skuSeleccionado.sku_gerencial,
+          negocio: this.skuSeleccionado.negocio,
+          ttv_full: this.nuevoTtvFull,
+          ttv_min_off: this.nuevoTtvMinOff,
+          ttv_min_cnt: this.nuevoTtvMinCnt,
+        }]
+      }
+    ).subscribe({
+      next: d => {
+        this.agregandoSku = false;
+        this.mensajeTtvOk = `SKU "${this.skuSeleccionado.sku_gerencial}" agregado correctamente`;
+        this.cerrarModalAgregar();
+        this.cargarTtv();
+      },
+      error: err => {
+        this.agregandoSku = false;
+        this.errorTtv = err.error?.detail ?? 'Error al agregar SKU';
+      },
+    });
+  }
+
+  eliminarTtvSku(item: any): void {
+    if (!confirm(`¿Eliminar "${item.sku_gerencial}" del periodo?`)) return;
+    this.http.delete<any>(
+      `${environment.apiUrl}/trade-spend/ttv-minimo/${this.ttvFormAnio}/${this.ttvFormMes}/${item.cd_pauser}`
+    ).subscribe({
+      next: () => {
+        this.mensajeTtvOk = `SKU eliminado correctamente`;
+        this.ttvItems = this.ttvItems.filter(i => i.cd_pauser !== item.cd_pauser);
+      },
+      error: err => { this.errorTtv = err.error?.detail ?? 'Error al eliminar'; },
+    });
+  }
+
+
+  // ══════════════════════════════════════════════════════════════════
+  // AGREGAR estas propiedades y métodos al SimuladorOptimoComponent
+  // ══════════════════════════════════════════════════════════════════
+
+  // ── Cierre CP — detalle SKUs por negocio ──────────────────────────
+
+  // SKUs detallados del cierre (vienen del endpoint /eval)
+  cierreSkus: any[] = [];
+  cargandoCierreSkus = false;
+
+  // Negocios expandidos (Set para toggle)
+  private negociosExpandidos = new Set<string>();
+
+  // Filtro de estado por negocio: 'todos' | 'ok' | 'alerta'
+  cierreFiltroEstado: Record<string, 'todos' | 'ok' | 'alerta'> = {};
+
+  toggleNegocio(negocio: string): void {
+    if (this.negociosExpandidos.has(negocio)) {
+      this.negociosExpandidos.delete(negocio);
+    } else {
+      this.negociosExpandidos.add(negocio);
+      // Inicializar filtro si no existe
+      if (!this.cierreFiltroEstado[negocio]) {
+        this.cierreFiltroEstado[negocio] = 'todos';
+      }
+      // Cargar SKUs del eval si aún no se cargaron
+      if (this.cierreSkus.length === 0 && !this.cargandoCierreSkus) {
+        this.cargarCierreSkus();
+      }
+    }
+  }
+
+  negocioExpandido(negocio: string): boolean {
+    return this.negociosExpandidos.has(negocio);
+  }
+
+  setCierreFiltro(negocio: string, estado: 'todos' | 'ok' | 'alerta'): void {
+    this.cierreFiltroEstado[negocio] = estado;
+  }
+
+  // Devuelve los SKUs del negocio filtrados por estado
+  getSkusNegocio(negocio: string): any[] {
+    const filtro = this.cierreFiltroEstado[negocio] ?? 'todos';
+    const skus = this.cierreSkus.filter(s => s.negocio === negocio);
+    if (filtro === 'ok') return skus.filter(s => s.ok);
+    if (filtro === 'alerta') return skus.filter(s => !s.ok);
+    return skus;
+  }
+
+  // Llama al endpoint /eval para obtener el detalle de SKUs
+  cargarCierreSkus(): void {
+    this.cargandoCierreSkus = true;
+    this.http.get<any>(
+      `${environment.apiUrl}/trade-spend/ttv-minimo/${this.cierreAnio}/${this.cierreMes}/eval?agencia=${this.cierreAgencia}`
+    ).subscribe({
+      next: d => {
+        this.cierreSkus = d.skus ?? [];
+        this.cargandoCierreSkus = false;
+      },
+      error: () => {
+        this.cierreSkus = [];
+        this.cargandoCierreSkus = false;
+      },
+    });
+  }
+
+  // ── MODIFICAR cargarCierre() para también resetear el estado ──────
+  // Reemplaza el método cargarCierre() existente con este:
+
+  cargarCierre(): void {
+    this.cargandoCierre = true;
+    this.cierreSkus = [];                      // resetear detalle
+    this.negociosExpandidos.clear();           // colapsar todos
+    this.cierreFiltroEstado = {};              // resetear filtros
+
+    this.http.get<CierreData>(
+      `${environment.apiUrl}/trade-spend/resultado/${this.cierreAgencia}/${this.cierreAnio}/${this.cierreMes}/negocios`
+    ).subscribe({
+      next: d => {
+        this.dataCierre = d;
+        this.cargandoCierre = false;
+        // Pre-cargar SKUs inmediatamente para tenerlos listos
+        this.cargarCierreSkus();
+      },
+      error: () => { this.cargandoCierre = false; },
+    });
   }
 }

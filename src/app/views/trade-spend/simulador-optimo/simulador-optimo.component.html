@@ -15,11 +15,13 @@
 
   <!-- ── Tabs ──────────────────────────────────────────────────────────────── -->
   <div class="sop-tabs">
-    <button class="sop-tab" [class.active]="tabActual==='simulador'" (click)="cambiarTab('simulador')">Simulador</button>
-    <button class="sop-tab" [class.active]="tabActual==='cierre'"    (click)="cambiarTab('cierre')">Cierre CP</button>
-    <button class="sop-tab" [class.active]="tabActual==='precios'"   (click)="cambiarTab('precios')">Precios cargados</button>
-    <button class="sop-tab" [class.active]="tabActual==='chess'"     (click)="cambiarTab('chess')">Chess Base</button>
-    <button class="sop-tab" [class.active]="tabActual==='ttv'"       (click)="cambiarTab('ttv')">TTV Mínimo</button>
+    <button class="sop-tab" [class.active]="tabActual==='simulador'"
+      (click)="cambiarTab('simulador')">Simulador</button>
+    <button class="sop-tab" [class.active]="tabActual==='cierre'" (click)="cambiarTab('cierre')">Cierre CP</button>
+    <button class="sop-tab" [class.active]="tabActual==='precios'" (click)="cambiarTab('precios')">Precios
+      cargados</button>
+    <button class="sop-tab" [class.active]="tabActual==='chess'" (click)="cambiarTab('chess')">Chess Base</button>
+    <button class="sop-tab" [class.active]="tabActual==='ttv'" (click)="cambiarTab('ttv')">TTV Mínimo</button>
   </div>
 
   <!-- ══════════════ TAB: SIMULADOR ══════════════ -->
@@ -49,8 +51,9 @@
       <div class="dbb-filter-group">
         <span class="dbb-filter-label">Canal</span>
         <div class="sop-canal-toggle">
-          <button [class.active]="canalActivo==='Tradicional'" (click)="cambiarCanal('Tradicional')">Tradicional</button>
-          <button [class.active]="canalActivo==='Mayorista'"   (click)="cambiarCanal('Mayorista')">Mayorista</button>
+          <button [class.active]="canalActivo==='Tradicional'"
+            (click)="cambiarCanal('Tradicional')">Tradicional</button>
+          <button [class.active]="canalActivo==='Mayorista'" (click)="cambiarCanal('Mayorista')">Mayorista</button>
         </div>
       </div>
       <div class="dbb-filter-divider"></div>
@@ -74,75 +77,55 @@
       <div class="dbb-alert" *ngIf="error && !cargando">⚠ {{ error }}</div>
 
       <ng-container *ngIf="data && !cargando">
-
-        <!-- KPIs -->
         <div class="dbb-kpi-row" style="grid-template-columns:repeat(5,1fr)">
-
-          <div class="dbb-kpi"
-            [class.dbb-kpi--total]="!data.estado_actual.ya_excede"
+          <div class="dbb-kpi" [class.dbb-kpi--total]="!data.estado_actual.ya_excede"
             [class.sop-kpi--danger]="data.estado_actual.ya_excede">
             <div class="dbb-kpi-label">% TS actual (real)</div>
-            <div class="dbb-kpi-val"
-              [class.sop-val-ok]="!data.estado_actual.ya_excede"
+            <div class="dbb-kpi-val" [class.sop-val-ok]="!data.estado_actual.ya_excede"
               [class.sop-val-bad]="data.estado_actual.ya_excede">
               {{ fmtPct(data.estado_actual.ts_pct) }}
             </div>
             <div class="dbb-kpi-bar-wrap">
-              <div class="dbb-kpi-bar"
-                [class.dbb-kpi-bar--pauser]="!data.estado_actual.ya_excede"
+              <div class="dbb-kpi-bar" [class.dbb-kpi-bar--pauser]="!data.estado_actual.ya_excede"
                 [class.sop-bar-danger]="data.estado_actual.ya_excede"
                 [style.width.%]="barPct(data.estado_actual.ts_pct, data.limite_ts_pct)"></div>
             </div>
             <div class="dbb-kpi-sub">Límite: {{ fmtPct(data.limite_ts_pct) }}</div>
           </div>
-
           <div class="dbb-kpi">
             <div class="dbb-kpi-label">TS gastado (real)</div>
             <div class="dbb-kpi-val dbb-kpi-val--sm">{{ fmtMoney(data.estado_actual.ts_soles) }}</div>
             <div class="dbb-kpi-sub">Ventas ya realizadas</div>
           </div>
-
-          <div class="dbb-kpi"
-            [class.sop-kpi--ok]="margenRestante>0"
-            [class.sop-kpi--danger]="margenRestante<=0">
+          <div class="dbb-kpi" [class.sop-kpi--ok]="margenRestante>0" [class.sop-kpi--danger]="margenRestante<=0">
             <div class="dbb-kpi-label">Margen restante</div>
-            <div class="dbb-kpi-val dbb-kpi-val--sm"
-              [class.sop-val-ok]="margenRestante>0"
+            <div class="dbb-kpi-val dbb-kpi-val--sm" [class.sop-val-ok]="margenRestante>0"
               [class.sop-val-bad]="margenRestante<=0">
               {{ fmtMoney(margenRestante) }}
             </div>
             <div class="dbb-kpi-bar-wrap">
-              <div class="dbb-kpi-bar"
-                [style.background]="margenRestante>0?'#16a34a':'#dc2626'"
+              <div class="dbb-kpi-bar" [style.background]="margenRestante>0?'#16a34a':'#dc2626'"
                 [style.width.%]="barPlanPct"></div>
             </div>
             <div class="dbb-kpi-sub">{{ hayPlan?'Incluye plan':'Sin plan activo' }}</div>
           </div>
-
-          <div class="dbb-kpi"
-            [class.sop-kpi--ok]="hayPlan && margenRestante>=0"
+          <div class="dbb-kpi" [class.sop-kpi--ok]="hayPlan && margenRestante>=0"
             [class.sop-kpi--danger]="hayPlan && margenRestante<0">
             <div class="dbb-kpi-label">TS del plan</div>
-            <div class="dbb-kpi-val dbb-kpi-val--sm"
-              [class.sop-val-ok]="tsPlanSoles>0 && margenRestante>=0"
+            <div class="dbb-kpi-val dbb-kpi-val--sm" [class.sop-val-ok]="tsPlanSoles>0 && margenRestante>=0"
               [class.sop-val-bad]="margenRestante<0">
               {{ hayPlan ? fmtMoney(tsPlanSoles) : '—' }}
             </div>
-            <div class="dbb-kpi-sub">
-              {{ hayPlan ? fmtPct(tsPlanPct)+' del margen' : 'Ingresa paquetes abajo' }}
-            </div>
+            <div class="dbb-kpi-sub">{{ hayPlan ? fmtPct(tsPlanPct)+' del margen' : 'Ingresa paquetes abajo' }}</div>
           </div>
-
           <div class="dbb-kpi">
             <div class="dbb-kpi-label">% TS proyectado</div>
-            <div class="dbb-kpi-val"
-              [class.sop-val-ok]="tsPctProyectado<=data.limite_ts_pct"
+            <div class="dbb-kpi-val" [class.sop-val-ok]="tsPctProyectado<=data.limite_ts_pct"
               [class.sop-val-bad]="tsPctProyectado>data.limite_ts_pct">
               {{ fmtPct(hayPlan ? tsPctProyectado : data.estado_actual.ts_pct) }}
             </div>
             <div class="dbb-kpi-bar-wrap">
-              <div class="dbb-kpi-bar"
-                [class.sop-bar-danger]="tsPctProyectado>data.limite_ts_pct"
+              <div class="dbb-kpi-bar" [class.sop-bar-danger]="tsPctProyectado>data.limite_ts_pct"
                 [class.dbb-kpi-bar--pauser]="tsPctProyectado<=data.limite_ts_pct"
                 [style.width.%]="barPct(hayPlan?tsPctProyectado:data.estado_actual.ts_pct, data.limite_ts_pct)"></div>
             </div>
@@ -157,34 +140,31 @@
           ⚠ Tu plan excede el margen en {{ fmtMoney(-margenRestante) }}. Reduce los paquetes de algún SKU.
         </div>
 
-        <!-- Tabla interactiva -->
         <div class="dbb-card">
           <div class="dbb-card-header">
             <div>
-              <div class="dbb-card-title">
-                SKUs disponibles —
-                <span class="sop-canal-label">{{ canalActivo }}</span>
+              <div class="dbb-card-title">SKUs disponibles — <span class="sop-canal-label">{{ canalActivo }}</span>
               </div>
-              <div class="dbb-kpi-sub" style="margin-top:3px">
-                Ingresa cuántos paquetes planeas ofrecer · El TS se calcula en tiempo real
-              </div>
+              <div class="dbb-kpi-sub" style="margin-top:3px">Ingresa cuántos paquetes planeas ofrecer · El TS se
+                calcula en tiempo real</div>
             </div>
             <div style="font-size:12px;color:#888">
               {{ skusFiltrados.length }} SKUs ·
-              <span *ngIf="hayPlan" style="color:#16a34a;font-weight:500">
-                {{ skusConPlan }} SKU{{ skusConPlan!==1?'s':'' }} en el plan
-              </span>
+              <span *ngIf="hayPlan" style="color:#16a34a;font-weight:500">{{ skusConPlan }} SKU{{ skusConPlan!==1?'s':''
+                }} en el plan</span>
               <span *ngIf="!hayPlan" style="color:#aaa">Sin plan activo</span>
             </div>
           </div>
-
           <div class="dbb-table-wrap">
             <table class="dbb-table">
               <thead>
                 <tr>
-                  <th>#</th><th>SKU</th><th>Negocio</th>
+                  <th>#</th>
+                  <th>SKU</th>
+                  <th>Negocio</th>
                   <th class="sop-th-right">MC/und</th>
-                  <th>Acción</th><th>Rango</th>
+                  <th>Acción</th>
+                  <th>Rango</th>
                   <th class="sop-th-right">Precio base</th>
                   <th class="sop-th-right">TS/paq</th>
                   <th class="sop-th-right">Paq máx sug.</th>
@@ -197,8 +177,8 @@
                 <ng-container *ngFor="let sku of skusFiltrados; let i=index">
                   <ng-container *ngIf="getCanalData(sku) as canal">
                     <tr [class.sop-tr-best]="i<5 && !hayPlan"
-                        [class.sop-tr-activo]="(planPaquetes[sku.politica_id]??0)>0"
-                        [class.sop-tr-exceso]="tsExcede(sku)">
+                      [class.sop-tr-activo]="(planPaquetes[sku.politica_id]??0)>0"
+                      [class.sop-tr-exceso]="tsExcede(sku)">
                       <td style="color:#aaa;font-size:11px">{{ i+1 }}</td>
                       <td>
                         <div class="dbb-td-name">{{ sku.sku_gerencial }}</div>
@@ -206,11 +186,8 @@
                       </td>
                       <td><span class="sop-badge sop-badge-neg">{{ sku.negocio||'—' }}</span></td>
                       <td class="sop-td-right"><span class="sop-mc">S/ {{ fmtNum(sku.mc,2) }}</span></td>
-                      <td>
-                        <span class="sop-badge" [ngClass]="badgeAccion(canal.tipo_accion)">
-                          {{ canal.accion_texto||'—' }}
-                        </span>
-                      </td>
+                      <td><span class="sop-badge" [ngClass]="badgeAccion(canal.tipo_accion)">{{ canal.accion_texto||'—'
+                          }}</span></td>
                       <td style="font-size:11px;color:#888">{{ canal.rango_texto||'—' }}</td>
                       <td class="sop-td-right">S/ {{ fmtNum(canal.precio_base,2) }}</td>
                       <td class="sop-td-right" style="color:#dc2626;font-weight:500">
@@ -223,16 +200,12 @@
                       <td class="sop-td-right">
                         <input type="number" min="0" class="sop-input-paq"
                           [class.sop-input-activo]="(planPaquetes[sku.politica_id]??0)>0"
-                          [class.sop-input-exceso]="tsExcede(sku)"
-                          [value]="planPaquetes[sku.politica_id]??0"
-                          (input)="onPaqInput(sku.politica_id, $event)"
-                          placeholder="0">
+                          [class.sop-input-exceso]="tsExcede(sku)" [value]="planPaquetes[sku.politica_id]??0"
+                          (input)="onPaqInput(sku.politica_id, $event)" placeholder="0">
                       </td>
                       <td class="sop-td-right">
-                        <span *ngIf="(planPaquetes[sku.politica_id]??0)>0"
-                          [class.sop-val-ok]="!tsExcede(sku)"
-                          [class.sop-val-bad]="tsExcede(sku)"
-                          style="font-weight:500;font-size:12px">
+                        <span *ngIf="(planPaquetes[sku.politica_id]??0)>0" [class.sop-val-ok]="!tsExcede(sku)"
+                          [class.sop-val-bad]="tsExcede(sku)" style="font-weight:500;font-size:12px">
                           S/ {{ fmtNum(tsPorSku(sku),0) }}
                         </span>
                         <span *ngIf="(planPaquetes[sku.politica_id]??0)===0" style="color:#ddd">—</span>
@@ -254,14 +227,11 @@
                 <tr class="sop-tfoot">
                   <td colspan="9" style="text-align:right;font-weight:600;padding:10px;color:#333">Total del plan</td>
                   <td class="sop-td-right" style="font-weight:600">{{ fmtNum(totalPaqPlan,0) }} paq</td>
-                  <td class="sop-td-right" style="font-weight:600"
-                    [class.sop-val-ok]="margenRestante>=0"
+                  <td class="sop-td-right" style="font-weight:600" [class.sop-val-ok]="margenRestante>=0"
                     [class.sop-val-bad]="margenRestante<0">
                     S/ {{ fmtNum(tsPlanSoles,0) }}
                   </td>
-                  <td class="sop-td-right" style="font-weight:600;color:#1a56db">
-                    S/ {{ fmtNum(ttvTotalPlan,0) }}
-                  </td>
+                  <td class="sop-td-right" style="font-weight:600;color:#1a56db">S/ {{ fmtNum(ttvTotalPlan,0) }}</td>
                 </tr>
               </tfoot>
             </table>
@@ -303,15 +273,21 @@
         </button>
       </div>
     </div>
+
     <div class="dbb-content">
       <div class="dbb-loading-full" *ngIf="cargandoCierre">
         <span class="dbb-spin dbb-spin--lg"></span><span>Calculando cierre…</span>
       </div>
+
       <ng-container *ngIf="dataCierre && !cargandoCierre">
+
+        <!-- KPIs resumen -->
         <div class="dbb-kpi-row" style="grid-template-columns:repeat(4,1fr)">
-          <div class="dbb-kpi" [class.dbb-kpi--total]="!dataCierre.supera_limite" [class.sop-kpi--danger]="dataCierre.supera_limite">
+          <div class="dbb-kpi" [class.dbb-kpi--total]="!dataCierre.supera_limite"
+            [class.sop-kpi--danger]="dataCierre.supera_limite">
             <div class="dbb-kpi-label">% TS total</div>
-            <div class="dbb-kpi-val" [class.sop-val-ok]="!dataCierre.supera_limite" [class.sop-val-bad]="dataCierre.supera_limite">
+            <div class="dbb-kpi-val" [class.sop-val-ok]="!dataCierre.supera_limite"
+              [class.sop-val-bad]="dataCierre.supera_limite">
               {{ fmtPct(dataCierre.ts_pct_total) }}
             </div>
             <div class="dbb-kpi-bar-wrap">
@@ -329,72 +305,134 @@
             <div class="dbb-kpi-label">Costo TS</div>
             <div class="dbb-kpi-val dbb-kpi-val--sm">{{ fmtMoney(dataCierre.ts_soles_total) }}</div>
           </div>
-          <div class="dbb-kpi">
-            <div class="dbb-kpi-label">Negocios</div>
-            <div class="dbb-kpi-val dbb-kpi-val--sm">{{ dataCierre.negocios.length }}</div>
-          </div>
           <div class="dbb-kpi" [class.sop-kpi--danger]="dataCierre.skus_bajo_minimo>0"
-            [class.dbb-kpi--total]="dataCierre.skus_bajo_minimo===0" *ngIf="dataCierre.skus_bajo_minimo!==undefined">
+            [class.dbb-kpi--total]="dataCierre.skus_bajo_minimo===0">
             <div class="dbb-kpi-label">SKUs bajo TTV mín</div>
-            <div class="dbb-kpi-val dbb-kpi-val--sm"
-              [class.sop-val-ok]="dataCierre.skus_bajo_minimo===0"
+            <div class="dbb-kpi-val dbb-kpi-val--sm" [class.sop-val-ok]="dataCierre.skus_bajo_minimo===0"
               [class.sop-val-bad]="dataCierre.skus_bajo_minimo>0">
               {{ dataCierre.skus_bajo_minimo }}
             </div>
             <div class="dbb-kpi-sub">Por debajo del piso CBC</div>
           </div>
         </div>
-        <div class="dbb-card">
-          <div class="dbb-card-title" style="margin-bottom:12px">Resultado por negocio</div>
-          <div class="dbb-table-wrap">
-            <table class="dbb-table">
-              <thead>
-                <tr>
-                  <th>Negocio</th><th class="sop-th-right">SKUs</th>
-                  <th class="sop-th-right">Paquetes</th>
-                  <th class="sop-th-right">TTV real</th>
-                  <th class="sop-th-right">Costo TS</th>
-                  <th class="sop-th-right">% TS</th>
-                  <th class="sop-th-right">GAP</th>
-                  <th class="sop-th-right">Precio pond.</th>
-                  <th class="sop-th-right">TTV Mín</th>
-                  <th>TS / TTV</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let n of dataCierre.negocios">
-                  <td><strong>{{ n.negocio }}</strong></td>
-                  <td class="sop-td-right">{{ n.skus_count }}</td>
-                  <td class="sop-td-right">{{ fmtNum(n.paquetes,0) }}</td>
-                  <td class="sop-td-right">{{ fmtMoney(n.ttv_real) }}</td>
-                  <td class="sop-td-right">{{ fmtMoney(n.ts_soles) }}</td>
-                  <td class="sop-td-right">
-                    <div style="display:flex;align-items:center;gap:5px;justify-content:flex-end">
-                      <div class="sop-dot" [ngClass]="'sop-dot-'+n.semaforo"></div>
-                      <span [class.sop-val-ok]="!n.supera_limite" [class.sop-val-bad]="n.supera_limite">
-                        {{ fmtPct(n.ts_pct) }}
+
+        <!-- Detalle por negocio con SKUs expandibles -->
+        <div class="cierre-negocios">
+          <ng-container *ngFor="let n of dataCierre.negocios">
+            <div class="cierre-negocio-card">
+
+              <!-- Header del negocio (clickable para expandir) -->
+              <div class="cierre-negocio-header" (click)="toggleNegocio(n.negocio)">
+                <div class="cierre-negocio-left">
+                  <div class="cierre-semaforo" [ngClass]="'semaforo-'+n.semaforo"></div>
+                  <div>
+                    <div class="cierre-negocio-nombre">{{ n.negocio }}</div>
+                    <div class="cierre-negocio-sub">
+                      {{ n.skus_count }} SKUs · {{ fmtNum(n.paquetes,0) }} paq
+                      <span *ngIf="n.skus_bajo_minimo > 0" class="cierre-badge-alerta">
+                        ⚠ {{ n.skus_bajo_minimo }} bajo mínimo
                       </span>
                     </div>
-                  </td>
-                  <td class="sop-td-right">
-                    <span class="sop-badge" [ngClass]="n.gap>=0?'sop-badge-ok':'sop-badge-neg'">
+                  </div>
+                </div>
+                <div class="cierre-negocio-kpis">
+                  <div class="cierre-mini-kpi">
+                    <span class="cierre-mini-label">TTV real</span>
+                    <span class="cierre-mini-val">{{ fmtMoney(n.ttv_real) }}</span>
+                  </div>
+                  <div class="cierre-mini-kpi">
+                    <span class="cierre-mini-label">Costo TS</span>
+                    <span class="cierre-mini-val">{{ fmtMoney(n.ts_soles) }}</span>
+                  </div>
+                  <div class="cierre-mini-kpi">
+                    <span class="cierre-mini-label">% TS</span>
+                    <span class="cierre-mini-val" [class.sop-val-ok]="!n.supera_limite"
+                      [class.sop-val-bad]="n.supera_limite">
+                      {{ fmtPct(n.ts_pct) }}
+                    </span>
+                  </div>
+                  <div class="cierre-mini-kpi">
+                    <span class="cierre-mini-label">GAP</span>
+                    <span class="cierre-mini-val" [class.sop-val-ok]="n.gap>=0" [class.sop-val-bad]="n.gap<0">
                       {{ n.gap>=0?'+':'' }}{{ fmtMoney(n.gap) }}
                     </span>
-                  </td>
-                  <td>
-                    <span class="sop-badge" [ngClass]="n.supera_limite?'sop-badge-dscto':'sop-badge-ok'">
-                      {{ n.supera_limite?'Excede':'OK' }}
-                    </span>
-                  </td>
-                  <td class="sop-td-right" style="color:#888">—</td>
-                  <td class="sop-td-right" style="color:#888">—</td>
-                  <td style="color:#aaa;font-size:11px">—</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+                  </div>
+                  <div class="cierre-expand-icon">{{ negocioExpandido(n.negocio) ? '▲' : '▼' }}</div>
+                </div>
+              </div>
+
+              <!-- Detalle SKUs del negocio -->
+              <div class="cierre-skus-wrap" *ngIf="negocioExpandido(n.negocio)">
+
+                <!-- Filtro rápido dentro del negocio -->
+                <div class="cierre-skus-filtros">
+                  <button class="cierre-filtro-btn" [class.activo]="cierreFiltroEstado[n.negocio]==='todos'"
+                    (click)="setCierreFiltro(n.negocio,'todos')">Todos</button>
+                  <button class="cierre-filtro-btn cierre-filtro-ok"
+                    [class.activo]="cierreFiltroEstado[n.negocio]==='ok'" (click)="setCierreFiltro(n.negocio,'ok')">✓
+                    OK</button>
+                  <button class="cierre-filtro-btn cierre-filtro-alerta"
+                    [class.activo]="cierreFiltroEstado[n.negocio]==='alerta'"
+                    (click)="setCierreFiltro(n.negocio,'alerta')">⚠ Alerta</button>
+                </div>
+
+                <div class="dbb-table-wrap">
+                  <table class="dbb-table cierre-tabla-skus">
+                    <thead>
+                      <tr>
+                        <th>SKU</th>
+                        <th>Canal</th>
+                        <th class="sop-th-right">Cant. TT</th>
+                        <th class="sop-th-right">TTV real</th>
+                        <th class="sop-th-right">Precio pond.</th>
+                        <th class="sop-th-right">TTV Mín</th>
+                        <th class="sop-th-right">GAP precio</th>
+                        <th class="sop-th-right">Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <ng-container *ngFor="let sku of getSkusNegocio(n.negocio)">
+                        <tr [class.cierre-fila-alerta]="sku.estado==='ALERTA'"
+                          [class.cierre-fila-ok]="sku.estado==='OK'">
+                          <td>
+                            <div style="font-weight:500;font-size:12px">{{ sku.sku_gerencial }}</div>
+                            <div style="font-size:10px;color:#aaa">{{ sku.cod_sku }}</div>
+                          </td>
+                          <td><span class="sop-badge sop-badge-neg" style="font-size:10px">{{ sku.canal }}</span></td>
+                          <td class="sop-td-right" style="font-size:12px">{{ fmtNum(sku.cant_tt,0) }}</td>
+                          <td class="sop-td-right" style="font-size:12px">{{ fmtMoney(sku.fact_cigv) }}</td>
+                          <td class="sop-td-right" style="font-size:12px;font-weight:500" [class.sop-val-ok]="sku.ok"
+                            [class.sop-val-bad]="!sku.ok">
+                            S/ {{ fmtNum(sku.precio_ponderado,4) }}
+                          </td>
+                          <td class="sop-td-right" style="font-size:12px;color:#64748b">
+                            S/ {{ fmtNum(sku.ttv_min_aplica,4) }}
+                          </td>
+                          <td class="sop-td-right" style="font-size:12px;font-weight:600"
+                            [class.sop-val-ok]="sku.gap>=0" [class.sop-val-bad]="sku.gap<0">
+                            {{ sku.gap>=0?'+':'' }}S/ {{ fmtNum(sku.gap,4) }}
+                          </td>
+                          <td class="sop-td-right">
+                            <span class="cierre-estado-badge" [class.cierre-estado-ok]="sku.estado==='OK'"
+                              [class.cierre-estado-alerta]="sku.estado==='ALERTA'">
+                              {{ sku.estado==='OK' ? '✓ OK' : '⚠ ALERTA' }}
+                            </span>
+                          </td>
+                        </tr>
+                      </ng-container>
+                      <tr *ngIf="getSkusNegocio(n.negocio).length===0">
+                        <td colspan="8" class="dbb-empty" style="font-size:12px">Sin SKUs con TTV mínimo cargado</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </ng-container>
         </div>
+
       </ng-container>
+
       <div class="dbb-empty" *ngIf="!dataCierre && !cargandoCierre">
         Selecciona agencia y mes, luego presiona <strong>Ver cierre</strong>.
       </div>
@@ -408,13 +446,17 @@
         <span class="dbb-spin dbb-spin--lg"></span><span>Cargando historial…</span>
       </div>
       <div class="dbb-card" *ngIf="!cargandoPrecios">
-        <div class="dbb-card-header"><div class="dbb-card-title">Historial de precios CBC cargados</div></div>
+        <div class="dbb-card-header">
+          <div class="dbb-card-title">Historial de precios CBC cargados</div>
+        </div>
         <div *ngIf="historialPrecios.length===0" class="dbb-empty">No hay precios cargados.</div>
         <div *ngIf="historialPrecios.length>0" class="dbb-table-wrap">
           <table class="dbb-table">
             <thead>
               <tr>
-                <th>Agencia</th><th>Periodo</th>
+                <th>Agencia</th>
+                <th>Periodo</th>
+                <th class="sop-th-right">SKUs</th>
                 <th class="sop-th-right">Fecha carga</th>
                 <th>Archivo</th>
               </tr>
@@ -423,9 +465,9 @@
               <tr *ngFor="let p of historialPrecios">
                 <td><strong>{{ p.agencia }}</strong></td>
                 <td>{{ mesesLabels[p.mes] }} {{ p.anio }}</td>
-                <td class="sop-td-right" style="font-size:11px;color:#888">
-                  {{ p.fecha_carga ? fmtFecha(p.fecha_carga) : '—' }}
-                </td>
+                <td class="sop-td-right">{{ p.skus_count }}</td>
+                <td class="sop-td-right" style="font-size:11px;color:#888">{{ p.fecha_carga ? fmtFecha(p.fecha_carga) :
+                  '—' }}</td>
                 <td style="font-size:11px;color:#888">{{ p.archivo||'—' }}</td>
               </tr>
             </tbody>
@@ -442,13 +484,16 @@
         <span class="dbb-spin dbb-spin--lg"></span><span>Cargando Chess Base…</span>
       </div>
       <div class="dbb-card" *ngIf="!cargandoChess">
-        <div class="dbb-card-header"><div class="dbb-card-title">Chess Base sincronizado</div></div>
+        <div class="dbb-card-header">
+          <div class="dbb-card-title">Chess Base sincronizado</div>
+        </div>
         <div *ngIf="historialChess.length===0" class="dbb-empty">No hay datos sincronizados.</div>
         <div *ngIf="historialChess.length>0" class="dbb-table-wrap">
           <table class="dbb-table">
             <thead>
               <tr>
-                <th>Agencia</th><th>Periodo</th>
+                <th>Agencia</th>
+                <th>Periodo</th>
                 <th class="sop-th-right">Filas</th>
                 <th class="sop-th-right">Paquetes</th>
                 <th class="sop-th-right">TTV (s/IGV)</th>
@@ -472,7 +517,6 @@
       </div>
     </div>
   </ng-container>
-
 
   <!-- ══════════════ TAB: TTV MÍNIMO ══════════════ -->
   <ng-container *ngIf="tabActual==='ttv'">
@@ -501,22 +545,32 @@
         <button class="dbb-btn" (click)="cargarTtv()" [disabled]="cargandoTtv">
           {{ cargandoTtv?'Cargando…':'Cargar' }}
         </button>
-        <!-- Carga desde Excel -->
         <label class="dbb-btn" [class.dbb-btn--disabled]="ttvSubiendo"
-          style="cursor:pointer;position:relative">
+          style="cursor:pointer;position:relative; display: inline-flex; align-items: center; gap: 8px;">
+
           <input type="file" accept=".xlsx,.xlsm,.xls"
-            style="position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;top:0;left:0"
+            style="position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;top:0;left:0;z-index: 10;"
             (change)="onTtvExcelChange($event)" [disabled]="ttvSubiendo">
-          <span class="dbb-spin" *ngIf="ttvSubiendo"></span>
-          <span *ngIf="!ttvSubiendo">📂</span>
-          {{ ttvSubiendo?'Subiendo…':'Cargar Excel' }}
+
+          <span class="dbb-spin" *ngIf="!ttvSubiendo"></span>
+
+          <span class="material-icons" *ngIf="!ttvSubiendo" style="font-size: 20px;">
+            file_upload
+          </span>
+
+          <span>
+            {{ ttvSubiendo ? 'Subiendo…' : 'Cargar Excel' }}
+          </span>
         </label>
-        <button class="dbb-btn" (click)="copiarTtvMesAnterior()"
-          [disabled]="copiandoTtv || ttvItems.length>0">
+        <button class="dbb-btn" (click)="copiarTtvMesAnterior()" [disabled]="copiandoTtv || ttvItems.length>0">
           {{ copiandoTtv?'Copiando…':'Copiar mes anterior' }}
         </button>
-        <button class="dbb-btn dbb-btn--primary" (click)="guardarTtv()"
-          [disabled]="guardandoTtv || !ttvHayEdiciones">
+        <!-- Botón Agregar SKU  -->
+        <button class="dbb-btn dbb-btn-agregar" (click)="abrirModalAgregar()">
+          <span class="material-icons" style="font-size:15px;vertical-align:middle">add</span>
+          Agregar SKU
+        </button>
+        <button class="dbb-btn dbb-btn--primary" (click)="guardarTtv()" [disabled]="guardandoTtv || !ttvHayEdiciones">
           {{ guardandoTtv?'Guardando…':'Guardar cambios' }}
         </button>
       </div>
@@ -531,9 +585,9 @@
         Último guardado: {{ fmtFecha(ttvGuardadoEn) }}
       </div>
       <div class="dbb-alert" *ngIf="errorTtv">⚠ {{ errorTtv }}</div>
-      <div style="background:#f0fdf4;color:#166534;border:0.5px solid #bbf7d0;border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:1rem"
-        *ngIf="mensajeTtvOk">✓ {{ mensajeTtvOk }}</div>
+      <div class="dbb-alert-ok" *ngIf="mensajeTtvOk">✓ {{ mensajeTtvOk }}</div>
 
+      <!-- Estado vacío -->
       <div *ngIf="!cargandoTtv && ttvItems.length===0" class="dbb-empty">
         <div style="font-size:14px;font-weight:500;margin-bottom:6px">
           Sin datos para {{ mesesLabels[ttvFormMes] }} {{ ttvFormAnio }}
@@ -555,6 +609,7 @@
         </div>
       </div>
 
+      <!-- Tabla TTV -->
       <div *ngIf="!cargandoTtv && ttvItems.length>0" class="dbb-card">
         <div class="dbb-card-header">
           <div>
@@ -572,45 +627,60 @@
           <table class="dbb-table">
             <thead>
               <tr>
-                <th>SKU</th><th>Negocio</th>
-                <th class="sop-th-right">TTV Full<br><span style="font-weight:400;color:#bbb;font-size:10px">c/IGV+perc</span></th>
-                <th class="sop-th-right">TTV Mín OFF<br><span style="font-weight:400;color:#bbb;font-size:10px">canal Trad</span></th>
-                <th class="sop-th-right">TTV Mín CNT<br><span style="font-weight:400;color:#bbb;font-size:10px">canal Mayo</span></th>
-                <th style="width:90px"></th>
+                <th>#</th>
+                <th>Cód.</th>
+                <th>SKU Gerencial</th>
+                <th>Nombre SKU</th>
+                <th>Negocio</th>
+                <th class="sop-th-right">TTV Full<br><span
+                    style="font-weight:400;color:#bbb;font-size:10px">c/IGV+perc</span></th>
+                <th class="sop-th-right">TTV Mín OFF<br><span style="font-weight:400;color:#bbb;font-size:10px">canal
+                    Trad</span></th>
+                <th class="sop-th-right">TTV Mín CNT<br><span style="font-weight:400;color:#bbb;font-size:10px">canal
+                    Mayo</span></th>
+                <th style="width:120px;text-align:center">Acciones</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let item of ttvFiltrados" [style.background]="item.editando?'#eff6ff':''">
+              <tr *ngFor="let item of ttvFiltrados; let i=index" [style.background]="item.editando?'#eff6ff':''">
+                <td style="color:#aaa;font-size:11px">{{ i+1 }}</td>
+                <td style="font-size:11px;color:#64748b;font-family:monospace">{{ item.cd_pauser }}</td>
                 <td>
-                  <div style="font-weight:500;font-size:12px">{{ item.sku_gerencial }}</div>
-                  <div style="font-size:10px;color:#aaa">{{ item.sku_nombre | slice:0:35 }}</div>
+                  <div style="font-weight:500;font-size:12px">{{ item.sku_gerencial || '—' }}</div>
+                </td>
+                <td>
+                  <div style="font-size:11px;color:#6b7280">{{ item.sku_nombre | slice:0:40 }}</div>
                 </td>
                 <td><span class="sop-badge sop-badge-neg">{{ item.negocio||'—' }}</span></td>
                 <td class="sop-td-right">
                   <span *ngIf="!item.editando">S/ {{ fmtNum(item.ttv_full,4) }}</span>
-                  <input *ngIf="item.editando" type="number" step="0.01"
-                    class="ttv-input-inline" [(ngModel)]="item._ttv_full">
+                  <input *ngIf="item.editando" type="number" step="0.01" class="ttv-input-inline"
+                    [(ngModel)]="item._ttv_full">
                 </td>
                 <td class="sop-td-right">
                   <span *ngIf="!item.editando">S/ {{ fmtNum(item.ttv_min_off,4) }}</span>
-                  <input *ngIf="item.editando" type="number" step="0.01"
-                    class="ttv-input-inline" [(ngModel)]="item._ttv_min_off">
+                  <input *ngIf="item.editando" type="number" step="0.01" class="ttv-input-inline"
+                    [(ngModel)]="item._ttv_min_off">
                 </td>
                 <td class="sop-td-right">
                   <span *ngIf="!item.editando">S/ {{ fmtNum(item.ttv_min_cnt,4) }}</span>
-                  <input *ngIf="item.editando" type="number" step="0.01"
-                    class="ttv-input-inline" [(ngModel)]="item._ttv_min_cnt">
+                  <input *ngIf="item.editando" type="number" step="0.01" class="ttv-input-inline"
+                    [(ngModel)]="item._ttv_min_cnt">
                 </td>
                 <td>
-                  <div *ngIf="!item.editando">
-                    <button class="dbb-btn" style="padding:3px 8px;font-size:11px"
-                      (click)="activarTtvEdicion(item)">Editar</button>
-                  </div>
-                  <div *ngIf="item.editando" style="display:flex;gap:4px">
-                    <button class="dbb-btn dbb-btn--primary" style="padding:3px 8px;font-size:11px"
-                      (click)="confirmarTtvEdicion(item)">✓</button>
-                    <button class="dbb-btn" style="padding:3px 8px;font-size:11px"
-                      (click)="cancelarTtvEdicion(item)">✕</button>
+                  <div style="display:flex;gap:4px;justify-content:center">
+                    <ng-container *ngIf="!item.editando">
+                      <button class="dbb-btn" style="padding:3px 8px;font-size:11px"
+                        (click)="activarTtvEdicion(item)">✏</button>
+                      <button class="ttv-btn-eliminar" style="padding:3px 8px;font-size:11px"
+                        (click)="eliminarTtvSku(item)" title="Eliminar SKU">🗑</button>
+                    </ng-container>
+                    <ng-container *ngIf="item.editando">
+                      <button class="dbb-btn dbb-btn--primary" style="padding:3px 8px;font-size:11px"
+                        (click)="confirmarTtvEdicion(item)">✓</button>
+                      <button class="dbb-btn" style="padding:3px 8px;font-size:11px"
+                        (click)="cancelarTtvEdicion(item)">✕</button>
+                    </ng-container>
                   </div>
                 </td>
               </tr>
@@ -620,5 +690,59 @@
       </div>
     </div>
   </ng-container>
+
+  <!-- ══════════════ MODAL AGREGAR SKU (único, fuera de los ng-container de tabs) ══════════════ -->
+  <div class="modal-overlay" *ngIf="modalAgregarAbierto" (click)="cerrarModalAgregar()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+
+      <div class="modal-header">
+        <h3>Agregar SKU al periodo</h3>
+        <button class="modal-close" (click)="cerrarModalAgregar()">✕</button>
+      </div>
+
+      <!-- Buscador -->
+      <div class="modal-field" style="position:relative">
+        <label>Buscar SKU <span style="color:#aaa;font-weight:400">(mínimo 2 caracteres)</span></label>
+        <input type="text" [(ngModel)]="skuBusqueda" (input)="buscarSkus()" placeholder="Nombre o código...">
+        <div class="sku-dropdown" *ngIf="skusBuscados.length > 0">
+          <div class="sku-option" *ngFor="let s of skusBuscados" (click)="seleccionarSku(s)">
+            <span class="sku-cod">{{ s.cd_pauser }}</span>
+            <span class="sku-nom">{{ s.sku_gerencial }}</span>
+            <span class="sku-neg">{{ s.negocio }}</span>
+          </div>
+        </div>
+        <div *ngIf="buscandoSkus" style="font-size:11px;color:#94a3b8;margin-top:4px">Buscando…</div>
+      </div>
+
+      <div class="sku-seleccionado" *ngIf="skuSeleccionado" style="margin-bottom:16px">
+        ✓ <strong>{{ skuSeleccionado.sku_gerencial }}</strong> ({{ skuSeleccionado.cd_pauser }}) — {{
+        skuSeleccionado.negocio }}
+      </div>
+
+      <!-- Valores TTV -->
+      <div class="modal-grid">
+        <div class="modal-field">
+          <label>TTV Full</label>
+          <input type="number" [(ngModel)]="nuevoTtvFull" step="0.0001" placeholder="0.0000">
+        </div>
+        <div class="modal-field">
+          <label>TTV Mín OFF <span style="color:#aaa;font-size:10px">(Trad)</span></label>
+          <input type="number" [(ngModel)]="nuevoTtvMinOff" step="0.0001" placeholder="0.0000">
+        </div>
+        <div class="modal-field">
+          <label>TTV Mín CNT <span style="color:#aaa;font-size:10px">(Mayo)</span></label>
+          <input type="number" [(ngModel)]="nuevoTtvMinCnt" step="0.0001" placeholder="0.0000">
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancelar" (click)="cerrarModalAgregar()">Cancelar</button>
+        <button class="btn-confirmar" [disabled]="!skuSeleccionado || agregandoSku" (click)="confirmarAgregarSku()">
+          {{ agregandoSku ? 'Guardando...' : 'Agregar SKU' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
 
 </div>

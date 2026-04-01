@@ -1,3 +1,6 @@
+<!-- Agrega esto en el <head> de tu HTML o en los estilos globales -->
+<!-- <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"> -->
+
 <div class="cruce-container">
 
   <!-- ══ CABECERA ══════════════════════════════════════════════════════════ -->
@@ -6,7 +9,9 @@
       <h2 class="cruce-title">Cruce de Inventario</h2>
       <span class="cruce-subtitle">Conciliación Facturas vs Remitos</span>
     </div>
-    <button class="btn btn-refresh" (click)="aplicarFiltros()">↺ Actualizar</button>
+    <button class="btn btn-refresh" (click)="aplicarFiltros()">
+      <span class="material-icons">refresh</span> Actualizar
+    </button>
   </div>
 
   <!-- ══ CARDS KPI ══════════════════════════════════════════════════════════ -->
@@ -126,8 +131,12 @@
       </div>
 
       <div class="field-group field-group--buttons">
-        <button class="btn btn-primary" (click)="aplicarFiltros()">Buscar</button>
-        <button class="btn btn-outline" (click)="limpiarFiltros()">Limpiar</button>
+        <button class="btn btn-primary" (click)="aplicarFiltros()">
+          <span class="material-icons">search</span> Buscar
+        </button>
+        <button class="btn btn-outline" (click)="limpiarFiltros()">
+          <span class="material-icons">filter_alt_off</span> Limpiar
+        </button>
       </div>
 
     </div>
@@ -142,7 +151,9 @@
       <span class="sep">|</span>
       <span class="filtro-activo">
         Filtro: <strong>{{ labelEstado(filtroEstado) }}</strong>
-        <button class="clear-filtro" (click)="filtroEstado=''; buscar()">✕</button>
+        <button class="clear-filtro" (click)="filtroEstado=''; buscar()">
+          <span class="material-icons">close</span>
+        </button>
       </span>
     </ng-container>
   </div>
@@ -202,11 +213,11 @@
           <td class="detalle-btns">
             <button class="btn-link" [disabled]="!l.fac_id"
                     (click)="verDetalle(l, 'factura')" title="Ver factura">
-              📄
+              <span class="material-icons">description</span>
             </button>
             <button class="btn-link" [disabled]="!l.rem_id"
                     (click)="verDetalle(l, 'remito')" title="Ver remito">
-              📦
+              <span class="material-icons">inventory_2</span>
             </button>
           </td>
         </tr>
@@ -216,9 +227,13 @@
 
   <!-- ══ PAGINACIÓN ════════════════════════════════════════════════════════ -->
   <div class="paginacion" *ngIf="totalPaginas > 1">
-    <button class="btn btn-outline" [disabled]="offset === 0" (click)="anterior()">← Anterior</button>
+    <button class="btn btn-outline" [disabled]="offset === 0" (click)="anterior()">
+      <span class="material-icons">chevron_left</span> Anterior
+    </button>
     <span class="pag-info">Página {{ paginaActual }} de {{ totalPaginas }}</span>
-    <button class="btn btn-outline" [disabled]="paginaActual >= totalPaginas" (click)="siguiente()">Siguiente →</button>
+    <button class="btn btn-outline" [disabled]="paginaActual >= totalPaginas" (click)="siguiente()">
+      Siguiente <span class="material-icons">chevron_right</span>
+    </button>
   </div>
 
 </div>
@@ -229,7 +244,9 @@
 
     <div class="modal-header">
       <div class="modal-header-left">
-        <span class="modal-icon">{{ modalTipo === 'factura' ? '📄' : '📦' }}</span>
+        <span class="modal-icon material-icons">
+          {{ modalTipo === 'factura' ? 'description' : 'inventory_2' }}
+        </span>
         <div>
           <h3 class="modal-title">
             {{ modalTipo === 'factura' ? 'Detalle Factura' : 'Detalle Remito' }}
@@ -237,7 +254,9 @@
           <span class="modal-doc">{{ modalDoc }} — {{ modalProveedor }}</span>
         </div>
       </div>
-      <button class="modal-close" (click)="cerrarModal()">✕</button>
+      <button class="modal-close" (click)="cerrarModal()">
+        <span class="material-icons">close</span>
+      </button>
     </div>
 
     <div class="modal-body">
@@ -294,7 +313,8 @@
               <td class="text-right fw-600">{{ fmt(m.subtotal) }}</td>
               <td>
                 <span class="tag-conf" [class.tag-si]="m.confirmado==='yes'">
-                  {{ m.confirmado === 'yes' ? '✓' : (m.confirmado || '—') }}
+                  <span class="material-icons" *ngIf="m.confirmado === 'yes'">check_circle</span>
+                  <span *ngIf="m.confirmado !== 'yes'">{{ m.confirmado || '—' }}</span>
                 </span>
               </td>
             </tr>

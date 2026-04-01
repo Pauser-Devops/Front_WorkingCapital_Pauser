@@ -284,3 +284,137 @@
   .field-group { min-width: 100%; }
   .resumen-row { grid-template-columns: 1fr 1fr 1fr; }
 }
+
+/* ══ MATERIAL ICONS — Reset global ══════════════════════════════════════ */
+.material-icons {
+  font-size: 18px;          /* Tamaño base coherente con el texto */
+  line-height: 1;
+  vertical-align: middle;   /* Alineación vertical con texto */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+/* ══ BOTÓN REFRESH (cabecera) ════════════════════════════════════════════ */
+.btn-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-refresh .material-icons {
+  font-size: 16px;
+}
+
+/* ══ BOTONES PRIMARIO Y OUTLINE (filtros) ════════════════════════════════ */
+.btn-primary,
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-primary .material-icons,
+.btn-outline .material-icons {
+  font-size: 16px;
+}
+
+/* ══ BOTONES DETALLE (tabla — description / inventory_2) ═════════════════ */
+.detalle-btns {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s;
+  color: inherit;
+}
+
+.btn-link:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.07);
+}
+
+.btn-link:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.btn-link .material-icons {
+  font-size: 18px;
+}
+
+/* ══ BOTÓN CERRAR FILTRO ACTIVO ══════════════════════════════════════════ */
+.clear-filtro {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 3px;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+.clear-filtro .material-icons {
+  font-size: 14px;
+}
+
+/* ══ MODAL — ícono del header ════════════════════════════════════════════ */
+.modal-icon.material-icons {
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+}
+
+/* ══ MODAL — botón cerrar ════════════════════════════════════════════════ */
+.modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.modal-close .material-icons {
+  font-size: 20px;
+}
+
+/* ══ PAGINACIÓN ══════════════════════════════════════════════════════════ */
+.paginacion .btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.paginacion .material-icons {
+  font-size: 18px;
+}
+
+/* ══ TAG CONFIRMADO (remito) ═════════════════════════════════════════════ */
+.tag-conf {
+  display: inline-flex;
+  align-items: center;
+}
+
+.tag-conf .material-icons {
+  font-size: 18px;
+}
+
+.tag-si .material-icons {
+  color: #22c55e; /* verde */
+}
