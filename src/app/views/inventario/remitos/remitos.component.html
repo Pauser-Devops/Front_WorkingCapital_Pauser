@@ -8,8 +8,17 @@
         <span *ngIf="!syncCargando">☁ Sync OneDrive</span>
         <span *ngIf="syncCargando">Sincronizando...</span>
       </button>
-      <button class="btn btn-outline" (click)="mostrarUpload = !mostrarUpload">
-        {{ mostrarUpload ? '✕ Cerrar' : '📂 Carga manual' }}
+      <button class="btn btn-outline" (click)="mostrarUpload = !mostrarUpload"
+        style="display: inline-flex; align-items: center; gap: 8px;">
+
+        <span class="material-icons" style="font-size: 18px;">
+          {{ mostrarUpload ? 'close' : 'file_open' }}
+        </span>
+
+        <span>
+          {{ mostrarUpload ? 'Cerrar carga' : 'Carga manual' }}
+        </span>
+
       </button>
     </div>
   </div>
@@ -37,9 +46,7 @@
         <input type="file" accept=".xlsx" (change)="onFileSelected($event)" hidden #fileInput />
       </div>
 
-      <button class="btn btn-primary"
-              [disabled]="!archivoSeleccionado || uploadCargando"
-              (click)="subirArchivo()">
+      <button class="btn btn-primary" [disabled]="!archivoSeleccionado || uploadCargando" (click)="subirArchivo()">
         {{ uploadCargando ? 'Cargando...' : '⬆ Subir' }}
       </button>
     </div>
@@ -47,8 +54,7 @@
     <!-- Sync individual -->
     <div class="sync-individual">
       <span class="sync-label">Sync OneDrive por archivo:</span>
-      <button *ngFor="let f of fuentes" class="btn btn-prov"
-              [disabled]="syncCargando" (click)="syncOneDrive(f)">
+      <button *ngFor="let f of fuentes" class="btn btn-prov" [disabled]="syncCargando" (click)="syncOneDrive(f)">
         {{ f === 'REMITOS' ? 'REMITOS (general)' : 'BACKUS' }}
       </button>
     </div>
@@ -167,9 +173,8 @@
           <td class="text-right">{{ fmt(r.costo_unitario) }}</td>
           <td class="text-right fw-bold">{{ fmt(r.subtotal) }}</td>
           <td>
-            <span *ngIf="r.confirmado" class="tag-confirmado"
-                  [class.tag-si]="r.confirmado === 'yes'"
-                  [class.tag-no]="r.confirmado === 'no'">
+            <span *ngIf="r.confirmado" class="tag-confirmado" [class.tag-si]="r.confirmado === 'yes'"
+              [class.tag-no]="r.confirmado === 'no'">
               {{ r.confirmado === 'yes' ? '✓' : r.confirmado }}
             </span>
             <span *ngIf="!r.confirmado">—</span>

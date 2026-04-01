@@ -100,7 +100,7 @@ export class CargaTradeSpendComponent implements OnInit {
 
   // ── Período ───────────────────────────────────────────────────────────────
   anioSeleccionado = new Date().getFullYear();
-  mesSeleccionado  = new Date().getMonth() + 1;
+  mesSeleccionado = new Date().getMonth() + 1;
   readonly mesesOpciones = Object.entries(MESES_LABELS).map(([n, l]) => ({ num: Number(n), label: l }));
   readonly aniosOpciones = [new Date().getFullYear(), new Date().getFullYear() - 1];
 
@@ -157,7 +157,7 @@ export class CargaTradeSpendComponent implements OnInit {
 
   readonly mesesLabels = MESES_LABELS;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   ngOnInit(): void {
     this.consultarEstado();
@@ -196,13 +196,27 @@ export class CargaTradeSpendComponent implements OnInit {
   consultarEstado(): void {
     this.cargandoEstado = true;
     let pendiente = 2;
-    const done = () => { if (--pendiente === 0) { this.cargandoEstado = false; this._actualizarPasoExpandido(); } };
+    const done = () => {
+      if (--pendiente === 0) {
+        this.cargandoEstado = false;
+
+        // ← AGREGA ESTO TEMPORALMENTE
+        console.log('Estado CHM:', this.estadoCHM);
+        console.log('Estado HRZ:', this.estadoHRZ);
+
+        this._actualizarPasoExpandido();
+      }
+    };
     const vacio = (): EstadoPeriodo => ({ existe: false, precios: false, politica: false, chess_base: false });
 
     for (const ag of ['CHM', 'HRZ'] as const) {
       const url = `${environment.apiUrl}/trade-spend/periodos/${ag}/${this.anioSeleccionado}/${this.mesSeleccionado}/estado`;
+
+      // ← Y ESTO
+      console.log('Consultando:', url);
+
       this.http.get<EstadoPeriodo>(url).subscribe({
-        next:  e  => { ag === 'CHM' ? (this.estadoCHM = e) : (this.estadoHRZ = e); done(); },
+        next: e => { ag === 'CHM' ? (this.estadoCHM = e) : (this.estadoHRZ = e); done(); },
         error: () => { ag === 'CHM' ? (this.estadoCHM = vacio()) : (this.estadoHRZ = vacio()); done(); },
       });
     }
@@ -294,7 +308,7 @@ export class CargaTradeSpendComponent implements OnInit {
         this.sincronizandoPrecios = false;
         if (res.estado === 'ok') {
           this.estadoCHM.precios = true; this.estadoHRZ.precios = true;
-          this.estadoCHM.existe = true;  this.estadoHRZ.existe = true;
+          this.estadoCHM.existe = true; this.estadoHRZ.existe = true;
           this._actualizarPasoExpandido();
         }
       },
@@ -336,7 +350,7 @@ export class CargaTradeSpendComponent implements OnInit {
         this.subiendoPolitica = false;
         this.archivoPolitica = null;
         this.estadoCHM.politica = true; this.estadoHRZ.politica = true;
-        this.estadoCHM.existe = true;   this.estadoHRZ.existe = true;
+        this.estadoCHM.existe = true; this.estadoHRZ.existe = true;
         this._actualizarPasoExpandido();
       },
       error: err => {
@@ -438,7 +452,7 @@ export class CargaTradeSpendComponent implements OnInit {
     let url = `${environment.apiUrl}/trade-spend/periodos/${this.agenciaProductos}/${this.anioSeleccionado}/${this.mesSeleccionado}/precios`;
     if (this.filtroNegocio) url += `?negocio=${encodeURIComponent(this.filtroNegocio)}`;
     this.http.get<{ productos: PrecioProducto[] }>(url).subscribe({
-      next:  r  => { this.productos = r.productos; this.cargandoProductos = false; },
+      next: r => { this.productos = r.productos; this.cargandoProductos = false; },
       error: () => { this.cargandoProductos = false; },
     });
   }
@@ -449,7 +463,7 @@ export class CargaTradeSpendComponent implements OnInit {
     this.vistaActual = 'historial';
     this.cargandoHistorial = true;
     this.http.get<CargaLog[]>(`${environment.apiUrl}/trade-spend/cargas/`).subscribe({
-      next:  d  => { this.historial = d; this.cargandoHistorial = false; },
+      next: d => { this.historial = d; this.cargandoHistorial = false; },
       error: () => { this.cargandoHistorial = false; },
     });
   }

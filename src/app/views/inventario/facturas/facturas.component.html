@@ -8,8 +8,17 @@
         <span *ngIf="!syncCargando">☁ Sync OneDrive</span>
         <span *ngIf="syncCargando">Sincronizando...</span>
       </button>
-      <button class="btn btn-outline" (click)="mostrarUpload = !mostrarUpload">
-        {{ mostrarUpload ? '✕ Cerrar carga' : '📂 Carga manual' }}
+      <button class="btn btn-outline" (click)="mostrarUpload = !mostrarUpload"
+        style="display: inline-flex; align-items: center; gap: 8px;">
+
+        <span class="material-icons" style="font-size: 18px;">
+          {{ mostrarUpload ? 'close' : 'file_open' }}
+        </span>
+
+        <span>
+          {{ mostrarUpload ? 'Cerrar carga' : 'Carga manual' }}
+        </span>
+
       </button>
     </div>
   </div>
@@ -38,9 +47,7 @@
         </label>
       </div>
 
-      <button class="btn btn-primary"
-              [disabled]="!archivoSeleccionado || uploadCargando"
-              (click)="subirArchivo()">
+      <button class="btn btn-primary" [disabled]="!archivoSeleccionado || uploadCargando" (click)="subirArchivo()">
         {{ uploadCargando ? 'Cargando...' : '⬆ Subir' }}
       </button>
     </div>
@@ -48,10 +55,7 @@
     <!-- Sync individual por proveedor -->
     <div class="sync-individual">
       <span class="sync-label">Sync OneDrive por proveedor:</span>
-      <button *ngFor="let p of proveedores"
-              class="btn btn-prov"
-              [disabled]="syncCargando"
-              (click)="syncOneDrive(p)">
+      <button *ngFor="let p of proveedores" class="btn btn-prov" [disabled]="syncCargando" (click)="syncOneDrive(p)">
         {{ p }}
       </button>
     </div>
