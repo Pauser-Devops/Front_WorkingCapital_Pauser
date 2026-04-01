@@ -159,7 +159,7 @@
           <ng-container *ngIf="!estaColapsada('cxp')">
             <tr class="wk-row-item">
               <td class="wk-concepto wk-ind1 wk-sublabel">Proveedores Principales</td>
-              <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gProvPrincTotal(f)) }}</td>
+              <td class="wk-val concepto" *ngFor="let f of fechasFiltradas">{{ fmt(gProvPrincTotal(f)) }}</td>
             </tr>
             <tr class="wk-row-item" *ngFor="let k of allProvKeys">
               <td class="wk-concepto wk-ind2">{{ k }}</td>
@@ -170,11 +170,11 @@
             </tr>
             <tr class="wk-row-item">
               <td class="wk-concepto wk-ind1 wk-sublabel">Proveedores Secundarios</td>
-              <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gProvSec(f)) }}</td>
+              <td class="wk-val concepto" *ngFor="let f of fechasFiltradas">{{ fmt(gProvSec(f)) }}</td>
             </tr>
             <tr class="wk-row-item">
               <td class="wk-concepto wk-ind1 wk-sublabel">Comodato Envases</td>
-              <td class="wk-val" *ngFor="let f of fechasFiltradas">{{ fmt(gComodato(f)) }}</td>
+              <td class="wk-val concepto" *ngFor="let f of fechasFiltradas">{{ fmt(gComodato(f)) }}</td>
             </tr>
           </ng-container>
 

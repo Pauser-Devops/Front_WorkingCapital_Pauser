@@ -333,7 +333,16 @@
             <div class="dbb-kpi-label">Negocios</div>
             <div class="dbb-kpi-val dbb-kpi-val--sm">{{ dataCierre.negocios.length }}</div>
           </div>
-          
+          <div class="dbb-kpi" [class.sop-kpi--danger]="dataCierre.skus_bajo_minimo>0"
+            [class.dbb-kpi--total]="dataCierre.skus_bajo_minimo===0" *ngIf="dataCierre.skus_bajo_minimo!==undefined">
+            <div class="dbb-kpi-label">SKUs bajo TTV mín</div>
+            <div class="dbb-kpi-val dbb-kpi-val--sm"
+              [class.sop-val-ok]="dataCierre.skus_bajo_minimo===0"
+              [class.sop-val-bad]="dataCierre.skus_bajo_minimo>0">
+              {{ dataCierre.skus_bajo_minimo }}
+            </div>
+            <div class="dbb-kpi-sub">Por debajo del piso CBC</div>
+          </div>
         </div>
         <div class="dbb-card">
           <div class="dbb-card-title" style="margin-bottom:12px">Resultado por negocio</div>
@@ -492,6 +501,16 @@
         <button class="dbb-btn" (click)="cargarTtv()" [disabled]="cargandoTtv">
           {{ cargandoTtv?'Cargando…':'Cargar' }}
         </button>
+        <!-- Carga desde Excel -->
+        <label class="dbb-btn" [class.dbb-btn--disabled]="ttvSubiendo"
+          style="cursor:pointer;position:relative">
+          <input type="file" accept=".xlsx,.xlsm,.xls"
+            style="position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;top:0;left:0"
+            (change)="onTtvExcelChange($event)" [disabled]="ttvSubiendo">
+          <span class="dbb-spin" *ngIf="ttvSubiendo"></span>
+          <span *ngIf="!ttvSubiendo">📂</span>
+          {{ ttvSubiendo?'Subiendo…':'Cargar Excel' }}
+        </label>
         <button class="dbb-btn" (click)="copiarTtvMesAnterior()"
           [disabled]="copiandoTtv || ttvItems.length>0">
           {{ copiandoTtv?'Copiando…':'Copiar mes anterior' }}
@@ -520,11 +539,20 @@
           Sin datos para {{ mesesLabels[ttvFormMes] }} {{ ttvFormAnio }}
         </div>
         <div style="font-size:12px;color:#aaa;margin-bottom:16px">
-          Copia los valores del mes anterior o ingresa manualmente
+          Sube el Excel "TTV MÍN PAUSER..." o copia los valores del mes anterior
         </div>
-        <button class="dbb-btn dbb-btn--primary" (click)="copiarTtvMesAnterior()" [disabled]="copiandoTtv">
-          {{ copiandoTtv?'Copiando…':'Copiar mes anterior' }}
-        </button>
+        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+          <label class="dbb-btn dbb-btn--primary" style="cursor:pointer;position:relative">
+            <input type="file" accept=".xlsx,.xlsm,.xls"
+              style="position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;top:0;left:0"
+              (change)="onTtvExcelChange($event)" [disabled]="ttvSubiendo">
+            <span class="dbb-spin" *ngIf="ttvSubiendo"></span>
+            📂 {{ ttvSubiendo?'Subiendo…':'Cargar Excel' }}
+          </label>
+          <button class="dbb-btn" (click)="copiarTtvMesAnterior()" [disabled]="copiandoTtv">
+            {{ copiandoTtv?'Copiando…':'Copiar mes anterior' }}
+          </button>
+        </div>
       </div>
 
       <div *ngIf="!cargandoTtv && ttvItems.length>0" class="dbb-card">

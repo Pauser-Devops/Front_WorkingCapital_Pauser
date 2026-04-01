@@ -44,6 +44,7 @@ export interface NegocioResumen {
   negocio: string; skus_count: number; paquetes: number;
   ttv_real: number; ttv_teorico: number; ts_soles: number;
   ts_pct: number; gap: number; supera_limite: boolean;
+  skus_bajo_minimo: number;
   semaforo: 'verde' | 'amarillo' | 'rojo';
 }
 
@@ -51,6 +52,7 @@ export interface CierreData {
   agencia: string; agencia_codigo: string; anio: number; mes: number;
   limite_ts_pct: number; supera_limite: boolean;
   ts_pct_total: number; ttv_real_total: number; ts_soles_total: number;
+  skus_bajo_minimo: number;
   negocios: NegocioResumen[];
 }
 
@@ -319,7 +321,7 @@ export class SimuladorOptimoComponent implements OnInit {
   // ── TTV Mínimo ────────────────────────────────────────────────────────────
 
   cargarTtv(): void {
-    this.cargandoTtv = true; this.errorTtv = null;
+    this.cargandoTtv = true; this.errorTtv = null; this.mensajeTtvOk = null;
     this.http.get<any>(
       `${environment.apiUrl}/trade-spend/ttv-minimo/${this.ttvFormAnio}/${this.ttvFormMes}`
     ).subscribe({
@@ -333,6 +335,33 @@ export class SimuladorOptimoComponent implements OnInit {
       },
       error: () => { this.cargandoTtv = false; },
     });
+  }
+
+  // Carga desde Excel
+  ttvSubiendo = false;
+
+  onTtvExcelChange(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    this.ttvSubiendo = true; this.errorTtv = null; this.mensajeTtvOk = null;
+    const fd = new FormData();
+    fd.append('file', file);
+    this.http.post<any>(
+      `${environment.apiUrl}/trade-spend/ttv-minimo/${this.ttvFormAnio}/${this.ttvFormMes}/excel`,
+      fd
+    ).subscribe({
+      next: d => {
+        this.ttvSubiendo = false;
+        this.mensajeTtvOk = d.mensaje;
+        this.cargarTtv();
+      },
+      error: err => {
+        this.ttvSubiendo = false;
+        this.errorTtv = err.error?.detail ?? 'Error al cargar Excel';
+      },
+    });
+    // Reset input
+    (event.target as HTMLInputElement).value = '';
   }
 
   copiarTtvMesAnterior(): void {

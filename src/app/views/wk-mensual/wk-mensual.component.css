@@ -94,6 +94,12 @@
 
 .wk-val {
   text-align: right; padding: 5px 16px;
+ 
+  font-size: 13px; white-space: nowrap;
+}
+.wk-val.concepto {
+  text-align: right; padding: 5px 16px;
+  font-weight: bolder ;
   font-size: 13px; white-space: nowrap;
 }
 
@@ -120,7 +126,7 @@
 
 .wk-ind1 { padding-left: 32px !important; }
 .wk-ind2 { padding-left: 48px !important; }
-.wk-sublabel { font-style: italic; color: #6b7280 !important; font-size: 12px !important; }
+.wk-sublabel { font-style: italic; color: #6b7280 !important; font-size: 12px !important; font-weight: bolder !important;; }
 
 .wk-row-total td { font-weight: 700; font-size: 13px; padding: 9px 16px; }
 .wk-total-activo td { background: #dbeafe; color: #1a2b4a; }
