@@ -19,6 +19,7 @@
     <button class="sop-tab" [class.active]="tabActual==='cierre'"    (click)="cambiarTab('cierre')">Cierre CP</button>
     <button class="sop-tab" [class.active]="tabActual==='precios'"   (click)="cambiarTab('precios')">Precios cargados</button>
     <button class="sop-tab" [class.active]="tabActual==='chess'"     (click)="cambiarTab('chess')">Chess Base</button>
+    <button class="sop-tab" [class.active]="tabActual==='ttv'"       (click)="cambiarTab('ttv')">TTV Mínimo</button>
   </div>
 
   <!-- ══════════════ TAB: SIMULADOR ══════════════ -->
@@ -332,6 +333,7 @@
             <div class="dbb-kpi-label">Negocios</div>
             <div class="dbb-kpi-val dbb-kpi-val--sm">{{ dataCierre.negocios.length }}</div>
           </div>
+          
         </div>
         <div class="dbb-card">
           <div class="dbb-card-title" style="margin-bottom:12px">Resultado por negocio</div>
@@ -344,7 +346,10 @@
                   <th class="sop-th-right">TTV real</th>
                   <th class="sop-th-right">Costo TS</th>
                   <th class="sop-th-right">% TS</th>
-                  <th class="sop-th-right">GAP</th><th>Estado</th>
+                  <th class="sop-th-right">GAP</th>
+                  <th class="sop-th-right">Precio pond.</th>
+                  <th class="sop-th-right">TTV Mín</th>
+                  <th>TS / TTV</th>
                 </tr>
               </thead>
               <tbody>
@@ -372,6 +377,9 @@
                       {{ n.supera_limite?'Excede':'OK' }}
                     </span>
                   </td>
+                  <td class="sop-td-right" style="color:#888">—</td>
+                  <td class="sop-td-right" style="color:#888">—</td>
+                  <td style="color:#aaa;font-size:11px">—</td>
                 </tr>
               </tbody>
             </table>
@@ -398,19 +406,18 @@
             <thead>
               <tr>
                 <th>Agencia</th><th>Periodo</th>
-                <th class="sop-th-right">SKUs</th>
                 <th class="sop-th-right">Fecha carga</th>
-                <th>Archivo</th><th>Estado</th>
+                <th>Archivo</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let p of historialPrecios">
                 <td><strong>{{ p.agencia }}</strong></td>
                 <td>{{ mesesLabels[p.mes] }} {{ p.anio }}</td>
-                <td class="sop-td-right">{{ p.skus_count | number }}</td>
-                <td class="sop-td-right" style="font-size:11px;color:#888">{{ fmtFecha(p.fecha_carga) }}</td>
+                <td class="sop-td-right" style="font-size:11px;color:#888">
+                  {{ p.fecha_carga ? fmtFecha(p.fecha_carga) : '—' }}
+                </td>
                 <td style="font-size:11px;color:#888">{{ p.archivo||'—' }}</td>
-                <td><span class="sop-badge" [ngClass]="p.skus_count>0?'sop-badge-ok':'sop-badge-sin'">{{ p.skus_count>0?'OK':'Vacío' }}</span></td>
               </tr>
             </tbody>
           </table>
@@ -449,6 +456,135 @@
                 <td class="sop-td-right">{{ fmtMoney(c.ttv_total) }}</td>
                 <td class="sop-td-right">{{ c.negocios_count }}</td>
                 <td class="sop-td-right" style="font-size:11px;color:#888">{{ fmtFecha(c.ultimo_sync) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+
+  <!-- ══════════════ TAB: TTV MÍNIMO ══════════════ -->
+  <ng-container *ngIf="tabActual==='ttv'">
+    <div class="dbb-filterbar">
+      <div class="dbb-filter-group">
+        <span class="dbb-filter-label">Mes</span>
+        <select class="dbb-select" [(ngModel)]="ttvFormMes" style="min-width:110px">
+          <option *ngFor="let m of mesesOpciones" [value]="m.num">{{ m.label }}</option>
+        </select>
+      </div>
+      <div class="dbb-filter-group">
+        <span class="dbb-filter-label">Año</span>
+        <select class="dbb-select" [(ngModel)]="ttvFormAnio" style="min-width:80px">
+          <option *ngFor="let a of aniosOpciones" [value]="a">{{ a }}</option>
+        </select>
+      </div>
+      <div class="dbb-filter-divider"></div>
+      <div class="dbb-filter-group">
+        <span class="dbb-filter-label">Negocio</span>
+        <select class="dbb-select" [(ngModel)]="ttvFiltroNegocio" style="min-width:120px">
+          <option value="">Todos</option>
+          <option *ngFor="let n of ttvNegociosDisponibles" [value]="n">{{ n }}</option>
+        </select>
+      </div>
+      <div class="dbb-filter-actions">
+        <button class="dbb-btn" (click)="cargarTtv()" [disabled]="cargandoTtv">
+          {{ cargandoTtv?'Cargando…':'Cargar' }}
+        </button>
+        <button class="dbb-btn" (click)="copiarTtvMesAnterior()"
+          [disabled]="copiandoTtv || ttvItems.length>0">
+          {{ copiandoTtv?'Copiando…':'Copiar mes anterior' }}
+        </button>
+        <button class="dbb-btn dbb-btn--primary" (click)="guardarTtv()"
+          [disabled]="guardandoTtv || !ttvHayEdiciones">
+          {{ guardandoTtv?'Guardando…':'Guardar cambios' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="dbb-content">
+      <div class="dbb-loading-full" *ngIf="cargandoTtv">
+        <span class="dbb-spin dbb-spin--lg"></span><span>Cargando TTV mínimos…</span>
+      </div>
+
+      <div *ngIf="ttvGuardadoEn" style="font-size:11px;color:#aaa;margin-bottom:10px">
+        Último guardado: {{ fmtFecha(ttvGuardadoEn) }}
+      </div>
+      <div class="dbb-alert" *ngIf="errorTtv">⚠ {{ errorTtv }}</div>
+      <div style="background:#f0fdf4;color:#166534;border:0.5px solid #bbf7d0;border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:1rem"
+        *ngIf="mensajeTtvOk">✓ {{ mensajeTtvOk }}</div>
+
+      <div *ngIf="!cargandoTtv && ttvItems.length===0" class="dbb-empty">
+        <div style="font-size:14px;font-weight:500;margin-bottom:6px">
+          Sin datos para {{ mesesLabels[ttvFormMes] }} {{ ttvFormAnio }}
+        </div>
+        <div style="font-size:12px;color:#aaa;margin-bottom:16px">
+          Copia los valores del mes anterior o ingresa manualmente
+        </div>
+        <button class="dbb-btn dbb-btn--primary" (click)="copiarTtvMesAnterior()" [disabled]="copiandoTtv">
+          {{ copiandoTtv?'Copiando…':'Copiar mes anterior' }}
+        </button>
+      </div>
+
+      <div *ngIf="!cargandoTtv && ttvItems.length>0" class="dbb-card">
+        <div class="dbb-card-header">
+          <div>
+            <div class="dbb-card-title">TTV Mínimo · {{ mesesLabels[ttvFormMes] }} {{ ttvFormAnio }}</div>
+            <div class="dbb-kpi-sub" style="margin-top:3px">
+              {{ ttvFiltrados.length }} SKUs ·
+              <span *ngIf="ttvHayEdiciones" style="color:#d97706;font-weight:500">Cambios sin guardar</span>
+              <span *ngIf="!ttvHayEdiciones" style="color:#aaa">Sin cambios pendientes</span>
+            </div>
+          </div>
+          <button class="dbb-btn" (click)="editarTodosTtv()" *ngIf="!ttvModoEdicion">Editar todos</button>
+        </div>
+
+        <div class="dbb-table-wrap">
+          <table class="dbb-table">
+            <thead>
+              <tr>
+                <th>SKU</th><th>Negocio</th>
+                <th class="sop-th-right">TTV Full<br><span style="font-weight:400;color:#bbb;font-size:10px">c/IGV+perc</span></th>
+                <th class="sop-th-right">TTV Mín OFF<br><span style="font-weight:400;color:#bbb;font-size:10px">canal Trad</span></th>
+                <th class="sop-th-right">TTV Mín CNT<br><span style="font-weight:400;color:#bbb;font-size:10px">canal Mayo</span></th>
+                <th style="width:90px"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of ttvFiltrados" [style.background]="item.editando?'#eff6ff':''">
+                <td>
+                  <div style="font-weight:500;font-size:12px">{{ item.sku_gerencial }}</div>
+                  <div style="font-size:10px;color:#aaa">{{ item.sku_nombre | slice:0:35 }}</div>
+                </td>
+                <td><span class="sop-badge sop-badge-neg">{{ item.negocio||'—' }}</span></td>
+                <td class="sop-td-right">
+                  <span *ngIf="!item.editando">S/ {{ fmtNum(item.ttv_full,4) }}</span>
+                  <input *ngIf="item.editando" type="number" step="0.01"
+                    class="ttv-input-inline" [(ngModel)]="item._ttv_full">
+                </td>
+                <td class="sop-td-right">
+                  <span *ngIf="!item.editando">S/ {{ fmtNum(item.ttv_min_off,4) }}</span>
+                  <input *ngIf="item.editando" type="number" step="0.01"
+                    class="ttv-input-inline" [(ngModel)]="item._ttv_min_off">
+                </td>
+                <td class="sop-td-right">
+                  <span *ngIf="!item.editando">S/ {{ fmtNum(item.ttv_min_cnt,4) }}</span>
+                  <input *ngIf="item.editando" type="number" step="0.01"
+                    class="ttv-input-inline" [(ngModel)]="item._ttv_min_cnt">
+                </td>
+                <td>
+                  <div *ngIf="!item.editando">
+                    <button class="dbb-btn" style="padding:3px 8px;font-size:11px"
+                      (click)="activarTtvEdicion(item)">Editar</button>
+                  </div>
+                  <div *ngIf="item.editando" style="display:flex;gap:4px">
+                    <button class="dbb-btn dbb-btn--primary" style="padding:3px 8px;font-size:11px"
+                      (click)="confirmarTtvEdicion(item)">✓</button>
+                    <button class="dbb-btn" style="padding:3px 8px;font-size:11px"
+                      (click)="cancelarTtvEdicion(item)">✕</button>
+                  </div>
+                </td>
               </tr>
             </tbody>
           </table>

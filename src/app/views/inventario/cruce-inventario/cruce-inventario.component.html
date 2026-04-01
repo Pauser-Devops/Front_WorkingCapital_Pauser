@@ -33,7 +33,7 @@
          [class.kpi-active]="filtroEstado === 'DIFERENCIA'">
       <span class="kpi-label">DIFERENCIAS</span>
       <span class="kpi-value kpi-orange">{{ totalDiferencia | number }}</span>
-      <span class="kpi-sub kpi-orange-sub">S/ {{ fmt(totalDifImporte) }}</span>
+      <span class="kpi-sub kpi-orange-sub">Productos</span>
     </div>
 
     <div class="kpi-card kpi-fac" (click)="filtrarPorEstado('SOLO_FACTURA')"
@@ -171,8 +171,6 @@
           <th>Fecha</th>
           <th class="text-right">Cant. Factura</th>
           <th class="text-right">Cant. Remito</th>
-          <th class="text-right">Imp. Factura</th>
-          <th class="text-right">Imp. Remito</th>
           <th class="text-right">Diferencia</th>
           <th>Detalle</th>
         </tr>
@@ -196,8 +194,6 @@
           <td class="nowrap">{{ formatFecha(l.fecha_ref) }}</td>
           <td class="text-right">{{ fmtCant(l.cant_factura) }}</td>
           <td class="text-right">{{ fmtCant(l.cant_remito) }}</td>
-          <td class="text-right">{{ fmt(l.importe_factura) }}</td>
-          <td class="text-right">{{ fmt(l.importe_remito) }}</td>
           <td class="text-right"
               [class.c-red]="diffImporte(l) !== 0"
               [class.c-green]="diffImporte(l) === 0">

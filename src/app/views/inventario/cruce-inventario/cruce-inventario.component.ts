@@ -197,7 +197,7 @@ export class CruceInventarioComponent implements OnInit {
   }
 
   diffImporte(linea: CruceLinea): number {
-    return (linea.importe_factura ?? 0) - (linea.importe_remito ?? 0);
+    return (linea.cant_factura ?? 0) - (linea.cant_remito ?? 0);
   }
 
   badgeEstado(e: string): string {

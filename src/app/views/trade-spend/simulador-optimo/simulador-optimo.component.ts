@@ -65,7 +65,7 @@ export interface HistorialChess {
   ultimo_sync: string; negocios_count: number;
 }
 
-type Tab = 'simulador' | 'cierre' | 'precios' | 'chess';
+type Tab = 'simulador' | 'cierre' | 'precios' | 'chess' | 'ttv';
 
 @Component({
   selector: 'app-simulador-optimo',
@@ -109,6 +109,19 @@ export class SimuladorOptimoComponent implements OnInit {
   historialChess: HistorialChess[] = [];
   cargandoChess  = false;
 
+  // ── TTV Mínimo ────────────────────────────────────────────────────────────
+  ttvItems:      any[] = [];
+  cargandoTtv  = false;
+  guardandoTtv = false;
+  copiandoTtv  = false;
+  errorTtv:    string | null = null;
+  mensajeTtvOk:string | null = null;
+  ttvGuardadoEn = '';
+  ttvModoEdicion = false;
+  ttvFormMes  = new Date().getMonth() + 1;
+  ttvFormAnio = new Date().getFullYear();
+  ttvFiltroNegocio = '';
+
   readonly mesesOpciones = Object.entries(MESES).map(([n,l])=>({num:Number(n),label:l}));
   readonly aniosOpciones = [new Date().getFullYear(), new Date().getFullYear()-1];
   readonly mesesLabels   = MESES;
@@ -122,6 +135,7 @@ export class SimuladorOptimoComponent implements OnInit {
     this.tabActual = tab;
     if (tab==='precios' && !this.historialPrecios.length) this.cargarPrecios();
     if (tab==='chess'   && !this.historialChess.length)   this.cargarChess();
+    if (tab==='ttv')                                       this.cargarTtv();
   }
 
   refrescar(): void {
@@ -302,6 +316,82 @@ export class SimuladorOptimoComponent implements OnInit {
   fmtNum(n: number, d=0):   string {
     return (n??0).toLocaleString('es-PE',{minimumFractionDigits:d,maximumFractionDigits:d});
   }
+  // ── TTV Mínimo ────────────────────────────────────────────────────────────
+
+  cargarTtv(): void {
+    this.cargandoTtv = true; this.errorTtv = null;
+    this.http.get<any>(
+      `${environment.apiUrl}/trade-spend/ttv-minimo/${this.ttvFormAnio}/${this.ttvFormMes}`
+    ).subscribe({
+      next: d => {
+        this.ttvItems = (d.items ?? []).map((i: any) => ({
+          ...i, editando: false,
+          _ttv_full: i.ttv_full, _ttv_min_off: i.ttv_min_off, _ttv_min_cnt: i.ttv_min_cnt,
+        }));
+        this.ttvGuardadoEn = d.guardado_en ?? '';
+        this.cargandoTtv = false;
+      },
+      error: () => { this.cargandoTtv = false; },
+    });
+  }
+
+  copiarTtvMesAnterior(): void {
+    this.copiandoTtv = true; this.errorTtv = null;
+    this.http.post<any>(
+      `${environment.apiUrl}/trade-spend/ttv-minimo/${this.ttvFormAnio}/${this.ttvFormMes}/copiar`, {}
+    ).subscribe({
+      next: d => { this.copiandoTtv=false; this.mensajeTtvOk=d.mensaje; this.cargarTtv(); },
+      error: err => { this.copiandoTtv=false; this.errorTtv=err.error?.detail??'Error al copiar'; },
+    });
+  }
+
+  activarTtvEdicion(item: any): void {
+    item._ttv_full=item.ttv_full; item._ttv_min_off=item.ttv_min_off;
+    item._ttv_min_cnt=item.ttv_min_cnt; item.editando=true;
+  }
+
+  confirmarTtvEdicion(item: any): void {
+    item.ttv_full=item._ttv_full; item.ttv_min_off=item._ttv_min_off;
+    item.ttv_min_cnt=item._ttv_min_cnt; item.editando=false;
+  }
+
+  cancelarTtvEdicion(item: any): void {
+    item._ttv_full=item.ttv_full; item._ttv_min_off=item.ttv_min_off;
+    item._ttv_min_cnt=item.ttv_min_cnt; item.editando=false;
+  }
+
+  editarTodosTtv(): void {
+    this.ttvModoEdicion=true; this.ttvItems.forEach(i=>this.activarTtvEdicion(i));
+  }
+
+  guardarTtv(): void {
+    this.ttvItems.filter(i=>i.editando).forEach(i=>this.confirmarTtvEdicion(i));
+    this.ttvModoEdicion=false; this.guardandoTtv=true; this.errorTtv=null;
+    this.http.post<any>(
+      `${environment.apiUrl}/trade-spend/ttv-minimo/${this.ttvFormAnio}/${this.ttvFormMes}`,
+      { updated_by:'usuario', items: this.ttvItems.map(i=>({
+          cd_pauser:i.cd_pauser, sku_nombre:i.sku_nombre,
+          sku_gerencial:i.sku_gerencial, negocio:i.negocio,
+          ttv_full:i.ttv_full, ttv_min_off:i.ttv_min_off, ttv_min_cnt:i.ttv_min_cnt,
+        })) }
+    ).subscribe({
+      next: d => { this.guardandoTtv=false; this.mensajeTtvOk=d.mensaje; this.cargarTtv(); },
+      error: err => { this.guardandoTtv=false; this.errorTtv=err.error?.detail??'Error'; },
+    });
+  }
+
+  get ttvFiltrados(): any[] {
+    return this.ttvFiltroNegocio
+      ? this.ttvItems.filter(i=>i.negocio===this.ttvFiltroNegocio)
+      : this.ttvItems;
+  }
+
+  get ttvNegociosDisponibles(): string[] {
+    return [...new Set(this.ttvItems.map(i=>i.negocio).filter(Boolean))].sort() as string[];
+  }
+
+  get ttvHayEdiciones(): boolean { return this.ttvItems.some(i=>i.editando); }
+
   fmtFecha(iso: string):    string {
     if (!iso) return '—';
     return new Date(iso).toLocaleDateString('es-PE',{day:'2-digit',month:'short',year:'numeric'});

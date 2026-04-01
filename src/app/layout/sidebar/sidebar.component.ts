@@ -91,7 +91,7 @@ export class SidebarComponent {
     },
     {
       label: 'Inventario',
-      icono: 'bar_chart',
+      icono: 'layers',
       abierto: true,
       modulos: [
          { id: 'facturasInventario', label: 'Facturas Inventario' },
