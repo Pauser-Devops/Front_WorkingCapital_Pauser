@@ -496,7 +496,7 @@
                 <th>Periodo</th>
                 <th class="sop-th-right">Filas</th>
                 <th class="sop-th-right">Paquetes</th>
-                <th class="sop-th-right">TTV (s/IGV)</th>
+                <!--<th class="sop-th-right">TTV (s/IGV)</th>-->
                 <th class="sop-th-right">Negocios</th>
                 <th class="sop-th-right">Último sync</th>
               </tr>
@@ -507,7 +507,7 @@
                 <td>{{ mesesLabels[c.mes] }} {{ c.anio }}</td>
                 <td class="sop-td-right">{{ c.total_filas | number }}</td>
                 <td class="sop-td-right">{{ fmtNum(c.paquetes_total,0) }}</td>
-                <td class="sop-td-right">{{ fmtMoney(c.ttv_total) }}</td>
+                <!--<td class="sop-td-right">{{ fmtMoney(c.ttv_total) }}</td>-->
                 <td class="sop-td-right">{{ c.negocios_count }}</td>
                 <td class="sop-td-right" style="font-size:11px;color:#888">{{ fmtFecha(c.ultimo_sync) }}</td>
               </tr>

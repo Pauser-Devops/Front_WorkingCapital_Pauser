@@ -57,6 +57,7 @@
       <app-facturas *ngIf="vista === 'facturasInventario'"></app-facturas>
       <app-remitos *ngIf="vista === 'remitosInventario'"></app-remitos>
       <app-cruce-inventario *ngIf="vista === 'dashInventario'"></app-cruce-inventario>
+      <app-resumen-bancario *ngIf="vista === 'resumenBancario'"></app-resumen-bancario>
       <div class="wk-coming" *ngIf="vista !== 'semanal' && vista !== 'mensual' && vista !== 'ingresos' 
              && vista !== 'egresos' && vista !== 'stock' && vista !== 'ingresosbancarios' 
              && vista !== 'reportes-bancarios' && vista !== 'registroIB' && vista !== 'compBancario' && vista !== 'analisisBancarios' 
@@ -65,7 +66,7 @@
              && vista !== 'conciliacionProsegur' && vista !== 'cargaTS' && vista !== 'cargaBackus'
              && vista !== 'ebitda' && vista !== 'cargaMondelez' && vista !== 'dashBackus' 
              && vista !== 'simuladorOptimoCBC'  && vista !== 'facturasInventario' && vista !== 'remitosInventario'
-             && vista !== 'dashInventario'
+             && vista !== 'dashInventario' && vista !== 'resumenBancario'
              ">
         <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
           <circle cx="26" cy="26" r="23" stroke="#0070C0" stroke-width="2" fill="#EBF3FB" />

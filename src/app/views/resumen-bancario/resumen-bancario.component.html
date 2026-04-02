@@ -1,0 +1,242 @@
+<!-- ═══════════════════════════════════════════════════════════
+     RESUMEN BANCARIO — Header
+═══════════════════════════════════════════════════════════ -->
+<div class="rb-page">
+
+  <!-- Encabezado -->
+  <div class="rb-header">
+    <div class="rb-header-left">
+      <div class="rb-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="rb-title">Resumen Bancario</h1>
+        <p class="rb-subtitle">Ingresos · Egresos · Saldos por banco</p>
+      </div>
+    </div>
+    <button class="rb-btn-actualizar" (click)="cargarResumen()" [disabled]="cargando">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+           [class.spinning]="cargando">
+        <path d="M1 4v6h6M23 20v-6h-6"/>
+        <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/>
+      </svg>
+      Actualizar
+    </button>
+  </div>
+
+  <!-- ── FILTROS ─────────────────────────────────────────────── -->
+  <div class="rb-filtros-card">
+
+    <!-- Tabs modo -->
+    <div class="rb-tabs">
+      <button [class.active]="modoFiltro === 'mes'"
+              (click)="modoFiltro = 'mes'; onModoChange()">Por mes</button>
+      <button [class.active]="modoFiltro === 'rango'"
+              (click)="modoFiltro = 'rango'; onModoChange()">Rango de fechas</button>
+    </div>
+
+    <div class="rb-filtros-row">
+      <!-- Filtro MES -->
+      <ng-container *ngIf="modoFiltro === 'mes'">
+        <div class="rb-field">
+          <label>MES</label>
+          <select [(ngModel)]="mesSeleccionado" (change)="onMesChange()">
+            <option *ngFor="let m of mesesDisponibles" [value]="m.mes">
+              {{ m.mes | titlecase }} {{ m.anio }}
+            </option>
+          </select>
+        </div>
+      </ng-container>
+
+      <!-- Filtro RANGO -->
+      <ng-container *ngIf="modoFiltro === 'rango'">
+        <div class="rb-field">
+          <label>DESDE</label>
+          <input type="date" [(ngModel)]="fechaDesde" />
+        </div>
+        <div class="rb-field">
+          <label>HASTA</label>
+          <input type="date" [(ngModel)]="fechaHasta" />
+        </div>
+        <button class="rb-btn-aplicar" (click)="cargarResumen()">Aplicar</button>
+      </ng-container>
+    </div>
+
+    <!-- Chips de bancos -->
+    <div class="rb-bancos-row">
+      <span class="rb-bancos-label">BANCOS</span>
+      <div class="rb-chips">
+        <button *ngFor="let b of bancosDisponibles"
+                class="rb-chip"
+                [class.activo]="isBancoActivo(b.tabla)"
+                (click)="toggleBanco(b.tabla); cargarResumen()">
+          {{ b.nombre }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LOADING ─────────────────────────────────────────────── -->
+  <div class="rb-loading" *ngIf="cargando">
+    <div class="rb-spinner"></div>
+    <span>Cargando resumen bancario…</span>
+  </div>
+
+  <!-- ── ERROR ──────────────────────────────────────────────── -->
+  <div class="rb-error" *ngIf="error && !cargando">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    {{ error }}
+  </div>
+
+  <!-- ── CONTENIDO ──────────────────────────────────────────── -->
+  <ng-container *ngIf="resumen && !cargando">
+
+    <!-- KPIs superiores -->
+    <div class="rb-kpis">
+      <div class="rb-kpi rb-kpi-ing">
+        <span class="rb-kpi-label">TOTAL INGRESOS</span>
+        <span class="rb-kpi-valor">{{ fmt(resumen.gran_total.ingreso) }}</span>
+        <span class="rb-kpi-sub">{{ resumen.periodo }}</span>
+      </div>
+      <div class="rb-kpi rb-kpi-egr">
+        <span class="rb-kpi-label">TOTAL EGRESOS</span>
+        <span class="rb-kpi-valor">{{ fmt(resumen.gran_total.egreso) }}</span>
+        <span class="rb-kpi-sub">{{ resumen.bancos_consultados.length }} bancos</span>
+      </div>
+      <div class="rb-kpi rb-kpi-saldo"
+           [class.deficit]="resumen.gran_total.saldo < 0">
+        <span class="rb-kpi-label">SALDO TOTAL</span>
+        <span class="rb-kpi-valor">{{ fmt(resumen.gran_total.saldo) }}</span>
+        <span class="rb-kpi-sub" *ngIf="resumen.tipo_cambio_usd > 1">
+          TC USD: S/ {{ resumen.tipo_cambio_usd | number:'1.3-3' }}
+        </span>
+      </div>
+    </div>
+
+    <!-- ── TABLA POR BANCO ──────────────────────────────────── -->
+    <div class="rb-tabla-card">
+
+      <div class="rb-tabla-header">
+        <h2>Detalle por banco</h2>
+        <span class="rb-periodo-badge">{{ resumen.periodo }}</span>
+      </div>
+
+      <div class="rb-tabla-wrap">
+        <table class="rb-table">
+          <thead>
+            <tr>
+              <th class="col-banco">Banco</th>
+              <th class="col-num">Ingreso (S/)</th>
+              <th class="col-bar"></th>
+              <th class="col-num">Egreso (S/)</th>
+              <th class="col-bar"></th>
+              <th class="col-num">Saldo Final (S/)</th>
+              <th class="col-fecha">Últ. fecha</th>
+              <th class="col-acc"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <ng-container *ngFor="let t of resumen.totales; trackBy: trackByBanco">
+
+              <!-- Fila resumen del banco -->
+              <tr class="rb-fila-banco"
+                  [class.expandido]="bancoExpandido === t.banco"
+                  (click)="toggleBancoExpandido(t.banco)">
+                <td class="col-banco">
+                  <div class="banco-nombre">
+                    <span class="banco-dot"></span>
+                    {{ t.banco }}
+                  </div>
+                </td>
+                <td class="col-num ing">{{ fmt(t.total_ingreso) }}</td>
+                <td class="col-bar">
+                  <div class="barra-wrap">
+                    <div class="barra barra-ing"
+                         [style.width.%]="pctNum(t.total_ingreso, maxIngreso)"></div>
+                  </div>
+                </td>
+                <td class="col-num egr">{{ fmt(t.total_egreso) }}</td>
+                <td class="col-bar">
+                  <div class="barra-wrap">
+                    <div class="barra barra-egr"
+                         [style.width.%]="pctNum(t.total_egreso, maxEgreso)"></div>
+                  </div>
+                </td>
+                <td class="col-num" [ngClass]="saldoClass(t.saldo_final)">
+                  {{ fmt(t.saldo_final) }}
+                </td>
+                <td class="col-fecha">{{ fmtFecha(t.ultima_fecha) }}</td>
+                <td class="col-acc">
+                  <svg class="expand-icon" [class.rotado]="bancoExpandido === t.banco"
+                       width="14" height="14" viewBox="0 0 24 24"
+                       fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </td>
+              </tr>
+
+              <!-- Sub-filas de detalle diario -->
+              <ng-container *ngIf="bancoExpandido === t.banco">
+                <tr class="rb-subheader">
+                  <td colspan="8">
+                    <div class="subheader-inner">
+                      <span>Fecha</span>
+                      <span>Ingreso</span>
+                      <span>Egreso</span>
+                      <span>Saldo cierre</span>
+                    </div>
+                  </td>
+                </tr>
+                <tr *ngFor="let f of filasDetallePorBanco(t.banco); trackBy: trackByFila"
+                    class="rb-fila-detalle">
+                  <td colspan="8">
+                    <div class="detalle-inner">
+                      <span class="d-fecha">{{ fmtFecha(f.fecha) }}</span>
+                      <span class="d-ing">{{ fmt(f.ingreso) }}</span>
+                      <span class="d-egr">{{ fmt(f.egreso) }}</span>
+                      <span class="d-saldo" [ngClass]="saldoClass(f.saldo)">
+                        {{ fmt(f.saldo) }}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              </ng-container>
+
+            </ng-container>
+          </tbody>
+
+          <!-- Totales generales -->
+          <tfoot>
+            <tr class="rb-fila-total">
+              <td class="col-banco">TOTAL GENERAL</td>
+              <td class="col-num ing">{{ fmt(resumen.gran_total.ingreso) }}</td>
+              <td class="col-bar"></td>
+              <td class="col-num egr">{{ fmt(resumen.gran_total.egreso) }}</td>
+              <td class="col-bar"></td>
+              <td class="col-num" [ngClass]="saldoClass(resumen.gran_total.saldo)">
+                {{ fmt(resumen.gran_total.saldo) }}
+              </td>
+              <td class="col-fecha"></td>
+              <td class="col-acc"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <!-- Nota TC -->
+      <div class="rb-nota" *ngIf="resumen.tipo_cambio_usd > 1">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        IBK USD convertido a soles con TC S/ {{ resumen.tipo_cambio_usd | number:'1.3-3' }}
+      </div>
+
+    </div>
+  </ng-container>
+
+</div>

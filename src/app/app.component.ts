@@ -33,8 +33,7 @@ import { SimuladorOptimoComponent } from './views/trade-spend/simulador-optimo/s
 import { FacturasComponent } from './views/inventario/facturas/facturas.component';
 import { RemitosComponent } from "./views/inventario/remitos/remitos.component";
 import { CruceInventarioComponent } from './views/inventario/cruce-inventario/cruce-inventario.component';
-
-
+import { ResumenBancarioComponent } from './views/resumen-bancario/resumen-bancario.component';
 const VISTA_NOMBRES: Record<string, string> = {
   semanal: 'WK Semanal 2026',
   mensual: 'WK Mensual 2026',
@@ -63,7 +62,8 @@ const VISTA_NOMBRES: Record<string, string> = {
   simuladorOptimoCBC: 'Simulador de predicción CBC',
   dashInventario: 'Dashboard de Conciliación de Inventario',
   remitosInventario: 'Remitos de Inventario',
-  facturasInventario:'Facturas Inventario'
+  facturasInventario:'Facturas Inventario',
+  resumenBancario: 'Resumen Bancario'
 };
 
 @Component({
@@ -102,7 +102,8 @@ const VISTA_NOMBRES: Record<string, string> = {
     SimuladorOptimoComponent,
     FacturasComponent,
     RemitosComponent,
-    CruceInventarioComponent
+    CruceInventarioComponent,
+    ResumenBancarioComponent
 ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']

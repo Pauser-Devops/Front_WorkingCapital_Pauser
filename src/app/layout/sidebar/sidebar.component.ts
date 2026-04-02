@@ -63,6 +63,7 @@ export class SidebarComponent {
         { id: 'stock',    label: 'Stock vs CxP',       roles: ['admin', 'gerencia', 'finanzas_admin'] },
         { id: 'renta',    label: 'Renta y Proyección', roles: ['admin', 'gerencia', 'finanzas_admin'] },
         { id: 'flujoCaja',    label: 'Flujo de Caja',      roles: ['admin', 'gerencia', 'finanzas_admin'] },
+        { id: 'resumenBancario',    label: 'Resumen Bancario',      roles: ['admin', 'gerencia', 'finanzas_admin'] },
       ]
     },
     {
