@@ -1498,3 +1498,147 @@ tr.dif-monto {
   color: #94a3b8;
   margin-left: 8px;
 }
+/* ═══════════════════════════════════════════════════════
+   AGREGAR al final de registro-ingresos-bancarios.component.css
+   El resto del CSS existente queda igual
+═══════════════════════════════════════════════════════ */
+
+/* ── Selector de año ── */
+.rib-anios {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 4px 0;
+  margin-bottom: 10px; 
+}
+
+.rib-anios-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  color: #64748b;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.rib-anios-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.rib-anio-chip {
+  padding: 5px 16px;
+  border-radius: 20px;
+  border: 1.5px solid #e2e8f0;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+
+.rib-anio-chip:hover:not(.activo) {
+  border-color: #1a2744;
+  color: #1a2744;
+}
+
+.rib-anio-chip.activo {
+  background: #1a2744;
+  border-color: #1a2744;
+  color: #fff;
+}
+
+/* Chip de año nuevo (aún sin datos) */
+.rib-anio-chip.rib-anio-nuevo {
+  background: #fffbeb;
+  border-color: #f59e0b;
+  color: #92400e;
+}
+
+.anio-nuevo-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: #f59e0b;
+  border-radius: 50%;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+/* ── Banner nuevo mes ── */
+.rib-nuevo-mes-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #fffbeb;
+  border: 1px solid #f59e0b;
+  border-left: 3px solid #f59e0b;
+  border-radius: 6px;
+  padding: 8px 14px;
+   margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.rib-nuevo-mes-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #92400e;
+  flex: 1;
+  min-width: 0;
+}
+
+.rib-nuevo-mes-left .material-icons {
+  font-size: 16px;
+  color: #d97706;
+  flex-shrink: 0;
+}
+
+.rib-nuevo-mes-left strong {
+  font-size: 12px;
+  font-weight: 700;
+  color: #92400e;
+}
+
+.rib-nuevo-mes-left span:not(.material-icons) {
+  font-size: 11px;
+  color: #a16207;
+}
+
+.rib-nuevo-mes-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #d97706;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 5px 13px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+.rib-nuevo-mes-btn:hover:not(:disabled) { background: #b45309; }
+.rib-nuevo-mes-btn:disabled { opacity: 0.65; cursor: default; }
+.rib-nuevo-mes-btn .material-icons { font-size: 14px; }
+.rib-nuevo-mes-btn .material-icons.spin {
+  animation: spin-rib 0.8s linear infinite;
+}
+
+@keyframes spin-rib { to { transform: rotate(360deg); } }
+
+/* ── Meses deshabilitados (sin datos en el año activo) ── */
+.mes-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}

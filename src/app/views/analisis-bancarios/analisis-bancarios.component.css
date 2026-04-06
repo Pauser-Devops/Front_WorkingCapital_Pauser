@@ -348,3 +348,66 @@
   vertical-align: middle;
   white-space: nowrap;
 }
+
+/* Reemplaza los estilos del banner en tu CSS */
+
+.ab-nuevo-mes-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #fffbeb;
+  border: 1px solid #f59e0b;
+  border-left: 3px solid #f59e0b;
+  border-radius: 6px;
+  padding: 8px 14px;
+  flex-wrap: wrap;
+}
+
+.ab-nuevo-mes-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #92400e;
+  flex: 1;
+  min-width: 0;
+}
+
+.ab-nuevo-mes-left svg {
+  flex-shrink: 0;
+  width: 13px;
+  height: 13px;
+  color: #d97706;
+}
+
+.ab-nuevo-mes-left strong {
+  font-size: 12px;
+  font-weight: 700;
+  color: #92400e;
+}
+
+.ab-nuevo-mes-left span {
+  font-size: 11px;
+  color: #a16207;
+  margin-left: 6px;
+}
+
+.ab-nuevo-mes-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #d97706;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 5px 13px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+.ab-nuevo-mes-btn:hover:not(:disabled) { background: #b45309; }
+.ab-nuevo-mes-btn:disabled { opacity: 0.65; cursor: default; }

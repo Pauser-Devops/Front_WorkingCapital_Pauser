@@ -125,37 +125,7 @@ export class AnalisisBancariosComponent implements OnInit {
 
     ngOnInit() { this.cargarMeses(); }
 
-    // ── carga de meses ───────────────────────────────────
-
-    cargarMeses() {
-        this.http.get<any>(`${API}/bancos/meses`).subscribe({
-            next: r => {
-                if (r.estado === 'OK') {
-                    const vistos = new Set<string>();
-                    const lista: PeriodoItem[] = [];
-                    for (const m of r.meses) {
-                        const key = `${m.mes}-${m.anio}`;
-                        if (!vistos.has(key)) {
-                            vistos.add(key);
-                            const mesLower = (m.mes || '').toLowerCase();
-                            lista.push({
-                                mes: m.mes, anio: m.anio,
-                                label: `${MESES_CORTOS[mesLower] || m.mes} ${m.anio}`
-                            });
-                        }
-                    }
-                    this.periodos = lista.sort((a, b) =>
-                        a.anio !== b.anio
-                            ? a.anio - b.anio
-                            : (ORDEN_MESES[a.mes.toLowerCase()] || 99) - (ORDEN_MESES[b.mes.toLowerCase()] || 99)
-                    );
-                    if (this.periodos.length) this.seleccionarPeriodo(this.periodos[this.periodos.length - 1]);
-                }
-            },
-            error: () => this.error = 'No se pudo conectar a la API'
-        });
-    }
-
+    
     // ── selección de periodo: carga TODO en paralelo ─────
 
     seleccionarPeriodo(p: PeriodoItem) {
@@ -501,5 +471,115 @@ export class AnalisisBancariosComponent implements OnInit {
         return this.registrosActivos.reduce((s, r) => s + r.ingreso, 0);
     }
 
+
+    // ═══════════════════════════════════════════════════════
+// CAMBIOS A APLICAR EN analisis-bancarios.component.ts
+// ═══════════════════════════════════════════════════════
+
+// 1. Agrega estas dos propiedades junto a las demás del componente:
+
+  nuevoMesDisponible = false;
+  nuevoMesLabel      = '';
+
+// 2. Reemplaza el método cargarMeses() completo por este:
+
+  cargarMeses() {
+    this.http.get<any>(`${API}/bancos/meses`).subscribe({
+      next: r => {
+        if (r.estado === 'OK') {
+          const vistos = new Set<string>();
+          const lista: PeriodoItem[] = [];
+          for (const m of r.meses) {
+            const key = `${m.mes}-${m.anio}`;
+            if (!vistos.has(key)) {
+              vistos.add(key);
+              const mesLower = (m.mes || '').toLowerCase();
+              lista.push({
+                mes: m.mes, anio: m.anio,
+                label: `${MESES_CORTOS[mesLower] || m.mes} ${m.anio}`
+              });
+            }
+          }
+          this.periodos = lista.sort((a, b) =>
+            a.anio !== b.anio
+              ? a.anio - b.anio
+              : (ORDEN_MESES[a.mes.toLowerCase()] || 99) - (ORDEN_MESES[b.mes.toLowerCase()] || 99)
+          );
+
+          // ── Auto-detección de nuevo mes ──────────────────
+          this._detectarNuevoMes();
+          // ────────────────────────────────────────────────
+
+          if (this.periodos.length && !this.periodoActivo) {
+            this.seleccionarPeriodo(this.periodos[this.periodos.length - 1]);
+          }
+        }
+      },
+      error: () => this.error = 'No se pudo conectar a la API'
+    });
+  }
+
+// 3. Agrega este método privado en el componente:
+
+  private _detectarNuevoMes() {
+    const hoy    = new Date();
+    const mesHoy = hoy.toLocaleString('es-PE', { month: 'long' }).toLowerCase(); // "abril"
+    const anioHoy = hoy.getFullYear();
+
+    const MESES_ES: Record<number, string> = {
+      1:'enero',2:'febrero',3:'marzo',4:'abril',5:'mayo',6:'junio',
+      7:'julio',8:'agosto',9:'septiembre',10:'octubre',11:'noviembre',12:'diciembre'
+    };
+    const mesActual = MESES_ES[hoy.getMonth() + 1];
+    const yaExiste  = this.periodos.some(
+      p => p.mes.toLowerCase() === mesActual && p.anio === anioHoy
+    );
+
+    if (!yaExiste) {
+      this.nuevoMesDisponible = true;
+      const mesCapitalizado   = mesActual.charAt(0).toUpperCase() + mesActual.slice(1);
+      this.nuevoMesLabel      = `${mesCapitalizado} ${anioHoy}`;
+    } else {
+      this.nuevoMesDisponible = false;
+      this.nuevoMesLabel      = '';
+    }
+  }
+
+// 4. Agrega este método público que llama el botón del banner:
+
+  sincronizarNuevoMes() {
+    const hoy  = new Date();
+    const MESES_ES: Record<number, string> = {
+      1:'enero',2:'febrero',3:'marzo',4:'abril',5:'mayo',6:'junio',
+      7:'julio',8:'agosto',9:'septiembre',10:'octubre',11:'noviembre',12:'diciembre'
+    };
+    const mes  = MESES_ES[hoy.getMonth() + 1];
+    const anio = hoy.getFullYear();
+
+    this.cargandoSync = true;
+    this.mensajeSync  = '';
+
+    this.http.post<any>(`${API}/bancos/sync?mes=${mes}&anio=${anio}`, {}).subscribe({
+      next: r => {
+        this.cargandoSync = false;
+        if (r.estado === 'OK') {
+          this.nuevoMesDisponible = false;
+          this.mensajeSync  = `${this.nuevoMesLabel} sincronizado correctamente`;
+          this.errorSync    = false;
+          // Limpiar cache y recargar lista de meses
+          this.cache = {};
+          this.cargarMeses();
+        } else {
+          this.mensajeSync = r.detalle || 'Error al sincronizar';
+          this.errorSync   = true;
+        }
+      },
+      error: () => {
+        this.cargandoSync = false;
+        this.mensajeSync  = 'Error de conexión';
+        this.errorSync    = true;
+      }
+    });
+  }
 
 }
