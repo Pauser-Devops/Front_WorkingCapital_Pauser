@@ -115,56 +115,50 @@
         </tr>
       </thead>
       <tbody>
-  <ng-container *ngFor="let c of conceptos; trackBy: trackById">
+        <ng-container *ngFor="let c of conceptos; trackBy: trackById">
 
-    <!-- SECCIÓN — ahora es clickeable -->
-    <tr *ngIf="esSeccion(c)" class="ing-row-seccion ing-row-toggle"
-        (click)="toggleSeccion(c.seccion)">
-      <td class="ing-td-seccion ing-col-sticky">
-        <span class="ing-toggle-icon">{{ estaColapsada(c.seccion) ? '▶' : '▼' }}</span>
-        {{ c.nombre }}
-      </td>
-      <td *ngFor="let col of columnasFiltradas; trackBy: trackByFecha"
-          class="ing-td-seccion-fill"></td>
-    </tr>
+          <!-- SECCIÓN — ahora es clickeable -->
+          <tr *ngIf="esSeccion(c)" class="ing-row-seccion ing-row-toggle" (click)="toggleSeccion(c.seccion)">
+            <td class="ing-td-seccion ing-col-sticky">
+              <span class="ing-toggle-icon">{{ estaColapsada(c.seccion) ? '▶' : '▼' }}</span>
+              {{ c.nombre }}
+            </td>
+            <td *ngFor="let col of columnasFiltradas; trackBy: trackByFecha" class="ing-td-seccion-fill"></td>
+          </tr>
 
-    <!-- TOTAL — siempre visible -->
-    <tr *ngIf="esTotal(c)" class="ing-row-total">
-      <td class="ing-td-label total ing-col-sticky">{{ c.nombre }}</td>
-      <td class="ing-td-val total"
-          *ngFor="let col of columnasFiltradas; trackBy: trackByFecha">
-        {{ fmt(getTotal(c, col.fecha)) }}
-      </td>
-    </tr>
+          <!-- TOTAL — siempre visible -->
+          <tr *ngIf="esTotal(c)" class="ing-row-total">
+            <td class="ing-td-label total ing-col-sticky">{{ c.nombre }}</td>
+            <td class="ing-td-val total" *ngFor="let col of columnasFiltradas; trackBy: trackByFecha">
+              {{ fmt(getTotal(c, col.fecha)) }}
+            </td>
+          </tr>
 
-    <!-- ITEM — se oculta si la sección está colapsada -->
-    <tr *ngIf="esItem(c) && mostrarFila(c.id) && !estaColapsada(c.seccion)"
-        class="ing-row-item" [class.auto]="esAuto(c) || esProsegurAuto(c)">
-      <td class="ing-td-label ing-col-sticky"
-          [style.paddingLeft.px]="16 + (c.indent || 0) * 10">
-        {{ c.nombre }}
-        <span class="ing-badge-auto" *ngIf="esAuto(c) || esProsegurAuto(c)">BD</span>
-      </td>
-      <td class="ing-td-val"
-          *ngFor="let col of columnasFiltradas; trackBy: trackByFecha"
-          [class.editable]="!esAuto(c) && !esProsegurAuto(c)"
-          [class.vacio]="!conceptoAplicaEnFecha(c.id, col.fecha) || getValor(c.id, col.fecha) === null"
-          (dblclick)="!esAuto(c) && !esProsegurAuto(c) && conceptoAplicaEnFecha(c.id, col.fecha) && iniciarEdicion(c.id, col.fecha)"
-          [attr.data-cid]="c.id" [attr.data-fecha]="col.fecha">
-        <ng-container *ngIf="esEditando(c.id, col.fecha); else spanItem">
-          <input class="ing-input-celda" type="number" [value]="valorEditando"
-            (input)="valorEditando = $any($event.target).value"
-            (keydown.enter)="confirmarEdicion()"
-            (keydown.escape)="cancelarEdicion()" />
+          <!-- ITEM — se oculta si la sección está colapsada -->
+          <tr *ngIf="esItem(c) && mostrarFila(c.id) && !estaColapsada(c.seccion)" class="ing-row-item"
+            [class.auto]="esAuto(c) || esProsegurAuto(c)">
+            <td class="ing-td-label ing-col-sticky" [style.paddingLeft.px]="16 + (c.indent || 0) * 10">
+              {{ c.nombre }}
+              <span class="ing-badge-auto" *ngIf="esAuto(c) || esProsegurAuto(c)">BD</span>
+            </td>
+            <td class="ing-td-val" *ngFor="let col of columnasFiltradas; trackBy: trackByFecha"
+              [class.editable]="!esAuto(c) && !esProsegurAuto(c)"
+              [class.vacio]="!conceptoAplicaEnFecha(c.id, col.fecha) || getValor(c.id, col.fecha) === null"
+              (dblclick)="!esAuto(c) && !esProsegurAuto(c) && conceptoAplicaEnFecha(c.id, col.fecha) && iniciarEdicion(c.id, col.fecha)"
+              [attr.data-cid]="c.id" [attr.data-fecha]="col.fecha">
+              <ng-container *ngIf="esEditando(c.id, col.fecha); else spanItem">
+                <input class="ing-input-celda" type="number" [value]="valorEditando"
+                  (input)="valorEditando = $any($event.target).value" (keydown.enter)="confirmarEdicion()"
+                  (keydown.escape)="cancelarEdicion()" />
+              </ng-container>
+              <ng-template #spanItem>
+                <span>{{ conceptoAplicaEnFecha(c.id, col.fecha) ? fmt(getValor(c.id, col.fecha)) : '—' }}</span>
+              </ng-template>
+            </td>
+          </tr>
+
         </ng-container>
-        <ng-template #spanItem>
-          <span>{{ conceptoAplicaEnFecha(c.id, col.fecha) ? fmt(getValor(c.id, col.fecha)) : '—' }}</span>
-        </ng-template>
-      </td>
-    </tr>
-
-  </ng-container>
-</tbody>
+      </tbody>
     </table>
   </div>
 
@@ -241,11 +235,11 @@
               TC: {{ tipoCambio | number:'1.3-3' }}
             </span>
           </label>
-          <div class="ing-banco-val-box" [class.cargando]="calculandoBancos">
+          <div class="ing-prosegur-box" [class.cargando]="calculandoBancos">
             <div class="ing-spinner-sm" *ngIf="calculandoBancos"></div>
-            <span *ngIf="!calculandoBancos">
-              {{ valorBancoCalculado(c.id) > 0 ? fmt(valorBancoCalculado(c.id)) : '—' }}
-            </span>
+            <input *ngIf="!calculandoBancos" class="ing-input-manual" type="text" [value]="fmtBancoPanel(c.id)"
+              (input)="setValorBancoPanel(c.id, $any($event.target).value)" (focus)="onFocusBancoPanel(c.id, $event)"
+              (blur)="onBlurBancoPanel(c.id, $event)" placeholder="—" />
           </div>
         </div>
       </div>

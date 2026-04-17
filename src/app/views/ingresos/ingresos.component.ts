@@ -185,6 +185,41 @@ export class IngresosComponent implements OnInit {
     );
   }
 
+  editandoBancoId: number | null = null;
+
+fmtBancoPanel(concepto_id: number): string {
+  const key = BANCO_KEY[concepto_id];
+  const v = key ? (this.bancosCalculados[key] ?? null) : null;
+  if (v === null || v === undefined || isNaN(v)) return '';
+  if (this.editandoBancoId === concepto_id) return v.toString();
+  return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+setValorBancoPanel(concepto_id: number, val: string) {
+  const key = BANCO_KEY[concepto_id];
+  if (!key) return;
+  const clean = val.replace(/[^0-9.]/g, '');
+  this.bancosCalculados[key] = clean === '' ? 0 : parseFloat(clean);
+}
+
+onFocusBancoPanel(concepto_id: number, event: FocusEvent) {
+  this.editandoBancoId = concepto_id;
+  const key = BANCO_KEY[concepto_id];
+  const v = key ? (this.bancosCalculados[key] ?? null) : null;
+  const input = event.target as HTMLInputElement;
+  input.value = v !== null && v !== undefined ? v.toString() : '';
+  setTimeout(() => input.select(), 0);
+}
+
+onBlurBancoPanel(concepto_id: number, event: FocusEvent) {
+  this.editandoBancoId = null;
+  const key = BANCO_KEY[concepto_id];
+  const v = key ? (this.bancosCalculados[key] ?? null) : null;
+  const input = event.target as HTMLInputElement;
+  input.value = v !== null && v !== undefined && !isNaN(v)
+    ? v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : '';
+}
   abrirPanel() {
     this.mostrarPanel = true;
     this.nuevaFecha = '';
