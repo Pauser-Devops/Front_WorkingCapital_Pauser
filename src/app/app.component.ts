@@ -34,6 +34,7 @@ import { FacturasComponent } from './views/inventario/facturas/facturas.componen
 import { RemitosComponent } from "./views/inventario/remitos/remitos.component";
 import { CruceInventarioComponent } from './views/inventario/cruce-inventario/cruce-inventario.component';
 import { ResumenBancarioComponent } from './views/resumen-bancario/resumen-bancario.component';
+import { CashflowComponent } from './views/cash-flow/cashflow.component';
 const VISTA_NOMBRES: Record<string, string> = {
   semanal: 'WK Semanal 2026',
   mensual: 'WK Mensual 2026',
@@ -63,7 +64,8 @@ const VISTA_NOMBRES: Record<string, string> = {
   dashInventario: 'Dashboard de Conciliación de Inventario',
   remitosInventario: 'Remitos de Inventario',
   facturasInventario:'Facturas Inventario',
-  resumenBancario: 'Resumen Bancario'
+  resumenBancario: 'Resumen Bancario',
+  cashFlow:'Cash Flow'
 };
 
 @Component({
@@ -103,7 +105,8 @@ const VISTA_NOMBRES: Record<string, string> = {
     FacturasComponent,
     RemitosComponent,
     CruceInventarioComponent,
-    ResumenBancarioComponent
+    ResumenBancarioComponent,
+    CashflowComponent
 ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']

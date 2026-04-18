@@ -64,6 +64,7 @@ export class SidebarComponent {
         { id: 'renta',    label: 'Renta y Proyección', roles: ['admin', 'gerencia', 'finanzas_admin'] },
         { id: 'flujoCaja',    label: 'Flujo de Caja',      roles: ['admin', 'gerencia', 'finanzas_admin'] },
         { id: 'resumenBancario',    label: 'Resumen Bancario',      roles: ['admin', 'gerencia', 'finanzas_admin'] },
+        { id: 'cashFlow',    label: 'Cash Flow',      roles: ['admin', 'gerencia', 'finanzas_admin'] },
       ]
     },
     {

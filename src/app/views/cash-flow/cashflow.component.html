@@ -1,0 +1,338 @@
+<div class="cf-wrap">
+
+  <!-- ══ HEADER ══════════════════════════════════════════════ -->
+  <div class="cf-header">
+    <div class="cf-header-left">
+      <div class="cf-icon">
+        <span class="material-icons">waterfall_chart</span>
+      </div>
+      <div>
+        <div class="cf-title">Cash Flow</div>
+        <div class="cf-subtitle">Flujo de caja · Vista por mes</div>
+      </div>
+    </div>
+    <div class="cf-header-actions">
+      <button class="cf-btn-eliminar" *ngIf="ymSeleccionado" (click)="confirmarEliminar()">
+        <span class="material-icons" style="font-size:15px">delete</span>
+        Eliminar mes
+      </button>
+      <button class="cf-btn-guardar" (click)="guardar()" [disabled]="!ymSeleccionado || guardando">
+        <span class="material-icons" style="font-size:15px">save</span>
+        {{ guardando ? 'Guardando...' : 'Guardar' }}
+      </button>
+      <button class="cf-btn-nueva" (click)="abrirModal()">
+        <span class="material-icons" style="font-size:16px">add</span>
+        Nuevo mes
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ LOADING ══════════════════════════════════════════════ -->
+  <div class="cf-loading" *ngIf="cargando">
+    <div class="cf-spinner"></div>
+    <span>Cargando...</span>
+  </div>
+
+  <!-- ══ CHIPS DE MESES ════════════════════════════════════════ -->
+  <div class="cf-meses-bar" *ngIf="!cargando">
+    <div class="cf-chips">
+      <button class="cf-chip"
+        *ngFor="let m of meses"
+        [class.cf-chip-activo]="m.ym === ymSeleccionado"
+        (click)="seleccionarMes(m.ym)">
+        {{ m.label }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ EMPTY STATE ══════════════════════════════════════════ -->
+  <div class="cf-empty" *ngIf="!cargando && meses.length === 0">
+    <span class="material-icons" style="font-size:44px;color:#94a3b8">waterfall_chart</span>
+    <p>Sin datos aún · Agrega el primer mes</p>
+    <button class="cf-btn-nueva" (click)="abrirModal()">+ Nuevo mes</button>
+  </div>
+
+  <!-- ══ CONTENIDO MES ════════════════════════════════════════ -->
+  <div class="cf-body" *ngIf="!cargando && ymSeleccionado">
+
+    <!-- ┌─ TABLA 1: CAPEX ─────────────────────────────────────┐ -->
+    <div class="cf-section">
+      <div class="cf-section-header">
+        <span class="cf-section-title">CAPEX</span>
+        <button class="cf-btn-add-row" (click)="agregarFilaCapex()">
+          <span class="material-icons" style="font-size:14px">add</span>
+          Agregar fila
+        </button>
+      </div>
+
+      <div class="cf-tabla-wrap">
+        <table class="cf-tabla">
+          <thead>
+            <tr>
+              <th class="cf-th-concepto">Proyecto</th>
+              <th class="cf-th-desc">Descripción</th>
+              <th class="cf-th-monto">Monto</th>
+              <th class="cf-th-accion"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let fila of capex; let i = index; trackBy: trackByIdx"
+                class="cf-row-item">
+              <td class="cf-td">
+                <input class="cf-input-tabla" type="text"
+                  [(ngModel)]="fila.proyecto" placeholder="Nombre del proyecto" />
+              </td>
+              <td class="cf-td">
+                <input class="cf-input-tabla" type="text"
+                  [(ngModel)]="fila.descripcion" placeholder="Descripción" />
+              </td>
+              <td class="cf-td cf-td-right">
+                <input class="cf-input-tabla cf-input-num" type="number"
+                  [(ngModel)]="fila.monto" placeholder="0.00" />
+              </td>
+              <td class="cf-td cf-td-accion">
+                <button class="cf-btn-del-row" (click)="eliminarFilaCapex(i)" title="Eliminar fila">
+                  <span class="material-icons" style="font-size:14px">close</span>
+                </button>
+              </td>
+            </tr>
+
+            <!-- Empty state tabla -->
+            <tr *ngIf="capex.length === 0">
+              <td colspan="4" class="cf-td-empty">
+                Sin proyectos · Agrega una fila
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="cf-row-total">
+              <td colspan="2" class="cf-td-label-total">TOTAL CAPEX</td>
+              <td class="cf-td-val-total">{{ fmt(totalCapex) }}</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- ┌─ TABLA 2: VARIACIONES WK ────────────────────────────┐ -->
+    <div class="cf-section">
+      <div class="cf-section-header">
+        <span class="cf-section-title">VARIACIONES WK</span>
+        <button class="cf-btn-calcular" (click)="calcularVariacionWK()" [disabled]="calculandoWK">
+          <span class="material-icons" style="font-size:14px">sync</span>
+          {{ calculandoWK ? 'Calculando...' : 'Traer desde BD' }}
+        </button>
+      </div>
+
+      <div class="cf-tabla-wrap">
+        <table class="cf-tabla">
+          <thead>
+            <tr>
+              <th class="cf-th-concepto">Concepto</th>
+              <th class="cf-th-monto">Mes Anterior</th>
+              <th class="cf-th-monto">Mes Actual</th>
+              <th class="cf-th-monto">Variación</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- CXC -->
+            <tr class="cf-row-item">
+              <td class="cf-td cf-td-label-left">Cuentas por cobrar</td>
+              <td class="cf-td cf-td-right">
+                <input class="cf-input-tabla cf-input-num" type="number"
+                  [ngModel]="variacionWK.cxc_anterior"
+                  (ngModelChange)="variacionWK.cxc_anterior = $event"
+                  placeholder="0.00" />
+              </td>
+              <td class="cf-td cf-td-right">
+                <input class="cf-input-tabla cf-input-num" type="number"
+                  [ngModel]="variacionWK.cxc_actual"
+                  (ngModelChange)="variacionWK.cxc_actual = $event"
+                  placeholder="0.00" />
+              </td>
+              <td class="cf-td cf-td-right cf-var" [class.cf-pos]="varCXC > 0" [class.cf-neg]="varCXC < 0">
+                {{ fmt(varCXC) }}
+              </td>
+            </tr>
+            <!-- Inventarios -->
+            <tr class="cf-row-item">
+              <td class="cf-td cf-td-label-left">Inventarios</td>
+              <td class="cf-td cf-td-right">
+                <input class="cf-input-tabla cf-input-num" type="number"
+                  [ngModel]="variacionWK.inv_anterior"
+                  (ngModelChange)="variacionWK.inv_anterior = $event"
+                  placeholder="0.00" />
+              </td>
+              <td class="cf-td cf-td-right">
+                <input class="cf-input-tabla cf-input-num" type="number"
+                  [ngModel]="variacionWK.inv_actual"
+                  (ngModelChange)="variacionWK.inv_actual = $event"
+                  placeholder="0.00" />
+              </td>
+              <td class="cf-td cf-td-right cf-var" [class.cf-pos]="varINV > 0" [class.cf-neg]="varINV < 0">
+                {{ fmt(varINV) }}
+              </td>
+            </tr>
+            <!-- CXP -->
+            <tr class="cf-row-item">
+              <td class="cf-td cf-td-label-left">Cuentas por pagar</td>
+              <td class="cf-td cf-td-right">
+                <input class="cf-input-tabla cf-input-num" type="number"
+                  [ngModel]="variacionWK.cxp_anterior"
+                  (ngModelChange)="variacionWK.cxp_anterior = $event"
+                  placeholder="0.00" />
+              </td>
+              <td class="cf-td cf-td-right">
+                <input class="cf-input-tabla cf-input-num" type="number"
+                  [ngModel]="variacionWK.cxp_actual"
+                  (ngModelChange)="variacionWK.cxp_actual = $event"
+                  placeholder="0.00" />
+              </td>
+              <td class="cf-td cf-td-right cf-var" [class.cf-pos]="varCXP > 0" [class.cf-neg]="varCXP < 0">
+                {{ fmt(varCXP) }}
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="cf-row-total">
+              <td colspan="3" class="cf-td-label-total">TOTAL VARIACIÓN WK</td>
+              <td class="cf-td-val-total" [class.cf-pos]="totalVarWK > 0" [class.cf-neg]="totalVarWK < 0">
+                {{ fmt(totalVarWK) }}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- ┌─ TABLA 3: CASH FLOW ─────────────────────────────────┐ -->
+    <div class="cf-section">
+      <div class="cf-section-header">
+        <span class="cf-section-title">CASH FLOW — {{ labelMesSeleccionado() }}</span>
+      </div>
+
+      <div class="cf-tabla-wrap">
+        <table class="cf-tabla">
+          <thead>
+            <tr>
+              <th class="cf-th-concepto">Concepto</th>
+              <th class="cf-th-monto">Monto</th>
+            </tr>
+          </thead>
+          <tbody>
+
+            <!-- EBITDA manual -->
+            <tr class="cf-row-item">
+              <td class="cf-td cf-td-label-left">EBITDA</td>
+              <td class="cf-td cf-td-right">
+                <input class="cf-input-tabla cf-input-num" type="number"
+                  [ngModel]="cashflow.ebitda"
+                  (ngModelChange)="cashflow.ebitda = $event"
+                  placeholder="0.00" />
+              </td>
+            </tr>
+
+            <!-- (-) Variación WK — automático -->
+            <tr class="cf-row-item cf-row-auto">
+              <td class="cf-td cf-td-label-left">
+                (-) Variación de WK
+                <span class="cf-badge-auto">AUTO</span>
+              </td>
+              <td class="cf-td cf-td-right cf-var"
+                [class.cf-pos]="totalVarWK > 0" [class.cf-neg]="totalVarWK < 0">
+                {{ fmt(totalVarWK) }}
+              </td>
+            </tr>
+
+            <!-- (-) Impuestos pagados manual -->
+            <tr class="cf-row-item">
+              <td class="cf-td cf-td-label-left">(-) Impuestos Pagados</td>
+              <td class="cf-td cf-td-right">
+                <input class="cf-input-tabla cf-input-num" type="number"
+                  [ngModel]="cashflow.impuestos_pagados"
+                  (ngModelChange)="cashflow.impuestos_pagados = $event"
+                  placeholder="0.00" />
+              </td>
+            </tr>
+
+            <!-- Flujo de Caja Operativo — calculado -->
+            <tr class="cf-row-subtotal">
+              <td class="cf-td cf-td-label-left">
+                Flujo de Caja Operativo
+                <span class="cf-badge-calc">CALC</span>
+              </td>
+              <td class="cf-td cf-td-right"
+                [class.cf-pos]="flujoCajaOperativo > 0"
+                [class.cf-neg]="flujoCajaOperativo < 0">
+                {{ fmt(flujoCajaOperativo) }}
+              </td>
+            </tr>
+
+            <!-- (-) CAPEX — automático -->
+            <tr class="cf-row-item cf-row-auto">
+              <td class="cf-td cf-td-label-left">
+                (-) CAPEX
+                <span class="cf-badge-auto">AUTO</span>
+              </td>
+              <td class="cf-td cf-td-right">{{ fmt(totalCapex) }}</td>
+            </tr>
+
+          </tbody>
+          <tfoot>
+            <tr class="cf-row-total cf-row-libre">
+              <td class="cf-td-label-total">FLUJO DE CAJA LIBRE</td>
+              <td class="cf-td-val-total"
+                [class.cf-pos]="flujoCajaLibre > 0"
+                [class.cf-neg]="flujoCajaLibre < 0">
+                {{ fmt(flujoCajaLibre) }}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /cf-body -->
+
+</div><!-- /cf-wrap -->
+
+<!-- ══ MODAL NUEVO MES ═══════════════════════════════════════ -->
+<div class="cf-overlay" *ngIf="mostrarModal" (click)="cerrarModal()"></div>
+<div class="cf-modal" *ngIf="mostrarModal">
+  <div class="cf-modal-header">
+    <span class="cf-modal-title">Nuevo mes</span>
+    <button class="cf-modal-close" (click)="cerrarModal()">
+      <span class="material-icons">close</span>
+    </button>
+  </div>
+  <div class="cf-modal-body">
+    <label class="cf-label">Selecciona el mes</label>
+    <input class="cf-input" type="month" [(ngModel)]="nuevoYm" style="max-width:200px" />
+  </div>
+  <div class="cf-modal-footer">
+    <button class="cf-btn-cancelar" (click)="cerrarModal()">Cancelar</button>
+    <button class="cf-btn-guardar" (click)="confirmarNuevoMes()" [disabled]="!nuevoYm">
+      Continuar
+    </button>
+  </div>
+</div>
+
+<!-- ══ MODAL ELIMINAR ════════════════════════════════════════ -->
+<div class="cf-overlay" *ngIf="mostrarModalEliminar" (click)="cancelarEliminar()"></div>
+<div class="cf-modal-confirmar" *ngIf="mostrarModalEliminar">
+  <div class="cf-confirmar-icon">
+    <span class="material-icons" style="font-size:40px;color:#ef4444">delete_forever</span>
+  </div>
+  <div class="cf-confirmar-titulo">Eliminar mes</div>
+  <div class="cf-confirmar-msg">
+    ¿Eliminar todos los datos de <strong>{{ labelMesSeleccionado() }}</strong>?
+    Esta acción no se puede deshacer.
+  </div>
+  <div class="cf-confirmar-btns">
+    <button class="cf-btn-cancelar" (click)="cancelarEliminar()">Cancelar</button>
+    <button class="cf-btn-eliminar-confirm" (click)="eliminarMes()" [disabled]="eliminando">
+      {{ eliminando ? 'Eliminando...' : 'Sí, eliminar' }}
+    </button>
+  </div>
+</div>
